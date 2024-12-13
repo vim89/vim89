@@ -1,7 +1,7 @@
 <h1 align="center">Hi 👋, I'm Vitthal</h1>
 <h3 align="center">A passionate Software/Data Engineer, Data Architect, teacher, and blogger from India</h3>
 
-- 🌱 I’m currently learning **Functional programming in Scala/Kotlin**
+- 🌱 I’m currently learning **Functional programming in Scala/Kotlin, Designing Data Engineering Applications, Google cloud & Databricks**
 
 - 📝 I regularly write articles on [Vitthal Mirji](https://vitthalmirji.com/)
 
