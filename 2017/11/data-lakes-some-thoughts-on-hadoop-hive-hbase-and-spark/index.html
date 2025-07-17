@@ -27,69 +27,69 @@ set: <a href=http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml>http:
 start with June, we still get 813 MiB and 9,656,995 records.</p><p>As we will re-use the same data set for HBase later, you will need to make sure your HBase Key is unique – if you just
 use the first value in the CSV, VendorID, you will get a total of 3 records – as there are 3 distinct values in that CSV
 for this column. So we need to add an ID using awk. I suggest using head -1000 and piping that to a separate file for
-testing if you want to follow along.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2017-06.csv
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>awk -F<span class=s1>&#39;,&#39;</span> -v <span class=nv>OFS</span><span class=o>=</span><span class=s1>&#39;,&#39;</span> <span class=s1>&#39;
-</span></span></span><span class=line><span class=cl><span class=s1>NR == 1 {print &#34;ID&#34;, $0; next}
-</span></span></span><span class=line><span class=cl><span class=s1>{print (NR-1), $0}
-</span></span></span><span class=line><span class=cl><span class=s1>&#39;</span> yellow_tripdata_2017-06.csv &gt; yellow_tripdata_2017-06_id.csv</span></span></code></pre></td></tr></table></div></div><p>Now, we need to create a DDL and import the data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>DROP</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=k>IF</span><span class=w> </span><span class=k>EXISTS</span><span class=w> </span><span class=n>nyc</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>nyc</span><span class=p>(</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>id</span><span class=w> </span><span class=nb>BIGINT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>VendorID</span><span class=w> </span><span class=nb>BIGINT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tpep_pickup_datetime</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tpep_dropoff_datetime</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>passenger_count</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>trip_distance</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>RatecodeID</span><span class=w> </span><span class=n>STRING</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>store_and_fwd_flag</span><span class=w> </span><span class=n>STRING</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>PULocationID</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>DOLocationID</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>payment_type</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>fare_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>extra</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>mta_tax</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tip_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tolls_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>improvement_surcharge</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>total_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ROW</span><span class=w> </span><span class=n>FORMAT</span><span class=w> </span><span class=n>DELIMITED</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>FIELDS</span><span class=w> </span><span class=n>TERMINATED</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=s1>&#39;,&#39;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>STORED</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>TEXTFILE</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>LOAD</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>INPATH</span><span class=w> </span><span class=s1>&#39;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#39;</span><span class=w> </span><span class=n>OVERWRITE</span><span class=w> </span><span class=k>INTO</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>nyc</span><span class=p>;</span></span></span></code></pre></td></tr></table></div></div><p>Oops. Not good. Wait, let’s just enable transactions! However, you will have issues doing that using Cloudera’s
+testing if you want to follow along.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span>wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2017-06.csv
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>awk -F<span style=color:#e6db74>&#39;,&#39;</span> -v OFS<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;,&#39;</span> <span style=color:#e6db74>&#39;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>NR == 1 {print &#34;ID&#34;, $0; next}
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>{print (NR-1), $0}
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>&#39;</span> yellow_tripdata_2017-06.csv &gt; yellow_tripdata_2017-06_id.csv</span></span></code></pre></td></tr></table></div></div><p>Now, we need to create a DDL and import the data:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-sql data-lang=sql><span style=display:flex><span><span style=color:#66d9ef>DROP</span> <span style=color:#66d9ef>TABLE</span> <span style=color:#66d9ef>IF</span> <span style=color:#66d9ef>EXISTS</span> nyc;
+</span></span><span style=display:flex><span><span style=color:#66d9ef>CREATE</span> <span style=color:#66d9ef>TABLE</span> nyc(
+</span></span><span style=display:flex><span>id BIGINT
+</span></span><span style=display:flex><span>,VendorID BIGINT
+</span></span><span style=display:flex><span>,tpep_pickup_datetime <span style=color:#66d9ef>TIMESTAMP</span>
+</span></span><span style=display:flex><span>,tpep_dropoff_datetime <span style=color:#66d9ef>TIMESTAMP</span>
+</span></span><span style=display:flex><span>,passenger_count INT
+</span></span><span style=display:flex><span>,trip_distance DOUBLE
+</span></span><span style=display:flex><span>,RatecodeID STRING
+</span></span><span style=display:flex><span>,store_and_fwd_flag STRING
+</span></span><span style=display:flex><span>,PULocationID INT
+</span></span><span style=display:flex><span>,DOLocationID INT
+</span></span><span style=display:flex><span>,payment_type INT
+</span></span><span style=display:flex><span>,fare_amount DOUBLE
+</span></span><span style=display:flex><span>,extra DOUBLE
+</span></span><span style=display:flex><span>,mta_tax DOUBLE
+</span></span><span style=display:flex><span>,tip_amount DOUBLE
+</span></span><span style=display:flex><span>,tolls_amount DOUBLE
+</span></span><span style=display:flex><span>,improvement_surcharge DOUBLE
+</span></span><span style=display:flex><span>,total_amount DOUBLE
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span><span style=color:#66d9ef>ROW</span> FORMAT DELIMITED
+</span></span><span style=display:flex><span>FIELDS TERMINATED <span style=color:#66d9ef>BY</span> <span style=color:#e6db74>&#39;,&#39;</span>
+</span></span><span style=display:flex><span>STORED <span style=color:#66d9ef>AS</span> TEXTFILE;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>LOAD</span> <span style=color:#66d9ef>DATA</span> INPATH <span style=color:#e6db74>&#39;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#39;</span> OVERWRITE <span style=color:#66d9ef>INTO</span> <span style=color:#66d9ef>TABLE</span> nyc;</span></span></code></pre></td></tr></table></div></div><p>Oops. Not good. Wait, let’s just enable transactions! However, you will have issues doing that using Cloudera’s
 distribution. Take this exempt from the documentation:</p><blockquote><p>_“The CDH distribution of Hive does not support
 transactions (<a href=https://issues.apache.org/jira/browse/HIVE-5317 target=_blank rel="nofollow noopener noreferrer">HIVE-5317</a>
 ). Currently, transaction support in Hive is
@@ -120,19 +120,19 @@ play <a href=http://mathworld.wolfram.com/TowerofHanoi.html>The Tower Of Hanoi</
 – meaning, using temporary tables and
 sub-selects to work with INSERT OVERWRITE statements, use a different storage and execution strategy that enables random
 writes and updates (more below) – or you can make this a core target and focus on matching the requirements outlined
-above.</p><p>When going for the first approach, there might be some…<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Cannot insert into target table because column number/types are different</span></span></code></pre></td></tr></table></div></div>&mldr;errors and excluding columns still involves regex, but after all, a lot is possible if you put your mind to it.</p><p>In any case, sooner or later you will find yourself in need of working with your now accessible data. If you call this
+above.</p><p>When going for the first approach, there might be some…<div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span>Cannot insert into target table because column number/types are different</span></span></code></pre></td></tr></table></div></div>&mldr;errors and excluding columns still involves regex, but after all, a lot is possible if you put your mind to it.</p><p>In any case, sooner or later you will find yourself in need of working with your now accessible data. If you call this
 process “mapping”, “transformation” or just throw your entire ETL workload on Hadoop, eventually you will want to gain
-some form of insights from your Lake – and usually, this involves Joins, Views and other SQL operations.</p><h2 id=hive-on-9656995-records>Hive on 9,656,995 records</h2><p>Let’s get back to our data. Always keep in mind that this data is currently stored as plain text.</p><p>Let’s try to get all trips with a tip over $100 – it’s NYC, after all:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>with tmp as<span class=o>(</span>
-</span></span><span class=line><span class=cl>SELECT * FROM Nyc
-</span></span><span class=line><span class=cl>WHERE tip_amount &gt;<span class=o>=</span> <span class=m>100</span>
-</span></span><span class=line><span class=cl><span class=o>)</span>
-</span></span><span class=line><span class=cl>SELECT COUNT<span class=o>(</span>*<span class=o>)</span>, max<span class=o>(</span>tip_amount<span class=o>)</span>, total_amount as max_tip from tmp group by total_amount<span class=p>;</span></span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-1.png alt>
+some form of insights from your Lake – and usually, this involves Joins, Views and other SQL operations.</p><h2 id=hive-on-9656995-records>Hive on 9,656,995 records</h2><p>Let’s get back to our data. Always keep in mind that this data is currently stored as plain text.</p><p>Let’s try to get all trips with a tip over $100 – it’s NYC, after all:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span>with tmp as<span style=color:#f92672>(</span>
+</span></span><span style=display:flex><span>SELECT * FROM Nyc
+</span></span><span style=display:flex><span>WHERE tip_amount &gt;<span style=color:#f92672>=</span> <span style=color:#ae81ff>100</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>SELECT COUNT<span style=color:#f92672>(</span>*<span style=color:#f92672>)</span>, max<span style=color:#f92672>(</span>tip_amount<span style=color:#f92672>)</span>, total_amount as max_tip from tmp group by total_amount;</span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-1.png alt>
 Hive on 9M records</p><p>Time taken: 66.138 seconds, Fetched: 185 row(s)</p><p>We got a result in about a minute on a single node <em>(cluster configuration can be found down below)</em>!</p><p>As you can see, I use a less-than-shiny, white-on-black CLI. So, let’s assume we have business users and analysts which
 are used to complex, powerful tools such as MS SQL Management Studio.</p><p>We can provide access to business users using Ambari (Hortonworks), Hue, Zeppelin or other web-based front ends.</p><p><a href=images/Selection_050-1024x566.png></a>Hue</p><p>However - storing queries, simply exporting results, auto-complete, stored procedures, special characters and (in most
 cases) visualization are not features that are commonly found on these tools.</p><p>You will need an external tool, usually connected via JDBC, for that. Examples include Dbeaver, Squirrel or
@@ -165,291 +165,291 @@ common access patterns on our NYC cab data. For details on HBase’s architectur
 book, “HBase – the Definitive Guide” (O’Reilly Media).</p><p>In general terms, noSQL systems heavily rely on the concept of a key – and therefore, doing exactly what Hive omits for
 good reasons. Now, what is true about Hive – that it does not come with a fancy client – is especially true for HBase.</p><p>A seemingly simple query like “get me all records where X” turns into a long, horrible orgy of sub-commands over a
 charming black-and-white CLI.</p><p>We’ll re-use our NYC Yellow Cab data set (the Hive import from above moves the data set, so you will need to copy it to
-HDFS again).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ruby data-lang=ruby><span class=line><span class=cl><span class=n>hbase</span> <span class=n>shell</span> <span class=o>&lt;&lt;&lt;</span> <span class=s2>&#34;create &#39;nyc&#39;, &#39;cf&#39;&#34;</span>
-</span></span><span class=line><span class=cl><span class=n>dos2unix</span> <span class=n>yellow_tripdata_2017</span><span class=o>-</span><span class=mo>06</span><span class=n>_id</span><span class=o>.</span><span class=n>csv</span>
-</span></span><span class=line><span class=cl><span class=n>hdfs</span> <span class=n>dfs</span> <span class=o>-</span><span class=n>copyFromLocal</span> <span class=n>yellow_tripdata_2017</span><span class=o>-</span><span class=mo>06</span><span class=n>_id</span><span class=o>.</span><span class=n>csv</span> <span class=sr>/user/</span><span class=n>cloudera</span>
-</span></span><span class=line><span class=cl><span class=n>hbase</span> <span class=n>org</span><span class=o>.</span><span class=n>apache</span><span class=o>.</span><span class=n>hadoop</span><span class=o>.</span><span class=n>hbase</span><span class=o>.</span><span class=n>mapreduce</span><span class=o>.</span><span class=n>ImportTsv</span> <span class=o>-</span><span class=no>Dimporttsv</span><span class=o>.</span><span class=n>separator</span><span class=o>=</span><span class=p>,</span> <span class=o>-</span><span class=no>Dimporttsv</span><span class=o>.</span><span class=n>columns</span><span class=o>=</span><span class=s2>&#34;HBASE_ROW_KEY,cf:
-</span></span></span><span class=line><span class=cl><span class=s2>VendorId,cf:tpep_pickup_datetime,cf:tpep_dropoff_datetime,cf:passenger_count,cf:trip_distance,cf:RatecodeID,cf:
-</span></span></span><span class=line><span class=cl><span class=s2>store_and_fwd_flag,cf:PULocationID,cf:DOLocationID,cf:payment_type,cf:fare_amount,cf:extra,cf:mta_tax,cf:tip_amount,cf:
-</span></span></span><span class=line><span class=cl><span class=s2>tolls_amount,cf:improvement_surcharge,cf:total_amount&#34;</span> <span class=n>nyc</span> <span class=sr>/user/</span><span class=n>cloudera</span><span class=o>/</span><span class=n>yellow_tripdata_2017</span><span class=o>-</span><span class=mo>06</span><span class=n>_id</span><span class=o>.</span><span class=n>csv</span></span></span></code></pre></td></tr></table></div></div><p>One might add that the initial import took plenty of time on the Quickstart Configuration, which, granted, is not very
+HDFS again).</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">7
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-ruby data-lang=ruby><span style=display:flex><span>hbase shell <span style=color:#f92672>&lt;&lt;&lt;</span> <span style=color:#e6db74>&#34;create &#39;nyc&#39;, &#39;cf&#39;&#34;</span>
+</span></span><span style=display:flex><span>dos2unix yellow_tripdata_2017<span style=color:#f92672>-</span><span style=color:#ae81ff>06</span>_id<span style=color:#f92672>.</span>csv
+</span></span><span style=display:flex><span>hdfs dfs <span style=color:#f92672>-</span>copyFromLocal yellow_tripdata_2017<span style=color:#f92672>-</span><span style=color:#ae81ff>06</span>_id<span style=color:#f92672>.</span>csv <span style=color:#e6db74>/user/</span>cloudera
+</span></span><span style=display:flex><span>hbase org<span style=color:#f92672>.</span>apache<span style=color:#f92672>.</span>hadoop<span style=color:#f92672>.</span>hbase<span style=color:#f92672>.</span>mapreduce<span style=color:#f92672>.</span>ImportTsv <span style=color:#f92672>-</span><span style=color:#66d9ef>Dimporttsv</span><span style=color:#f92672>.</span>separator<span style=color:#f92672>=</span>, <span style=color:#f92672>-</span><span style=color:#66d9ef>Dimporttsv</span><span style=color:#f92672>.</span>columns<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;HBASE_ROW_KEY,cf:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>VendorId,cf:tpep_pickup_datetime,cf:tpep_dropoff_datetime,cf:passenger_count,cf:trip_distance,cf:RatecodeID,cf:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>store_and_fwd_flag,cf:PULocationID,cf:DOLocationID,cf:payment_type,cf:fare_amount,cf:extra,cf:mta_tax,cf:tip_amount,cf:
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>tolls_amount,cf:improvement_surcharge,cf:total_amount&#34;</span> nyc <span style=color:#e6db74>/user/</span>cloudera<span style=color:#f92672>/</span>yellow_tripdata_2017<span style=color:#f92672>-</span><span style=color:#ae81ff>06</span>_id<span style=color:#f92672>.</span>csv</span></span></code></pre></td></tr></table></div></div><p>One might add that the initial import took plenty of time on the Quickstart Configuration, which, granted, is not very
 good. The command also exits with Bytes Written=0 if something is wrong (like a mismatch in the columns) – do not pass
-Go. Do not collect$200.</p><p>Again, let’s get all trips with a tip > $100.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ruby data-lang=ruby><span class=line><span class=cl><span class=nb>scan</span> <span class=s1>&#39;nyc&#39;</span><span class=p>,</span> <span class=p>{</span><span class=no>LIMIT</span> <span class=o>=&gt;</span> <span class=mi>10</span><span class=p>,</span> <span class=no>FILTER</span> <span class=o>=&gt;</span> <span class=n>org</span><span class=o>.</span><span class=n>apache</span><span class=o>.</span><span class=n>hadoop</span><span class=o>.</span><span class=n>hbase</span><span class=o>.</span><span class=n>filter</span><span class=o>.</span><span class=n>SingleColumnValueFilter</span><span class=o>.</span><span class=n>new</span><span class=p>(</span><span class=no>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=p>(</span><span class=s1>&#39;cf&#39;</span><span class=p>),</span>
-</span></span><span class=line><span class=cl><span class=no>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=p>(</span><span class=s1>&#39;tip_amount&#39;</span><span class=p>),</span> <span class=n>org</span><span class=o>.</span><span class=n>apache</span><span class=o>.</span><span class=n>hadoop</span><span class=o>.</span><span class=n>hbase</span><span class=o>.</span><span class=n>filter</span><span class=o>.</span><span class=n>CompareFilter</span><span class=o>::</span><span class=no>CompareOp</span><span class=o>.</span><span class=n>valueOf</span><span class=p>(</span><span class=s1>&#39;GREATER_OR_EQUAL&#39;</span><span class=p>),</span>
-</span></span><span class=line><span class=cl><span class=no>Bytes</span><span class=o>.</span><span class=n>toBytes</span><span class=p>(</span><span class=mi>100</span><span class=p>))}</span></span></span></code></pre></td></tr></table></div></div><p>What’s that?</p><p><img src=images/Selection_049-1024x644.png alt>
+Go. Do not collect$200.</p><p>Again, let’s get all trips with a tip > $100.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-ruby data-lang=ruby><span style=display:flex><span>scan <span style=color:#e6db74>&#39;nyc&#39;</span>, {<span style=color:#66d9ef>LIMIT</span> <span style=color:#f92672>=&gt;</span> <span style=color:#ae81ff>10</span>, <span style=color:#66d9ef>FILTER</span> <span style=color:#f92672>=&gt;</span> org<span style=color:#f92672>.</span>apache<span style=color:#f92672>.</span>hadoop<span style=color:#f92672>.</span>hbase<span style=color:#f92672>.</span>filter<span style=color:#f92672>.</span>SingleColumnValueFilter<span style=color:#f92672>.</span>new(<span style=color:#66d9ef>Bytes</span><span style=color:#f92672>.</span>toBytes(<span style=color:#e6db74>&#39;cf&#39;</span>),
+</span></span><span style=display:flex><span><span style=color:#66d9ef>Bytes</span><span style=color:#f92672>.</span>toBytes(<span style=color:#e6db74>&#39;tip_amount&#39;</span>), org<span style=color:#f92672>.</span>apache<span style=color:#f92672>.</span>hadoop<span style=color:#f92672>.</span>hbase<span style=color:#f92672>.</span>filter<span style=color:#f92672>.</span>CompareFilter<span style=color:#f92672>::</span><span style=color:#66d9ef>CompareOp</span><span style=color:#f92672>.</span>valueOf(<span style=color:#e6db74>&#39;GREATER_OR_EQUAL&#39;</span>),
+</span></span><span style=display:flex><span><span style=color:#66d9ef>Bytes</span><span style=color:#f92672>.</span>toBytes(<span style=color:#ae81ff>100</span>))}</span></span></code></pre></td></tr></table></div></div><p>What’s that?</p><p><img src=images/Selection_049-1024x644.png alt>
 HBase Query Result</p><p>What happened here? Using the TSV import command, all the values are imported as Strings – and we are trying to compare
 Strings with Bytes. Technically correct, but not very insightful. There is a whole lot more to the way HBase stores its
 data – I will not go into that at this point. But just keep in mind that HBase does not really care about the data you
 throw at it.</p><p>So, let’s use Java, the next low-level abstraction HBase offers. We implement a custom Comparator to work with Double in
 String fields, move that jar to HBase’s classpath, restart HBase and run our query as jar file. Make sure to set
-<code>hbase.client.scanner.timeout.period hbase.regionserver.lease.period</code> accordingly.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span><span class=lnt>44
-</span><span class=lnt>45
-</span><span class=lnt>46
-</span><span class=lnt>47
-</span><span class=lnt>48
-</span><span class=lnt>49
-</span><span class=lnt>50
-</span><span class=lnt>51
-</span><span class=lnt>52
-</span><span class=lnt>53
-</span><span class=lnt>54
-</span><span class=lnt>55
-</span><span class=lnt>56
-</span><span class=lnt>57
-</span><span class=lnt>58
-</span><span class=lnt>59
-</span><span class=lnt>60
-</span><span class=lnt>61
-</span><span class=lnt>62
-</span><span class=lnt>63
-</span><span class=lnt>64
-</span><span class=lnt>65
-</span><span class=lnt>66
-</span><span class=lnt>67
-</span><span class=lnt>68
-</span><span class=lnt>69
-</span><span class=lnt>70
-</span><span class=lnt>71
-</span><span class=lnt>72
-</span><span class=lnt>73
-</span><span class=lnt>74
-</span><span class=lnt>75
-</span><span class=lnt>76
-</span><span class=lnt>77
-</span><span class=lnt>78
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kn>package</span><span class=w> </span><span class=nn>com.otterinasuit.hbase</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kn>import</span><span class=w> </span><span class=nn>com.otterinasuit.hbase.comparators.ByteToDoubleComparator</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kn>import</span><span class=w> </span><span class=nn>org.apache.hadoop.hbase.client.*</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kn>import</span><span class=w> </span><span class=nn>org.apache.hadoop.hbase.filter.CompareFilter</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kn>import</span><span class=w> </span><span class=nn>org.apache.hadoop.hbase.filter.LongComparator</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kn>import</span><span class=w> </span><span class=nn>org.apache.hadoop.hbase.filter.SingleColumnValueFilter</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>// import ...</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kd>public</span><span class=w> </span><span class=kd>class</span> <span class=nc>Main</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kd>private</span><span class=w> </span><span class=kd>final</span><span class=w> </span><span class=kd>static</span><span class=w> </span><span class=n>Logger</span><span class=w> </span><span class=n>logger</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>LoggerFactory</span><span class=p>.</span><span class=na>getLogger</span><span class=p>(</span><span class=n>Main</span><span class=p>.</span><span class=na>class</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=kd>private</span><span class=w> </span><span class=kd>final</span><span class=w> </span><span class=kd>static</span><span class=w> </span><span class=kt>double</span><span class=w> </span><span class=n>THRESHOLD</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>100</span><span class=p>.</span><span class=na>00D</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>public</span><span class=w> </span><span class=kd>static</span><span class=w> </span><span class=kt>void</span><span class=w> </span><span class=nf>main</span><span class=p>(</span><span class=n>String</span><span class=o>[]</span><span class=w> </span><span class=n>args</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>try</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kt>long</span><span class=w> </span><span class=n>lStartTime</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>System</span><span class=p>.</span><span class=na>nanoTime</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>logger</span><span class=p>.</span><span class=na>info</span><span class=p>(</span><span class=s>&#34;Start&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>Configuration</span><span class=w> </span><span class=n>config</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>Configuration</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>config</span><span class=p>.</span><span class=na>addResource</span><span class=p>(</span><span class=s>&#34;/etc/hbase/conf.cloudera.hbase/hbase-site.xml&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>config</span><span class=p>.</span><span class=na>set</span><span class=p>(</span><span class=s>&#34;hbase.rpc.timeout&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;1800000&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>config</span><span class=p>.</span><span class=na>set</span><span class=p>(</span><span class=s>&#34;hbase.regionserver.lease.period&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;1800000&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>Connection</span><span class=w> </span><span class=n>connection</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ConnectionFactory</span><span class=p>.</span><span class=na>createConnection</span><span class=p>(</span><span class=n>config</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>Table</span><span class=w> </span><span class=n>table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>connection</span><span class=p>.</span><span class=na>getTable</span><span class=p>(</span><span class=n>TableName</span><span class=p>.</span><span class=na>valueOf</span><span class=p>(</span><span class=s>&#34;nyc&#34;</span><span class=p>));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// Filter</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>SingleColumnValueFilter</span><span class=w> </span><span class=n>filter</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>SingleColumnValueFilter</span><span class=p>(</span><span class=n>Bytes</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;cf&#34;</span><span class=p>),</span><span class=w> </span><span class=n>Bytes</span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;tip_amount&#34;</span><span class=p>),</span><span class=w> </span><span class=n>CompareFilter</span><span class=p>.</span><span class=na>CompareOp</span><span class=p>.</span><span class=na>GREATER_OR_EQUAL</span><span class=p>,</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=k>new</span><span class=w> </span><span class=n>ByteToDoubleComparator</span><span class=p>(</span><span class=n>THRESHOLD</span><span class=p>));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// Scan</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>Scan</span><span class=w> </span><span class=n>scan</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>Scan</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>scan</span><span class=p>.</span><span class=na>setFilter</span><span class=p>(</span><span class=n>filter</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>scan</span><span class=p>.</span><span class=na>addFamily</span><span class=p>(</span><span class=n>Bytes</span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;cf&#34;</span><span class=p>));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// Run</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kt>long</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>0</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>ResultScanner</span><span class=w> </span><span class=n>scanner</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>table</span><span class=p>.</span><span class=na>getScanner</span><span class=p>(</span><span class=n>scan</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>TreeMap</span><span class=o>&lt;</span><span class=n>Double</span><span class=p>,</span><span class=n>result</span><span class=o>&gt;</span><span class=w> </span><span class=n>list</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>TreeMap</span><span class=o>&lt;</span><span class=n>Double</span><span class=p>,</span><span class=n>result</span><span class=o>&gt;</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=n>Result</span><span class=w> </span><span class=n>r</span><span class=w> </span><span class=p>:</span><span class=w> </span><span class=n>scanner</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>String</span><span class=w> </span><span class=n>total</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Bytes</span><span class=p>.</span><span class=na>toString</span><span class=p>(</span><span class=n>r</span><span class=p>.</span><span class=na>getValue</span><span class=p>(</span><span class=n>Bytes</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                        </span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;cf&#34;</span><span class=p>),</span><span class=w> </span><span class=n>Bytes</span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;tip_amount&#34;</span><span class=p>)));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>String</span><span class=w> </span><span class=n>tip</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Bytes</span><span class=p>.</span><span class=na>toString</span><span class=p>(</span><span class=n>r</span><span class=p>.</span><span class=na>getValue</span><span class=p>(</span><span class=n>Bytes</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                        </span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;cf&#34;</span><span class=p>),</span><span class=w> </span><span class=n>Bytes</span><span class=p>.</span><span class=na>toBytes</span><span class=p>(</span><span class=s>&#34;total_amount&#34;</span><span class=p>)));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>System</span><span class=p>.</span><span class=na>out</span><span class=p>.</span><span class=na>println</span><span class=p>(</span><span class=s>&#34;tip_amount: &#34;</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>tip</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>System</span><span class=p>.</span><span class=na>out</span><span class=p>.</span><span class=na>println</span><span class=p>(</span><span class=s>&#34;total_amount: &#34;</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>total</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kt>double</span><span class=w> </span><span class=n>total_amount</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Double</span><span class=p>.</span><span class=na>parseDouble</span><span class=p>(</span><span class=n>total</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=kt>double</span><span class=w> </span><span class=n>tip_amount</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Double</span><span class=p>.</span><span class=na>parseDouble</span><span class=p>(</span><span class=n>tip</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>list</span><span class=p>.</span><span class=na>put</span><span class=p>(</span><span class=n>tip_amount</span><span class=p>,</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>result</span><span class=p>(</span><span class=n>total_amount</span><span class=p>,</span><span class=n>tip_amount</span><span class=p>));</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=n>c</span><span class=o>++</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// Calculate in the client</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kt>double</span><span class=w> </span><span class=n>max_tip</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Collections</span><span class=p>.</span><span class=na>max</span><span class=p>(</span><span class=n>list</span><span class=p>.</span><span class=na>keySet</span><span class=p>());</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>result</span><span class=w> </span><span class=n>max_res</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>list</span><span class=p>.</span><span class=na>get</span><span class=p>(</span><span class=n>max_tip</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>System</span><span class=p>.</span><span class=na>out</span><span class=p>.</span><span class=na>println</span><span class=p>(</span><span class=s>&#34;Max tip was &#34;</span><span class=o>+</span><span class=n>max_res</span><span class=p>.</span><span class=na>getTotal</span><span class=p>()</span><span class=o>+</span><span class=s>&#34;, amount was &#34;</span><span class=o>+</span><span class=n>max_res</span><span class=p>.</span><span class=na>tip</span><span class=o>+</span><span class=s>&#34;, ratio: &#34;</span><span class=o>+</span><span class=n>max_res</span><span class=p>.</span><span class=na>getRatio</span><span class=p>());</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>System</span><span class=p>.</span><span class=na>out</span><span class=p>.</span><span class=na>println</span><span class=p>(</span><span class=s>&#34;A total of &#34;</span><span class=o>+</span><span class=n>c</span><span class=o>+</span><span class=s>&#34; people tipped over &#34;</span><span class=o>+</span><span class=n>THRESHOLD</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=c1>// Cleanup</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>table</span><span class=p>.</span><span class=na>close</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>connection</span><span class=p>.</span><span class=na>close</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kt>long</span><span class=w> </span><span class=n>lEndTime</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>System</span><span class=p>.</span><span class=na>nanoTime</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=kt>long</span><span class=w> </span><span class=n>total</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>lEndTime</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>lStartTime</span><span class=p>)</span><span class=w> </span><span class=o>/</span><span class=w> </span><span class=n>1000000</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>System</span><span class=p>.</span><span class=na>out</span><span class=p>.</span><span class=na>println</span><span class=p>(</span><span class=s>&#34;Rumtime: &#34;</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>total</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=s>&#34;ms / &#34;</span><span class=o>+</span><span class=n>total</span><span class=o>/</span><span class=n>1000</span><span class=o>/</span><span class=n>60</span><span class=o>+</span><span class=s>&#34;min&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w> </span><span class=k>catch</span><span class=w> </span><span class=p>(</span><span class=n>Exception</span><span class=w> </span><span class=n>e</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>logger</span><span class=p>.</span><span class=na>error</span><span class=p>(</span><span class=s>&#34;Reading from HBase failed!&#34;</span><span class=p>);</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=n>e</span><span class=p>.</span><span class=na>printStackTrace</span><span class=p>();</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w> 
-</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>static</span><span class=w> </span><span class=kd>class</span> <span class=nc>result</span><span class=w> </span><span class=p>{</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c1>// ...</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>}</span></span></span></code></pre></td></tr></table></div></div><p>Implementing the custom Comparator sounds like a simple exercise, but believe me, I had to read a lot of HBase source
-code in order to get that working. Also, Protobuf. We’ll forge that into a separate article.</p><p><img src=images/word-image-3.png alt></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Max tip was 440.0, amount was 473.3, ratio: 0.9296429326008874
-</span></span><span class=line><span class=cl>A total of <span class=m>185</span> people tipped over 100.0
-</span></span><span class=line><span class=cl>Rumtime: 284765ms / 4.7min</span></span></code></pre></td></tr></table></div></div><p>A total of 185 people tipped over 100.0</p><p><strong>About 5x the runtime of Hive</strong>. I need to add at this point that using a HBase client application is not a very
+<code>hbase.client.scanner.timeout.period hbase.regionserver.lease.period</code> accordingly.</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">44
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">45
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">46
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">47
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">48
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">49
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">50
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">51
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">52
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">53
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">54
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">55
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">56
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">57
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">58
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">59
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">60
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">61
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">62
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">63
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">64
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">65
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">66
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">67
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">68
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">69
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">70
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">71
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">72
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">73
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">74
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">75
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">76
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">77
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">78
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>package</span> com.otterinasuit.hbase;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> com.otterinasuit.hbase.comparators.ByteToDoubleComparator;
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> org.apache.hadoop.hbase.client.*;
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> org.apache.hadoop.hbase.filter.CompareFilter;
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> org.apache.hadoop.hbase.filter.LongComparator;
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// import ...</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>Main</span> {
+</span></span><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>static</span> Logger logger <span style=color:#f92672>=</span> LoggerFactory.<span style=color:#a6e22e>getLogger</span>(Main.<span style=color:#a6e22e>class</span>);
+</span></span><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>double</span> THRESHOLD <span style=color:#f92672>=</span> 100.<span style=color:#a6e22e>00D</span>;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span>(String<span style=color:#f92672>[]</span> args) {
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>try</span> {
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>long</span> lStartTime <span style=color:#f92672>=</span> System.<span style=color:#a6e22e>nanoTime</span>();
+</span></span><span style=display:flex><span>            logger.<span style=color:#a6e22e>info</span>(<span style=color:#e6db74>&#34;Start&#34;</span>);
+</span></span><span style=display:flex><span>            Configuration config <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Configuration();
+</span></span><span style=display:flex><span>            config.<span style=color:#a6e22e>addResource</span>(<span style=color:#e6db74>&#34;/etc/hbase/conf.cloudera.hbase/hbase-site.xml&#34;</span>);
+</span></span><span style=display:flex><span>            config.<span style=color:#a6e22e>set</span>(<span style=color:#e6db74>&#34;hbase.rpc.timeout&#34;</span>, <span style=color:#e6db74>&#34;1800000&#34;</span>);
+</span></span><span style=display:flex><span>            config.<span style=color:#a6e22e>set</span>(<span style=color:#e6db74>&#34;hbase.regionserver.lease.period&#34;</span>, <span style=color:#e6db74>&#34;1800000&#34;</span>);
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            Connection connection <span style=color:#f92672>=</span> ConnectionFactory.<span style=color:#a6e22e>createConnection</span>(config);
+</span></span><span style=display:flex><span>            Table table <span style=color:#f92672>=</span> connection.<span style=color:#a6e22e>getTable</span>(TableName.<span style=color:#a6e22e>valueOf</span>(<span style=color:#e6db74>&#34;nyc&#34;</span>));
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// Filter</span>
+</span></span><span style=display:flex><span>            SingleColumnValueFilter filter <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> SingleColumnValueFilter(Bytes
+</span></span><span style=display:flex><span>                    .<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;cf&#34;</span>), Bytes.<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;tip_amount&#34;</span>), CompareFilter.<span style=color:#a6e22e>CompareOp</span>.<span style=color:#a6e22e>GREATER_OR_EQUAL</span>,
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>new</span> ByteToDoubleComparator(THRESHOLD));
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// Scan</span>
+</span></span><span style=display:flex><span>            Scan scan <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> Scan();
+</span></span><span style=display:flex><span>            scan.<span style=color:#a6e22e>setFilter</span>(filter);
+</span></span><span style=display:flex><span>            scan.<span style=color:#a6e22e>addFamily</span>(Bytes.<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;cf&#34;</span>));
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// Run</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>long</span> c <span style=color:#f92672>=</span> 0;
+</span></span><span style=display:flex><span>            ResultScanner scanner <span style=color:#f92672>=</span> table.<span style=color:#a6e22e>getScanner</span>(scan);
+</span></span><span style=display:flex><span>            TreeMap<span style=color:#f92672>&lt;</span>Double,result<span style=color:#f92672>&gt;</span> list <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> TreeMap<span style=color:#f92672>&lt;</span>Double,result<span style=color:#f92672>&gt;</span>();
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>for</span> (Result r : scanner) {
+</span></span><span style=display:flex><span>                String total <span style=color:#f92672>=</span> Bytes.<span style=color:#a6e22e>toString</span>(r.<span style=color:#a6e22e>getValue</span>(Bytes
+</span></span><span style=display:flex><span>                        .<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;cf&#34;</span>), Bytes.<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;tip_amount&#34;</span>)));
+</span></span><span style=display:flex><span>                String tip <span style=color:#f92672>=</span> Bytes.<span style=color:#a6e22e>toString</span>(r.<span style=color:#a6e22e>getValue</span>(Bytes
+</span></span><span style=display:flex><span>                        .<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;cf&#34;</span>), Bytes.<span style=color:#a6e22e>toBytes</span>(<span style=color:#e6db74>&#34;total_amount&#34;</span>)));
+</span></span><span style=display:flex><span>                System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;tip_amount: &#34;</span> <span style=color:#f92672>+</span> tip);
+</span></span><span style=display:flex><span>                System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;total_amount: &#34;</span> <span style=color:#f92672>+</span> total);
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>double</span> total_amount <span style=color:#f92672>=</span> Double.<span style=color:#a6e22e>parseDouble</span>(total);
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>double</span> tip_amount <span style=color:#f92672>=</span> Double.<span style=color:#a6e22e>parseDouble</span>(tip);
+</span></span><span style=display:flex><span>                list.<span style=color:#a6e22e>put</span>(tip_amount, <span style=color:#66d9ef>new</span> result(total_amount,tip_amount));
+</span></span><span style=display:flex><span>                c<span style=color:#f92672>++</span>;
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// Calculate in the client</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>double</span> max_tip <span style=color:#f92672>=</span> Collections.<span style=color:#a6e22e>max</span>(list.<span style=color:#a6e22e>keySet</span>());
+</span></span><span style=display:flex><span>            result max_res <span style=color:#f92672>=</span> list.<span style=color:#a6e22e>get</span>(max_tip);
+</span></span><span style=display:flex><span>            System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;Max tip was &#34;</span><span style=color:#f92672>+</span>max_res.<span style=color:#a6e22e>getTotal</span>()<span style=color:#f92672>+</span><span style=color:#e6db74>&#34;, amount was &#34;</span><span style=color:#f92672>+</span>max_res.<span style=color:#a6e22e>tip</span><span style=color:#f92672>+</span><span style=color:#e6db74>&#34;, ratio: &#34;</span><span style=color:#f92672>+</span>max_res.<span style=color:#a6e22e>getRatio</span>());
+</span></span><span style=display:flex><span>            System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;A total of &#34;</span><span style=color:#f92672>+</span>c<span style=color:#f92672>+</span><span style=color:#e6db74>&#34; people tipped over &#34;</span><span style=color:#f92672>+</span>THRESHOLD);
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// Cleanup</span>
+</span></span><span style=display:flex><span>            table.<span style=color:#a6e22e>close</span>();
+</span></span><span style=display:flex><span>            connection.<span style=color:#a6e22e>close</span>();
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>long</span> lEndTime <span style=color:#f92672>=</span> System.<span style=color:#a6e22e>nanoTime</span>();
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>long</span> total <span style=color:#f92672>=</span> (lEndTime <span style=color:#f92672>-</span> lStartTime) <span style=color:#f92672>/</span> 1000000;
+</span></span><span style=display:flex><span>            System.<span style=color:#a6e22e>out</span>.<span style=color:#a6e22e>println</span>(<span style=color:#e6db74>&#34;Rumtime: &#34;</span> <span style=color:#f92672>+</span> total <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34;ms / &#34;</span><span style=color:#f92672>+</span>total<span style=color:#f92672>/</span>1000<span style=color:#f92672>/</span>60<span style=color:#f92672>+</span><span style=color:#e6db74>&#34;min&#34;</span>);
+</span></span><span style=display:flex><span>        } <span style=color:#66d9ef>catch</span> (Exception e) {
+</span></span><span style=display:flex><span>            logger.<span style=color:#a6e22e>error</span>(<span style=color:#e6db74>&#34;Reading from HBase failed!&#34;</span>);
+</span></span><span style=display:flex><span>            e.<span style=color:#a6e22e>printStackTrace</span>();
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span> 
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>result</span> {
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// ...</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>}</span></span></code></pre></td></tr></table></div></div><p>Implementing the custom Comparator sounds like a simple exercise, but believe me, I had to read a lot of HBase source
+code in order to get that working. Also, Protobuf. We’ll forge that into a separate article.</p><p><img src=images/word-image-3.png alt></p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span>Max tip was 440.0, amount was 473.3, ratio: 0.9296429326008874
+</span></span><span style=display:flex><span>A total of <span style=color:#ae81ff>185</span> people tipped over 100.0
+</span></span><span style=display:flex><span>Rumtime: 284765ms / 4.7min</span></span></code></pre></td></tr></table></div></div><p>A total of 185 people tipped over 100.0</p><p><strong>About 5x the runtime of Hive</strong>. I need to add at this point that using a HBase client application is not a very
 efficient way of working with this data in itself and that I threw together that jar in a couple of minutes (which it
 why it screams &ldquo;Kill me!&rdquo;) – but since my test environment is running on a single node anyways, we will let this slide.</p><p>However, this comes back to my point about keys and hence data access patterns. We are using a monotonically increasing,
 artificial, meaningless key. It’s like assigning each record in a pile of loose vinyls a increasing number and expecting
 to find something quick. Sure, it works eventually – but not efficiently.</p><p>Let me demonstrate this by getting the (chosen-at-random) key “200000”:</p><p><img src=images/word-image-4.png alt>
 HBase get\</p><p><strong>0.24s isn’t bad at all</strong>. Running a similar query in our (seemingly) quicker Hive table from above looks like this:</p><p><img src=images/word-image-6.png alt>
-Hive HBase &ldquo;get&rdquo;</p><p><strong>34.4s</strong>! In other words, 141x HBase’s runtime.</p><p>The same finding applies for scanning multiple rows – using</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ruby data-lang=ruby><span class=line><span class=cl><span class=nb>scan</span> <span class=s1>&#39;nyc&#39;</span><span class=p>,</span> <span class=p>{</span><span class=no>STARTROW</span> <span class=o>=&gt;</span> <span class=s1>&#39;200000&#39;</span><span class=p>,</span> <span class=no>ENDROW</span> <span class=o>=&gt;</span> <span class=s1>&#39;200020&#39;</span><span class=p>}</span></span></span></code></pre></td></tr></table></div></div><p>to get all rows from 200,000 to 200,020 takes 1.9s in my example, the majority of what would be printing to the shell.</p><p>In real life, we would probably use a meaningful HBase key, such as the trip’s time if we are interested in analyzing
+Hive HBase &ldquo;get&rdquo;</p><p><strong>34.4s</strong>! In other words, 141x HBase’s runtime.</p><p>The same finding applies for scanning multiple rows – using</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-ruby data-lang=ruby><span style=display:flex><span>scan <span style=color:#e6db74>&#39;nyc&#39;</span>, {<span style=color:#66d9ef>STARTROW</span> <span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#39;200000&#39;</span>, <span style=color:#66d9ef>ENDROW</span> <span style=color:#f92672>=&gt;</span> <span style=color:#e6db74>&#39;200020&#39;</span>}</span></span></code></pre></td></tr></table></div></div><p>to get all rows from 200,000 to 200,020 takes 1.9s in my example, the majority of what would be printing to the shell.</p><p>In real life, we would probably use a meaningful HBase key, such as the trip’s time if we are interested in analyzing
 the data based on date and time (on nanosecond precision in order to avoid duplicates). We could ask HBase “get me all
 trips from 2017-07-04 18:00:00.000 to 2017-07-05 01:59:59.000 and show me the average fare” if we want to take a look at
 4th July fares at night.</p><p>Anyways – while HBase also answers my initial query, the Java method is highly inefficient as well:</p><ul><li>The query runs client-side (as mentioned above)</li><li>We needed to essentially customize HBase or at least work around our data type issues (there’s other ways to achieve
 this, but your choice of technology will eventually limit your ability to gain these insights)</li><li>We need to write a custom program in Java</li><li>While it is almost easier than daisy-chaining commands in a shell, it is still fairly complex for such a simple query</li></ul><h2 id=sql-on-nosql>SQL on noSQL</h2><p>But what about SQL? Well, you can use Hive again by pointing an external table to HBase – I just don’t recommend it for
 this use case. First, we need an external table (a table that does not manage data, but rather just points to an
-existing data source), mapping our HBase columns to Hive columns:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>EXTERNAL</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>hbaseNyc</span><span class=p>(</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>VendorID</span><span class=w> </span><span class=nb>BIGINT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tpep_pickup_datetime</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tpep_dropoff_datetime</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>passenger_count</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>trip_distance</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>RatecodeID</span><span class=w> </span><span class=n>STRING</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>store_and_fwd_flag</span><span class=w> </span><span class=n>STRING</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>PULocationID</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>DOLocationID</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>payment_type</span><span class=w> </span><span class=nb>INT</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>fare_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>extra</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>mta_tax</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tip_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>tolls_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>improvement_surcharge</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=n>total_amount</span><span class=w> </span><span class=n>DOUBLE</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>STORED</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=s1>&#39;org.apache.hadoop.hive.hbase.HBaseStorageHandler&#39;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WITH</span><span class=w> </span><span class=n>SERDEPROPERTIES</span><span class=w> </span><span class=p>(</span><span class=s2>&#34;hbase.columns.mapping&#34;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&#34;
-</span></span></span><span class=line><span class=cl><span class=s2>:key
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:tpep_pickup_datetime
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:tpep_dropoff_datetime
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:passenger_count
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:trip_distance
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:RatecodeID
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:store_and_fwd_flag
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:PULocationID
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:DOLocationID
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:payment_type
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:fare_amount
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:extra
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:mta_tax
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:tip_amount
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:tolls_amount
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:improvement_surcharge
-</span></span></span><span class=line><span class=cl><span class=s2>,cf:total_amount
-</span></span></span><span class=line><span class=cl><span class=s2>&#34;</span><span class=p>)</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>TBLPROPERTIES</span><span class=w> </span><span class=p>(</span><span class=s1>&#39;hbase.table.name&#39;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s1>&#39;nyc&#39;</span><span class=p>);</span></span></span></code></pre></td></tr></table></div></div><p>The query certainly is easier to manage, but the performance is also not great either:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=m>1</span> 440.0 473.3
-</span></span><span class=line><span class=cl>Time taken: 265.434 seconds, Fetched: <span class=m>155</span> row<span class=o>(</span>s<span class=o>)</span>
-</span></span><span class=line><span class=cl>4.4 minutes.</span></span></code></pre></td></tr></table></div></div><p>And the explanation remains the same: Column-based random-access is not what HBase was built for.</p><p>HBase is really fast on any access that involves a key, on a lot of inserts and even “updates” (which are really
+existing data source), mapping our HBase columns to Hive columns:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">40
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-sql data-lang=sql><span style=display:flex><span><span style=color:#66d9ef>CREATE</span> <span style=color:#66d9ef>EXTERNAL</span> <span style=color:#66d9ef>TABLE</span> hbaseNyc(
+</span></span><span style=display:flex><span>VendorID BIGINT
+</span></span><span style=display:flex><span>,tpep_pickup_datetime <span style=color:#66d9ef>TIMESTAMP</span>
+</span></span><span style=display:flex><span>,tpep_dropoff_datetime <span style=color:#66d9ef>TIMESTAMP</span>
+</span></span><span style=display:flex><span>,passenger_count INT
+</span></span><span style=display:flex><span>,trip_distance DOUBLE
+</span></span><span style=display:flex><span>,RatecodeID STRING
+</span></span><span style=display:flex><span>,store_and_fwd_flag STRING
+</span></span><span style=display:flex><span>,PULocationID INT
+</span></span><span style=display:flex><span>,DOLocationID INT
+</span></span><span style=display:flex><span>,payment_type INT
+</span></span><span style=display:flex><span>,fare_amount DOUBLE
+</span></span><span style=display:flex><span>,extra DOUBLE
+</span></span><span style=display:flex><span>,mta_tax DOUBLE
+</span></span><span style=display:flex><span>,tip_amount DOUBLE
+</span></span><span style=display:flex><span>,tolls_amount DOUBLE
+</span></span><span style=display:flex><span>,improvement_surcharge DOUBLE
+</span></span><span style=display:flex><span>,total_amount DOUBLE
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>STORED <span style=color:#66d9ef>BY</span> <span style=color:#e6db74>&#39;org.apache.hadoop.hive.hbase.HBaseStorageHandler&#39;</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>WITH</span> SERDEPROPERTIES (<span style=color:#e6db74>&#34;hbase.columns.mapping&#34;</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>:key
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:tpep_pickup_datetime
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:tpep_dropoff_datetime
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:passenger_count
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:trip_distance
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:RatecodeID
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:store_and_fwd_flag
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:PULocationID
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:DOLocationID
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:payment_type
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:fare_amount
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:extra
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:mta_tax
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:tip_amount
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:tolls_amount
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:improvement_surcharge
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>,cf:total_amount
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>&#34;</span>)
+</span></span><span style=display:flex><span>TBLPROPERTIES (<span style=color:#e6db74>&#39;hbase.table.name&#39;</span> <span style=color:#f92672>=</span> <span style=color:#e6db74>&#39;nyc&#39;</span>);</span></span></code></pre></td></tr></table></div></div><p>The query certainly is easier to manage, but the performance is also not great either:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">3
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span><span style=color:#ae81ff>1</span> 440.0 473.3
+</span></span><span style=display:flex><span>Time taken: 265.434 seconds, Fetched: <span style=color:#ae81ff>155</span> row<span style=color:#f92672>(</span>s<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>4.4 minutes.</span></span></code></pre></td></tr></table></div></div><p>And the explanation remains the same: Column-based random-access is not what HBase was built for.</p><p>HBase is really fast on any access that involves a key, on a lot of inserts and even “updates” (which are really
 overwrites), can manage billions of rows, and is incredible flexible, as it does not dictate a fixed schema apart from
 ColumnFamilies. You can literally make up columns and data types as you go.</p><p>One alternative is Apache Phoenix, an SQL layer on top of HBase that takes care of a lot of optimization for you. I will
 not go into detail at this point – but the key finding (pun intended) remains the same. Using HBase while expecting
@@ -459,133 +459,133 @@ of schema is incredible and it will not let you down on very large data sets –
 you are after.</p><h2 id=apache-spark>Apache Spark</h2><p>First off, Apache Spark is a general-purpose processing engine. Comparing it to other technologies is not really a good
 start, as it serves many purposes, such as -</p><ul><li>Programming interface for data access, ETL, Machine Learning and more</li><li>Execution Engine (for Hive)</li><li>Streaming data</li><li>Machine Learning</li></ul><p>I’ve used Spark many times and it remains one of my favorite, to-go tools in the Big Data zoo – mostly because it can do
 almost anything and is usually very fast, due to some very smart optimizations and techniques under the hood.</p><p>Without further ado, we will replace M/R2 from the Hive example above with the Scala-based Spark shell (basically, a
-live shell you can get by running $ spark-shell) and fire the same query:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>def</span> <span class=n>show_timing</span><span class=o>[</span><span class=kt>T</span><span class=o>](</span><span class=n>proc</span><span class=k>:</span> <span class=o>=&gt;</span> <span class=n>T</span><span class=o>)</span><span class=k>:</span> <span class=kt>T</span> <span class=o>=</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>start</span><span class=k>=</span><span class=nc>System</span><span class=o>.</span><span class=n>nanoTime</span><span class=o>()</span>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>res</span> <span class=k>=</span> <span class=n>proc</span> <span class=c1>// call the code
-</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>val</span> <span class=n>end</span> <span class=k>=</span> <span class=nc>System</span><span class=o>.</span><span class=n>nanoTime</span><span class=o>()</span>
-</span></span><span class=line><span class=cl><span class=n>println</span><span class=o>(</span><span class=s>&#34;Time elapsed: &#34;</span> <span class=o>+</span> <span class=o>(</span><span class=n>end</span><span class=o>-</span><span class=n>start</span><span class=o>)/</span><span class=mi>1000</span><span class=o>/</span><span class=mi>1000</span> <span class=o>+</span> <span class=s>&#34; ms&#34;</span><span class=o>)</span>
-</span></span><span class=line><span class=cl><span class=n>res</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>sql</span> <span class=k>=</span> <span class=s>&#34;&#34;&#34;
-</span></span></span><span class=line><span class=cl><span class=s>with tmp as(
-</span></span></span><span class=line><span class=cl><span class=s>SELECT * FROM Nyc
-</span></span></span><span class=line><span class=cl><span class=s>WHERE tip_amount &gt;= 100
-</span></span></span><span class=line><span class=cl><span class=s>)
-</span></span></span><span class=line><span class=cl><span class=s>
-</span></span></span><span class=line><span class=cl><span class=s>SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=n>show_timing</span><span class=o>(</span><span class=n>sqlContext</span><span class=o>.</span><span class=n>sql</span><span class=o>(</span><span class=n>sql</span><span class=o>).</span><span class=n>show</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span></span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-8.png alt>
-Spark</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>Time elapsed: <span class=m>12420</span> ms</span></span></code></pre></td></tr></table></div></div><p>12s for the exact same result. Of course – we already spent time on Hive prior to this, but the same result with a
+live shell you can get by running $ spark-shell) and fire the same query:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-scala data-lang=scala><span style=display:flex><span><span style=color:#66d9ef>def</span> show_timing<span style=color:#f92672>[</span><span style=color:#66d9ef>T</span><span style=color:#f92672>](</span>proc<span style=color:#66d9ef>:</span> <span style=color:#f92672>=&gt;</span> T<span style=color:#f92672>)</span><span style=color:#66d9ef>:</span> <span style=color:#66d9ef>T</span> <span style=color:#f92672>=</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> start<span style=color:#66d9ef>=</span><span style=color:#a6e22e>System</span><span style=color:#f92672>.</span>nanoTime<span style=color:#f92672>()</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> res <span style=color:#66d9ef>=</span> proc <span style=color:#75715e>// call the code
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>val</span> end <span style=color:#66d9ef>=</span> <span style=color:#a6e22e>System</span><span style=color:#f92672>.</span>nanoTime<span style=color:#f92672>()</span>
+</span></span><span style=display:flex><span>println<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Time elapsed: &#34;</span> <span style=color:#f92672>+</span> <span style=color:#f92672>(</span>end<span style=color:#f92672>-</span>start<span style=color:#f92672>)/</span><span style=color:#ae81ff>1000</span><span style=color:#f92672>/</span><span style=color:#ae81ff>1000</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34; ms&#34;</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>res
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> sql <span style=color:#66d9ef>=</span> <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>with tmp as(
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>SELECT * FROM Nyc
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>WHERE tip_amount &gt;= 100
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>)
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>show_timing<span style=color:#f92672>(</span>sqlContext<span style=color:#f92672>.</span>sql<span style=color:#f92672>(</span>sql<span style=color:#f92672>).</span>show<span style=color:#f92672>(</span><span style=color:#ae81ff>200</span><span style=color:#f92672>))</span></span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-8.png alt>
+Spark</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">1
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-bash data-lang=bash><span style=display:flex><span>Time elapsed: <span style=color:#ae81ff>12420</span> ms</span></span></code></pre></td></tr></table></div></div><p>12s for the exact same result. Of course – we already spent time on Hive prior to this, but the same result with a
 slightly different performance outcome could be achieved by reading the CSV from HDFS directly! Using Spark 2 makes this
 easy, but we can use the default 1.6 as well, as installing Spark 2 on Cloudera be a bit tricky.</p><p>So we use the <a href=https://github.com/databricks/spark-csv target=_blank rel="nofollow noopener noreferrer">databricks-csv</a>
 library:
-<code>spark-shell --packages com.databricks:spark-csv\_2.10:1.5.0</code></p><p>And this bit of code:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span><span class=lnt>44
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.spark.sql.SQLContext</span>
-</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>org.apache.spark.sql.types._</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=k>def</span> <span class=n>show_timing</span><span class=o>[</span><span class=kt>T</span><span class=o>](</span><span class=n>proc</span><span class=k>:</span> <span class=o>=&gt;</span> <span class=n>T</span><span class=o>)</span><span class=k>:</span> <span class=kt>T</span> <span class=o>=</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>start</span><span class=k>=</span><span class=nc>System</span><span class=o>.</span><span class=n>nanoTime</span><span class=o>()</span>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>res</span> <span class=k>=</span> <span class=n>proc</span> <span class=c1>// call the code
-</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>val</span> <span class=n>end</span> <span class=k>=</span> <span class=nc>System</span><span class=o>.</span><span class=n>nanoTime</span><span class=o>()</span>
-</span></span><span class=line><span class=cl><span class=n>println</span><span class=o>(</span><span class=s>&#34;Time elapsed: &#34;</span> <span class=o>+</span> <span class=o>(</span><span class=n>end</span><span class=o>-</span><span class=n>start</span><span class=o>)/</span><span class=mi>1000</span><span class=o>/</span><span class=mi>1000</span> <span class=o>+</span> <span class=s>&#34; ms&#34;</span><span class=o>)</span>
-</span></span><span class=line><span class=cl><span class=n>res</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>schema</span> <span class=k>=</span> <span class=nc>StructType</span><span class=o>(</span><span class=nc>Array</span><span class=o>(</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;id&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;VendorID&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;tpep_pickup_datetime&#34;</span><span class=o>,</span> <span class=nc>StringType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;tpep_dropoff_datetime&#34;</span><span class=o>,</span> <span class=nc>StringType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;passenger_count&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;trip_distance&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;RatecodeID&#34;</span><span class=o>,</span> <span class=nc>StringType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;store_and_fwd_flag&#34;</span><span class=o>,</span> <span class=nc>StringType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;PULocationID&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;DOLocationID&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;payment_type&#34;</span><span class=o>,</span> <span class=nc>IntegerType</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;fare_amount&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;extra&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;mta_tax&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;tip_amount&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;tolls_amount&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;improvement_surcharge&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>),</span>
-</span></span><span class=line><span class=cl><span class=nc>StructField</span><span class=o>(</span><span class=s>&#34;total_amount&#34;</span><span class=o>,</span> <span class=nc>DecimalType</span><span class=o>.</span><span class=nc>Unlimited</span><span class=o>,</span> <span class=kc>true</span><span class=o>)))</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>df</span> <span class=k>=</span> <span class=n>sqlContext</span><span class=o>.</span><span class=n>read</span><span class=o>.</span><span class=n>format</span><span class=o>(</span><span class=s>&#34;com.databricks.spark.csv&#34;</span><span class=o>).</span><span class=n>option</span><span class=o>(</span><span class=s>&#34;header&#34;</span><span class=o>,</span> <span class=s>&#34;true&#34;</span><span class=o>).</span><span class=n>option</span><span class=o>(</span><span class=s>&#34;inferSchema&#34;</span><span class=o>,</span> <span class=s>&#34;false&#34;</span><span class=o>)</span>
-</span></span><span class=line><span class=cl><span class=o>.</span><span class=n>schema</span><span class=o>(</span><span class=n>schema</span><span class=o>).</span><span class=n>load</span><span class=o>(</span><span class=s>&#34;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#34;</span><span class=o>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=n>df</span><span class=o>.</span><span class=n>registerTempTable</span><span class=o>(</span><span class=s>&#34;nycspark&#34;</span><span class=o>)</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=k>val</span> <span class=n>sql</span> <span class=k>=</span> <span class=s>&#34;&#34;&#34;
-</span></span></span><span class=line><span class=cl><span class=s>with tmp as(
-</span></span></span><span class=line><span class=cl><span class=s>SELECT * FROM nycspark
-</span></span></span><span class=line><span class=cl><span class=s>WHERE tip_amount &gt;= 100
-</span></span></span><span class=line><span class=cl><span class=s>)
-</span></span></span><span class=line><span class=cl><span class=s>SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=n>show_timing</span><span class=o>(</span><span class=n>sqlContext</span><span class=o>.</span><span class=n>sql</span><span class=o>(</span><span class=n>sql</span><span class=o>).</span><span class=n>show</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span></span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-11.png alt>
+<code>spark-shell --packages com.databricks:spark-csv\_2.10:1.5.0</code></p><p>And this bit of code:</p><div class=highlight><div style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><table style=border-spacing:0;padding:0;margin:0;border:0><tr><td style=vertical-align:top;padding:0;margin:0;border:0><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">22
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">23
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">24
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">25
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">26
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">27
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">28
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">29
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">30
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">31
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">32
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">33
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">34
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">35
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">36
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">37
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">38
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">39
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">40
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">41
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">42
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">43
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:.4em;padding:0 .4em;color:#7f7f7f">44
+</span></code></pre></td><td style=vertical-align:top;padding:0;margin:0;border:0;width:100%><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:2;-o-tab-size:2;tab-size:2><code class=language-scala data-lang=scala><span style=display:flex><span><span style=color:#66d9ef>import</span> org.apache.spark.sql.SQLContext
+</span></span><span style=display:flex><span><span style=color:#66d9ef>import</span> org.apache.spark.sql.types._
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> show_timing<span style=color:#f92672>[</span><span style=color:#66d9ef>T</span><span style=color:#f92672>](</span>proc<span style=color:#66d9ef>:</span> <span style=color:#f92672>=&gt;</span> T<span style=color:#f92672>)</span><span style=color:#66d9ef>:</span> <span style=color:#66d9ef>T</span> <span style=color:#f92672>=</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> start<span style=color:#66d9ef>=</span><span style=color:#a6e22e>System</span><span style=color:#f92672>.</span>nanoTime<span style=color:#f92672>()</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> res <span style=color:#66d9ef>=</span> proc <span style=color:#75715e>// call the code
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>val</span> end <span style=color:#66d9ef>=</span> <span style=color:#a6e22e>System</span><span style=color:#f92672>.</span>nanoTime<span style=color:#f92672>()</span>
+</span></span><span style=display:flex><span>println<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;Time elapsed: &#34;</span> <span style=color:#f92672>+</span> <span style=color:#f92672>(</span>end<span style=color:#f92672>-</span>start<span style=color:#f92672>)/</span><span style=color:#ae81ff>1000</span><span style=color:#f92672>/</span><span style=color:#ae81ff>1000</span> <span style=color:#f92672>+</span> <span style=color:#e6db74>&#34; ms&#34;</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>res
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> schema <span style=color:#66d9ef>=</span> <span style=color:#a6e22e>StructType</span><span style=color:#f92672>(</span><span style=color:#a6e22e>Array</span><span style=color:#f92672>(</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;id&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;VendorID&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;tpep_pickup_datetime&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>StringType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;tpep_dropoff_datetime&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>StringType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;passenger_count&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;trip_distance&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;RatecodeID&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>StringType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;store_and_fwd_flag&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>StringType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;PULocationID&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;DOLocationID&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;payment_type&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>IntegerType</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;fare_amount&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;extra&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;mta_tax&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;tip_amount&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;tolls_amount&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;improvement_surcharge&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>StructField</span><span style=color:#f92672>(</span><span style=color:#e6db74>&#34;total_amount&#34;</span><span style=color:#f92672>,</span> <span style=color:#a6e22e>DecimalType</span><span style=color:#f92672>.</span><span style=color:#a6e22e>Unlimited</span><span style=color:#f92672>,</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>)))</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> df <span style=color:#66d9ef>=</span> sqlContext<span style=color:#f92672>.</span>read<span style=color:#f92672>.</span>format<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;com.databricks.spark.csv&#34;</span><span style=color:#f92672>).</span>option<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;header&#34;</span><span style=color:#f92672>,</span> <span style=color:#e6db74>&#34;true&#34;</span><span style=color:#f92672>).</span>option<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;inferSchema&#34;</span><span style=color:#f92672>,</span> <span style=color:#e6db74>&#34;false&#34;</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>.</span>schema<span style=color:#f92672>(</span>schema<span style=color:#f92672>).</span>load<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#34;</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>df<span style=color:#f92672>.</span>registerTempTable<span style=color:#f92672>(</span><span style=color:#e6db74>&#34;nycspark&#34;</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>val</span> sql <span style=color:#66d9ef>=</span> <span style=color:#e6db74>&#34;&#34;&#34;
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>with tmp as(
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>SELECT * FROM nycspark
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>WHERE tip_amount &gt;= 100
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>)
+</span></span></span><span style=display:flex><span><span style=color:#e6db74>SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>show_timing<span style=color:#f92672>(</span>sqlContext<span style=color:#f92672>.</span>sql<span style=color:#f92672>(</span>sql<span style=color:#f92672>).</span>show<span style=color:#f92672>(</span><span style=color:#ae81ff>200</span><span style=color:#f92672>))</span></span></span></code></pre></td></tr></table></div></div><p><img src=images/word-image-11.png alt>
 Spark</p><p>As you can see, the performance is not exactly a miracle and we had to manually define a schema, as we removed the CSV
 header – but keep in mind that this approach directly reads your CSV from HDFS, basically skipping Hive altogether.
 While aggregates might not be the key use case here, this is a very neat feature to work with various files directly on
@@ -618,4 +618,4 @@ evolve.</p><p>There is a ton of topics I did not even mention in this 4,000 word
 how to make use of more than their standard “reporting” interfaces and ERP- and CRM-extracts will gain a competitive
 advantage in the marketplace – as we all know, knowledge is key!</p><p><em>All test were done on a single-node Cloudera Quickstart VM, running on QEMU/KVM with 12 AMD Ryzen 1700 vCores @ 3.2Ghz
 and 25GiB RAM, image launched from a 3TB WD RED Raid-1 Array under Fedora 26. yarn.nodemanager.resource.memory-mb was
-set to 4GiB, yarn.nodemanager.resource.cpu-vcores to 10</em></p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#utilizing-your-data-lake>Utilizing your Data Lake</a></li><li><a href=#a-short-prefix-for-apache-hive>A short prefix for Apache Hive</a></li><li><a href=#hive>Hive</a></li><li><a href=#hive-on-9656995-records>Hive on 9,656,995 records</a></li><li><a href=#hbase-and-other-non-relational-databases>HBase and other non-relational databases</a></li><li><a href=#sql-on-nosql>SQL on noSQL</a></li><li><a href=#apache-spark>Apache Spark</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags><ul class=flat><li class=tag-li><a href=../../../tags/big-data>big data</a></li><li class=tag-li><a href=../../../tags/hbase>hbase</a></li><li class=tag-li><a href=../../../tags/hive>hive</a></li><li class=tag-li><a href=../../../tags/spark>spark</a></li><li class=tag-li><a href=../../../tags/scala>scala</a></li><li class=tag-li><a href=../../../tags/phoenix>phoenix</a></li><li class=tag-li><a href=../../../tags/data-lake>data lake</a></li><li class=tag-li><a href=../../../tags/hadoop>hadoop</a></li></ul></div><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"10 Reasons why gcc SHOULD be re-written in JavaScript - You won't believe #8!"</i></div></div></div><div class="footer wrapper"><nav class=nav><div>2017 © Copyright notice</div></nav></div><script>feather.replace()</script><script>var enableTruncate=!0,filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const e=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio>0){var t=document.querySelectorAll(`nav li a[href="#${n}"]`);t!=null&&t.forEach(e=>{if(e!=null){var t=getDepth(e.parentElement);filterDepth&&t<=MAX_DEPTH&&(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))}else filterDepth||(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))})}})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(t=>{e.observe(t)})});function isVisible(e){if(!(e instanceof Element))return!1;const n=getComputedStyle(e);if(n.display==="none")return!1;if(n.visibility!=="visible")return!1;if(n.opacity<.1)return!1;if(e.offsetWidth+e.offsetHeight+e.getBoundingClientRect().height+e.getBoundingClientRect().width===0)return!1;const t={x:e.getBoundingClientRect().left+e.offsetWidth/2,y:e.getBoundingClientRect().top+e.offsetHeight/2};if(t.x<0)return!1;if(t.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(t.y<0)return!1;if(t.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(t.x,t.y);do if(s===e)return!0;while(s=s.parentNode)return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){for(var t=0;e!==null&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){var e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href!=null&&e.hash.startsWith("#"))}function lasItemInNavBarVisible(){var e=navItems().slice(-1)[0];return isVisible(e)}document.addEventListener("DOMContentLoaded",function(){if(!enableTruncate)return;var e=navItems();console.log(e),lasItemInNavBarVisible()||(filterDepth=!0,e.forEach(function(e){var t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))})</script></body></html>
+set to 4GiB, yarn.nodemanager.resource.cpu-vcores to 10</em></p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#utilizing-your-data-lake>Utilizing your Data Lake</a></li><li><a href=#a-short-prefix-for-apache-hive>A short prefix for Apache Hive</a></li><li><a href=#hive>Hive</a></li><li><a href=#hive-on-9656995-records>Hive on 9,656,995 records</a></li><li><a href=#hbase-and-other-non-relational-databases>HBase and other non-relational databases</a></li><li><a href=#sql-on-nosql>SQL on noSQL</a></li><li><a href=#apache-spark>Apache Spark</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags><ul class=flat><li class=tag-li><a href=../../../tags/big-data>big data</a></li><li class=tag-li><a href=../../../tags/hbase>hbase</a></li><li class=tag-li><a href=../../../tags/hive>hive</a></li><li class=tag-li><a href=../../../tags/spark>spark</a></li><li class=tag-li><a href=../../../tags/scala>scala</a></li><li class=tag-li><a href=../../../tags/phoenix>phoenix</a></li><li class=tag-li><a href=../../../tags/data-lake>data lake</a></li><li class=tag-li><a href=../../../tags/hadoop>hadoop</a></li></ul></div><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"What Tiger King can teach us about x86 Assembly"</i></div></div></div><div class="footer wrapper"><nav class=nav><div>2017 © Copyright notice</div></nav></div><script>feather.replace()</script><script>var enableTruncate=!0,filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const e=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio>0){var t=document.querySelectorAll(`nav li a[href="#${n}"]`);t!=null&&t.forEach(e=>{if(e!=null){var t=getDepth(e.parentElement);filterDepth&&t<=MAX_DEPTH&&(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))}else filterDepth||(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))})}})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(t=>{e.observe(t)})});function isVisible(e){if(!(e instanceof Element))return!1;const n=getComputedStyle(e);if(n.display==="none")return!1;if(n.visibility!=="visible")return!1;if(n.opacity<.1)return!1;if(e.offsetWidth+e.offsetHeight+e.getBoundingClientRect().height+e.getBoundingClientRect().width===0)return!1;const t={x:e.getBoundingClientRect().left+e.offsetWidth/2,y:e.getBoundingClientRect().top+e.offsetHeight/2};if(t.x<0)return!1;if(t.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(t.y<0)return!1;if(t.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(t.x,t.y);do if(s===e)return!0;while(s=s.parentNode)return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){for(var t=0;e!==null&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){var e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href!=null&&e.hash.startsWith("#"))}function lasItemInNavBarVisible(){var e=navItems().slice(-1)[0];return isVisible(e)}document.addEventListener("DOMContentLoaded",function(){if(!enableTruncate)return;var e=navItems();console.log(e),lasItemInNavBarVisible()||(filterDepth=!0,e.forEach(function(e){var t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))})</script></body></html>
