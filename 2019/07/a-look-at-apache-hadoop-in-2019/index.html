@@ -1,0 +1,149 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>A look at Apache Hadoop in 2019 - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="A look at Apache Hadoop in 2019"><meta itemprop=description content="In this article, we'll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data processing an analytics on the rise..."><meta itemprop=datePublished content="2019-07-01T00:00:00+00:00"><meta itemprop=dateModified content="2019-07-01T00:00:00+00:00"><meta itemprop=wordCount content="2402"><meta itemprop=keywords content="Aws,Azure,Big Data,Cloud,Google Cloud,Hive,Linux,Programming,Spark"><meta property="og:url" content="https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="A look at Apache Hadoop in 2019"><meta property="og:description" content="In this article, we'll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data processing an analytics on the rise..."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2019-07-01T00:00:00+00:00"><meta property="article:modified_time" content="2019-07-01T00:00:00+00:00"><meta property="article:tag" content="Aws"><meta property="article:tag" content="Azure"><meta property="article:tag" content="Big Data"><meta property="article:tag" content="Cloud"><meta property="article:tag" content="Google Cloud"><meta property="article:tag" content="Hive"><meta name=twitter:card content="summary"><meta name=twitter:title content="A look at Apache Hadoop in 2019"><meta name=twitter:description content="In this article, we'll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data processing an analytics on the rise..."><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>01</span>
+<span class=rest>Jul 2019</span></div></div><div class=matter><h1 class=title>A look at Apache Hadoop in 2019</h1></div></div><aside class=toc id=static-toc><header><h3>Contents</h3></header><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#a-bit-of-history>A bit of History</a></li><li><a href=#the-emerging-cloud-market>The emerging Cloud Market</a></li><li><a href=#a-look-at-the-overall-ecosystems-changes>A look at the overall ecosystem’s changes</a></li><li><a href=#what-happened-in-the-open-source-space-since-then>What happened in the Open Source space since then?</a><ol><li><a href=#hadoop-overall>Hadoop Overall</a></li><li><a href=#hbase>HBase</a></li><li><a href=#hive>Hive</a></li><li><a href=#sqoop>Sqoop</a></li><li><a href=#spark>Spark</a></li><li><a href=#tez>TEZ</a></li><li><a href=#so-what>So what?</a></li></ol></li></ol></nav></aside><h2 id=introduction>Introduction</h2><p>In this article, we&rsquo;ll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data
+processing an analytics on the rise.</p><p>When I first started using the Apache Hadoop Ecosystem, things around the magic buzzwords of “Big Data” and “Machine
+Learning” were quite different compared to what happened since. In this article, we will take a look at what happened
+since and how it compares against powerful, managed Cloud providers in 2019.</p><h2 id=a-bit-of-history>A bit of History</h2><p>Apache Hadoop, the open source framework for “reliable, scalable, distributed computing”, first saw the light of the day
+in 2006, based on Google’s &ldquo;MapReduce: Simplified Data Processing on Large Clusters&rdquo; whitepaper (
+available <a href=http://ai.google/research/pubs/pub62>here</a>
+) from 2003. Over the coming years, more and more tools (such as
+Pig by Yahoo) emerge, the major distributions from Hortonworks, Cloudera, and MapR are being released, performance
+records are being made (2008/2009), SQL-like support by Apache Hive becomes available in 2010 and schedulers like YARN
+become popular (2012/2013).</p><p>Around 2014/2015, Hadoop finally had a lot of things going for it which other platforms lacked - it was Open Source,
+already moved past the tedious limitations of Java-based Map/Reduce programs, supported both Batch and Real-Time
+applications, ran on pretty much every old piece of hardware you could find, could be run by either setting it up
+yourself (my 2013 Macbook Pro still has a local HDFS, YARN, and Hive instance running) or as enterprise level solution
+by Hortonworks’ HDP, Cloudera’s CDH, or MapR. It enabled companies to ingest, store, and analyze any data and was used
+heavily in production across major companies.</p><p>A lot of additional tools supported the framework - the below tables gives a rough overview of components we will
+mention in this article:</p><table><thead><tr><th>Tool</th><th>Description</th><th>First Release</th><th>Latest Release</th></tr></thead><tbody><tr><td><a href=https://hadoop.apache.org target=_blank rel="nofollow noopener noreferrer">YARN</a></td><td>Resource Manager & Scheduler</td><td>2006</td><td>2019-02-06</td></tr><tr><td><a href=https://hbase.apache.org/ target=_blank rel="nofollow noopener noreferrer">Hbase</a></td><td>no-SQL database</td><td>2008</td><td>2019-06-11</td></tr><tr><td><a href=https://hive.apache.org/ target=_blank rel="nofollow noopener noreferrer">Hive</a></td><td>Data Warehouse and SQL abstraction</td><td>2010</td><td>2019-05-14</td></tr><tr><td><a href=http://sqoop.apache.org>Sqoop</a></td><td>RDMBS ingestion pipeline</td><td>2009</td><td>2019-01-18</td></tr><tr><td><a href=https://spark.apache.org target=_blank rel="nofollow noopener noreferrer">Spark</a></td><td>Data processing framework and compute engine</td><td>2014</td><td>2019-05-08</td></tr><tr><td>Tez</td><td>Execution frameworks for DAGS on Hive or Pig</td><td>2014</td><td>2019-03-29</td></tr></tbody></table><p>As you can see, all recent releases where within the last 6 months (at the time of writing).</p><p>Things were not without their drawbacks, however - like most Open Source software, especially when bundled in a modular
+way, running on dozens, hundreds, or thousands of machines is not without challenges. Configuration, performance
+optimization, tool selection, maintenance, operations, and development require deep expertise to make any Hadoop
+installation run smoothly, as one wrong configuration setting can severely degrade the performance of the overall
+system. At the same time, this level of granular control also allows for an unmatched level of flexibility and
+adaptability of your tools.</p><h2 id=the-emerging-cloud-market>The emerging Cloud Market</h2><p><img src=images/my_sky.png alt></p><p><a href=https://xkcd.com/1117/ target=_blank rel="nofollow noopener noreferrer">https://xkcd.com/1117/</a>
+, CC BY-NC 2.5</p><p>However, over the past years, more and more companies find their benefits in the major Cloud providers - AWS, Google
+Cloud, and Microsoft Azure. Their benefits are many - a massively reduced need for local infrastructure and
+administration, flexible scaling from a couple of GB to TB of memory, storage, and CPU, a flexible bill-by-usage model,
+out-of-the-box machine learning models, and integration into other, non-”Big Data” tools.</p><p>Companies were able to move from needing to maintain expensive, bare-metal boxes in-house that may run idle for 80% of
+the day and cause resource constraints and bottlenecks during scheduled batch-runs, limited by tools the organization
+had Subject Matter Experts or external support for, to reserving resources for massive jobs that can handle terabytes of
+data in minutes or seconds for a couple of $.</p><p>So the question stands - what has happened with Hadoop since then - and is there still a need for it?</p><h2 id=a-look-at-the-overall-ecosystems-changes>A look at the overall ecosystem’s changes</h2><p>Before we dig into the individual components, let’s briefly talk about what happened from a bird’s-eye view.</p><p>In early 2019, two of the major providers (Hortonworks and Cloudera) announced a
+massive <a href=http://hortonworks.com/blog/welcome-brand-new-cloudera/>merger</a>
+of the two companies. The step made sense for
+any Software Engineer familiar with the technology - both companies worked on an almost identical tech stack, both were
+heavily involved in Open Source software, both offered a supported or managed Hadoop stack with convenient
+administration and a multitude of available tools. Cloudera’s focus on Machine Learning and Hortonwork’s focus on data
+ingestion and aggregation also provide potential for powerful synergies. Their press release
+mentions $760M in TTM revenue and $500M in cash without debts.</p><p>One of the key strategic targets of the merger is the focus on Cloud (I quote: “Cloud Everywhere!”) - but a Cloud based
+on Open Source technology. The company’s target is to provide customers with the benefits of Hadoop and (F)OSS (see
+above), as well as the advantages of Public Cloud providers.</p><p>This is not a new development - Hortonwork’s 3.0 release
+already <a href=https://docs.hortonworks.com/HDPDocuments/HDP3/HDP-3.0.0/release-notes/hdp-release-notes.pdf target=_blank rel="nofollow noopener noreferrer">included support for storage on all Cloud providers</a>
+(
+as opposed to strictly HDFS) in July of 2018.</p><p>At the same time, competitor MapR (who focused mostly on proprietary
+solutions), <a href=http://siliconangle.com/2019/05/30/mapr-may-shut-investor-pulls-following-extremely-poor-results/>announced job cuts in May of 2019</a>
+and finally announced the intent
+to <a href=https://www.datanami.com/2019/06/18/mapr-says-its-close-to-deal-to-sell-company/ target=_blank rel="nofollow noopener noreferrer">sell the company</a>
+in June 2019.
+The company struggled with the monetization of the business model and the strong drive towards Cloud native operations.</p><p>During all this, the Public Cloud market only knew one
+direction: <a href=https://www.skyhighnetworks.com/cloud-security-blog/microsoft-azure-closes-iaas-adoption-gap-with-amazon-aws/ target=_blank rel="nofollow noopener noreferrer">Skywards</a>
+.
+The revenue of AWS, GCP, and Azure provide large portions of the respective companies earnings and seemingly every new
+conference provides impressive advancements in the respective technologies and fewer companies rely on their local data
+centers.</p><p>And <a href=https://www.ciodive.com/news/ibm-still-sees-value-in-hadoop-based-technologies/557326/ target=_blank rel="nofollow noopener noreferrer">IBM</a>
+still sees value in
+Hadoop.</p><h2 id=what-happened-in-the-open-source-space-since-then>What happened in the Open Source space since then?</h2><p>While the above certainly doesn’t inspire confidence, we also should take a look at what actually happened over the past
+years - while the Cloud providers did show some amazing, easy-to-use products from data ingestion all the way through to
+Machine Learning and Analytics use cases, development in the (F)OSS space did not stop.</p><h3 id=hadoop-overall>Hadoop Overall</h3><p>Hadoop 3.0 made some <a href=https://hadoop.apache.org/old/releases.html target=_blank rel="nofollow noopener noreferrer">huge additions</a>
+to the feature set.</p><p>YARN now
+supports <a href=https://hadoop.apache.org/docs/r3.1.2/hadoop-yarn/hadoop-yarn-site/DockerContainers.html target=_blank rel="nofollow noopener noreferrer">docker containers</a>
+, <a href=https://hadoop.apache.org/docs/r3.1.2/hadoop-yarn/hadoop-yarn-site/UsingGpus.html target=_blank rel="nofollow noopener noreferrer">GPU scheduling</a>
+for e.g. TensorFlow, more advanced scheduling features, the overall platform offers native support
+for <a href=http://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html>AWS S3</a>
+.</p><p>These changes enable organizations running Hadoop clusters to move away from the traditional approach of running mostly
+large Batch jobs on YARN and separate ML jobs on premise to switch to a more modern container-based approach and utilize
+GPU-driven Machine Learning and also integrate Cloud providers into either “hybrid” or even native Cloud model.</p><h3 id=hbase>HBase</h3><p>Apache HBase is one of those things I have a love-hate relationship with - it is very fast, very powerful and can be
+even simple to use once you grasp the basics, but can also be a beast to tame once it scales up.</p><p>Similar to Spark, Hbase had a major version bump to 2.x., but the changes are less obvious than more end-user facing
+tools such as Hive. As a reminder, HBase (out of the box) offers a Ruby-based shell and APIs for various languages and
+is rarely used as a standalone tool - with the notable exception of <a href=https://phoenix.apache.org target=_blank rel="nofollow noopener noreferrer">Apache Phoenix</a>
+, which
+we won’t cover in this article.</p><p>You can find those releases notes on the project’s homepage
+for <a href=https://apache.org/dist/hbase/2.0.5/RELEASENOTES.md target=_blank rel="nofollow noopener noreferrer">2.0.5</a>
+, <a href=https://apache.org/dist/hbase/2.1.5/RELEASENOTES.md target=_blank rel="nofollow noopener noreferrer">2.1.5</a>
+, <a href=https://apache.org/dist/hbase/2.2.0/RELEASENOTES.md target=_blank rel="nofollow noopener noreferrer">2.2.0</a>
+,
+as well as the
+project’s <a href="https://issues.apache.org/jira/browse/HBASE-22596?jql=project%20%3D%20HBASE%20AND%20issuetype%20in%20%28Improvement%2C%20%22New%20Feature%22%29%20AND%20status%20in%20%28Resolved%2C%20Closed%29%20AND%20fixVersion%20%3D%203.0.0" target=_blank rel="nofollow noopener noreferrer">JIRA</a>
+.</p><p>Risking to offend some people - Hbase is a project that follows the UNIX philosophy - do one thing and do it right - a
+lot more than other projects and hence, it’s improvements over the years are less apparent. Looking at the associated
+tools, libraries, and frameworks will give you a better overview.</p><p><a href=https://cloud.google.com/bigtable/ target=_blank rel="nofollow noopener noreferrer">Google Cloud’s BigTable</a>
+is interoperable with Hbase and hence works with all
+existing HBase projects, as a cloud-native, managed service.</p><h3 id=hive>Hive</h3><p>Hive’s compatibility is usually tied to the <a href=http://hive.apache.org/downloads.html>release of Hadoop</a>
+- Hive 3.x works
+with Hadoop 3.x, Hive 2.x works with Hadoop 2.x and so on.</p><p>Just focussing on
+the <a href="https://issues.apache.org/jira/secure/ReleaseNote.jspa?version=12340268&amp;styleName=Text&amp;projectId=12310843" target=_blank rel="nofollow noopener noreferrer">3.x release branches</a>
+,
+Hive went from being a rather limited, not exactly fast, Map-Reduce driven SQL-layer to a low-latency, in-memory driven,
+powerful analytics framework.</p><p>The introduction of <a href=https://cwiki.apache.org/confluence/display/Hive/LLAP target=_blank rel="nofollow noopener noreferrer">Hive <strong>LLAP</strong></a>
+(low-latency analytical
+processing), first introduced in Hive 2.0, provides exactly what the name entails. It runs a daemon service on YARN that
+coordinates job runs, where smaller runs are being orchestrated directly by the daemon and larger, more resource
+intensive jobs are going through a fully-fledged YARN job. This method allows for much quicker queries, while still
+giving users the option to run large jobs that access large volumes of data and hence comes closer to the benefits of a
+large RDMBS cluster, such as Postgres.</p><p><img src=images/pasted-image-0-1.png alt></p><p><a href=https://cwiki.apache.org/confluence/display/Hive/LLAP target=_blank rel="nofollow noopener noreferrer">https://cwiki.apache.org/confluence/display/Hive/LLAP</a></p><p>Furthermore, it also finally allowed support for <a href=https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions target=_blank rel="nofollow noopener noreferrer">**ACID
+** transactions,</a>
+a surprisingly new feature for
+Hive data. Where the legacy versions of Hive mostly relied on immutable data, where updates could only be realized using
+INSERT OVERWRITE or CTAS statements.</p><p>While ACID does come with it’s own challenges and limitations, it moves Hive closer and closer to the likes of either a
+traditional RDMBS or a Google BigQuery (which has update support, albeit limited).</p><h3 id=sqoop>Sqoop</h3><p>Sqoop is a powerful tool, as it allows you to ingest data into Hadoop from various RDMBS. While this seems like a
+trivial task, it is usually an operation dominated by the likes of Informatica or Pentaho ETL.</p><p>Similar to HBase, its improvements are mostly under the hood. See the release notes
+of <a href=https://sqoop.apache.org/docs/1.4.7/sqoop-1.4.7.releasenotes.html target=_blank rel="nofollow noopener noreferrer">1.4.7</a>
+, currently shipped with HDP 3.1, for
+reference.</p><p>A special thing to mention here is the lack of comparable tools for most Cloud providers. Sqoop talks to a database,
+either via integrated incremental or full loads, or even custom SQL, and stores the data on HDFS (and Hive, if
+required). It makes ingesting data from operational source systems that do not take analytical or ETL load
+straightforward and easy. As a matter of fact, AWS
+EMR <a href=https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-sqoop-considerations.html target=_blank rel="nofollow noopener noreferrer">supports Sqoop loads to S3</a>
+.</p><p>This point might be controversial and I would gladly take insights into other FOSS tools providing similar capabilities
+to the big managed SQL-likes of the cloud proviers as well as their storage components (S3, GCS etc.).</p><h3 id=spark>Spark</h3><p>Apache Spark (which is not strictly tied to Hadoop, more on that later), had a major version change from 1.6.x
+to <a href=https://spark.apache.org/releases/spark-release-2-0-0.html target=_blank rel="nofollow noopener noreferrer">2.x</a>
+, changing the API and introducing a lot of new
+features.</p><p>The 2.x and subsequent releases enabled more comprehensive SQL support on various platforms, huge performance increases
+on SQL operations on DataFrames/DataSets (2-10X), more support for underlying file formats (ORC, Parquet), native
+support for Kafka in 2.1, more advanced and reliable streaming in 2.2, support for Kubernetes, updated History server, a
+new data source API (e.g., reading CSV files natively) in 2.3, and more support for advanced execution modes for Machine
+Learning / “Deep Learning”, higer order functions and more
+in <a href=https://spark.apache.org/releases/spark-release-2-3-0.html target=_blank rel="nofollow noopener noreferrer">2.4</a>
+.</p><p>Spark is available on Java, Scala, Python, and R and hence provides interfaces for various popular languages an
+organization might have SMEs for.</p><p>Furthermore, the Spark framework is detached from Hadoop as such and is available
+on <a href=https://aws.amazon.com/emr/features/spark/ target=_blank rel="nofollow noopener noreferrer">AWS EMR</a>
+, Google Cloud <a href=https://cloud.google.com/dataproc/ target=_blank rel="nofollow noopener noreferrer">Dataproc</a>
+,
+and Azure <a href=https://docs.microsoft.com/en-us/azure/hdinsight/spark/apache-spark-overview target=_blank rel="nofollow noopener noreferrer">HDInsights</a>
+, allowing
+developers to lift-and-shift existing Spark applications (whether a small helper script or a massive, multi-tier
+application) to the Cloud on fully-managed services.</p><p>This enables companies to not only re-use existing IP, but also to provide a level of independence towards a single,
+external provider. Despite my high praises for the likes of GCP in previous publications, this independence can be a
+strategic advantage.</p><p><img src=images/pasted-image-0.png alt></p><p><a href=https://cloud.google.com/dataproc/ target=_blank rel="nofollow noopener noreferrer">https://cloud.google.com/dataproc/</a></p><h3 id=tez>TEZ</h3><p>Apache TEZ allows Hive and PIG to run DAGs, as opposed to M/R jobs. While clearly a Hadoop-exclusive component, it is
+still worth looking into.</p><p>The changes TEZ made are sometimes user facing, like the new TEZ UI
+in <a href=http://tez.apache.org/releases/0.9.0/release-notes.txt>0.9.0</a>
+, but mostly also operate under the hood to provide
+better performance and scalability than previous versions. It’s biggest strength is the additional performance and
+monitoring capabilities that it offers over M/R jobs.</p><h3 id=so-what>So what?</h3><p>Now, we’ve talked at length about what happened in some cherry-picked Hadoop and related tools. But what does this mean
+for you?</p><p>One thing is clear - running an Open Source tech stack on bare metal in your data center has its disadvantages, as well
+as clear advantages. You own your data, you own your tech stack, you have the capability to commit back to the ecosystem
+by contributing to Open Source. You have the ability to work on the features you need and are not forced to take the
+ones offered by third parties.</p><p>The independence from Cloud providers gives companies the sovereignty over their data and make them independent of
+bandwidth constraints or regulatory issues (not to be confused with “no regulatory compliance necessary on-premise).</p><p>Hadoop’s new features and stability improvements make using the platform and it’s tools (including all the ones we
+haven’t touched upon in this article) more and more convenient and powerful. The advancements in the ML space,
+specifically on Spark(ML) and YARN, also pave the way for more analytics and less aggregation and traditional database
+modelling.</p><p>The steady rise of Cloud-driven data processing and analytics and
+a <a href=https://www.wsj.com/articles/cloudera-struggles-highlight-rapid-rise-of-public-cloud-11559865497 target=_blank rel="nofollow noopener noreferrer">lowering interest in Hadoop</a>
+might lead to the belief that it’s a “black and white” situation - either move to Cloud or stay on-premise.</p><p>I disagree - hybrid approaches are real and can offer the best of both worlds. You can maintain a local Hadoop instance
+and combine it with, for instance, a managed Machine Learning service
+like <a href=https://cloud.google.com/automl/ target=_blank rel="nofollow noopener noreferrer">Google Cloud AutoML</a>
+on BigQuery with a subset of your data, stripped from PII.</p><p>You can also move your existing Hadoop workloads to the Cloud with the likes of EMR or Dataproc, taking advantage of the
+Cloud’s scabality and cost savings, whilst developing portable software across Cloud providers.</p><p>The latter is roughly the route I can see Cloudera/Hortonworks taking in the future - take advantage of FOSS, while
+benefiting from the vast amount of proprietary and powerful solutions the Public Cloud offers.</p><p>In some instances, moving legacy systems to the Cloud is not a realistic option without a fully-fledged, multi-year
+migration effort - for instance, 20, 30 (or even older!) year old database systems that manage a business&rsquo;s daily
+operations. However, combining the strength of custom software and Open Source, tailored towards your business needs,
+can prove invaluable.</p><p>In the end, it depends - Hadoop is certainly not dead, but the continued investment by Amazon, Google, and Microsoft
+certainly might change this in the upcoming years.</p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#a-bit-of-history>A bit of History</a></li><li><a href=#the-emerging-cloud-market>The emerging Cloud Market</a></li><li><a href=#a-look-at-the-overall-ecosystems-changes>A look at the overall ecosystem’s changes</a></li><li><a href=#what-happened-in-the-open-source-space-since-then>What happened in the Open Source space since then?</a><ol><li><a href=#hadoop-overall>Hadoop Overall</a></li><li><a href=#hbase>HBase</a></li><li><a href=#hive>Hive</a></li><li><a href=#sqoop>Sqoop</a></li><li><a href=#spark>Spark</a></li><li><a href=#tez>TEZ</a></li><li><a href=#so-what>So what?</a></li></ol></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags><ul class=flat><li class=tag-li><a href=../../../tags/aws>aws</a></li><li class=tag-li><a href=../../../tags/azure>azure</a></li><li class=tag-li><a href=../../../tags/big-data>big data</a></li><li class=tag-li><a href=../../../tags/cloud>cloud</a></li><li class=tag-li><a href=../../../tags/google-cloud>google cloud</a></li><li class=tag-li><a href=../../../tags/hive>hive</a></li><li class=tag-li><a href=../../../tags/linux>linux</a></li><li class=tag-li><a href=../../../tags/programming>programming</a></li><li class=tag-li><a href=../../../tags/spark>spark</a></li></ul></div><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2019/07/a-look-at-apache-hadoop-in-2019/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"10 Reasons why gcc SHOULD be re-written in JavaScript - You won't believe #8!"</i></div></div></div><div class="footer wrapper"><nav class=nav><div>2019 © Copyright notice</div></nav></div><script>feather.replace()</script><script>var enableTruncate=!0,filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const e=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio>0){var t=document.querySelectorAll(`nav li a[href="#${n}"]`);t!=null&&t.forEach(e=>{if(e!=null){var t=getDepth(e.parentElement);filterDepth&&t<=MAX_DEPTH&&(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))}else filterDepth||(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))})}})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(t=>{e.observe(t)})});function isVisible(e){if(!(e instanceof Element))return!1;const n=getComputedStyle(e);if(n.display==="none")return!1;if(n.visibility!=="visible")return!1;if(n.opacity<.1)return!1;if(e.offsetWidth+e.offsetHeight+e.getBoundingClientRect().height+e.getBoundingClientRect().width===0)return!1;const t={x:e.getBoundingClientRect().left+e.offsetWidth/2,y:e.getBoundingClientRect().top+e.offsetHeight/2};if(t.x<0)return!1;if(t.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(t.y<0)return!1;if(t.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(t.x,t.y);do if(s===e)return!0;while(s=s.parentNode)return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){for(var t=0;e!==null&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){var e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href!=null&&e.hash.startsWith("#"))}function lasItemInNavBarVisible(){var e=navItems().slice(-1)[0];return isVisible(e)}document.addEventListener("DOMContentLoaded",function(){if(!enableTruncate)return;var e=navItems();console.log(e),lasItemInNavBarVisible()||(filterDepth=!0,e.forEach(function(e){var t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))})</script></body></html>

@@ -1,6 +1,17 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>GDE on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/gde/</link><description>Recent content in GDE on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Wed, 16 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/gde/index.xml" rel="self" type="application/rss+xml"/><item><title>My Road to Google Developer Expert (GDE): A hands-on guide from an Engineer who walked the path</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</link><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</guid><description>&lt;p>If you&amp;rsquo;re reading this, you’re probably thinking of applying for the &lt;a href="https://developers.google.com/community/experts" target="_blank" rel="nofollow noopener noreferrer">Google Developer Expert (GDE)&lt;/a>
- program - or at least curious what it takes. I’ve walked that path. This post is a no-BS breakdown of my journey, including what worked, what didn’t, and what surprised me along the way.&lt;/p>
-&lt;p>{{ $img := resources.Get &amp;ldquo;images/vitthal-gde.png&amp;rdquo; | images.Resize &amp;ldquo;900x&amp;rdquo; }}
-&lt;img src="{{ $img.RelPermalink }}" alt="Ready to rub shoulders with GDEs">&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>GDE on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/gde/</link><description>Recent content in GDE on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Wed, 16 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/gde/index.xml" rel="self" type="application/rss+xml"/><item><title>My Road to Google Developer Expert (GDE): A hands-on guide from an Engineer who walked the path</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</link><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</guid><description>&lt;p>If you&amp;rsquo;re reading this, you’re probably thinking of applying for
+the &lt;a href="https://developers.google.com/community/experts" target="_blank" rel="nofollow noopener noreferrer">Google Developer Expert (GDE)&lt;/a>
+ program - or at least curious what
+it takes. I’ve walked that path. This post is a no-BS breakdown of my journey, including what worked, what didn’t, and
+what surprised me along the way.&lt;/p>
+&lt;p>
+ &lt;img src="images/vitthal-gde.png" alt="vitthal-gde.png">
+
+
+
+ &lt;img src="images/vitthal-gde1.png" alt="vitthal-gde1.png">
+
+&lt;/p>
 &lt;h2 id="-why-i-chose-the-gde-path">🧭 Why I Chose the GDE Path&lt;/h2>
-&lt;p>For me, GDE wasn’t about a title - it was about &lt;strong>recognizing and amplifying&lt;/strong> the work I was already doing. I’ve been in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE program felt like a natural next step to formalize those contributions.&lt;/p></description></item></channel></rss>
+&lt;p>For me, GDE wasn’t about a title - it was about &lt;strong>recognizing and amplifying&lt;/strong> the work I was already doing. I’ve been
+in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE
+program felt like a natural next step to formalize those contributions.&lt;/p></description></item><item><title>Talk First, Code Later: Why I Applied for Google Developer Expert</title><link>https://vitthalmirji.com/2025/02/talk-first-code-later-why-i-applied-for-google-developer-expert/</link><pubDate>Fri, 28 Feb 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/02/talk-first-code-later-why-i-applied-for-google-developer-expert/</guid><description>&lt;p>🔥 Add section: “Everything I learned the hard way”&lt;/p></description></item></channel></rss>

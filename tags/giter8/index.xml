@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Giter8 on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/giter8/</link><description>Recent content in Giter8 on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Thu, 17 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/giter8/index.xml" rel="self" type="application/rss+xml"/><item><title>llm4s.g8 – A Developer Experience Boost for LLM4S SDK (Issue #94)</title><link>https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394/</link><pubDate>Thu, 17 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394/</guid><description>&lt;h2 id="-background">🎯 Background&lt;/h2>
+&lt;p>&lt;strong>Issue #94&lt;/strong> on the &lt;a href="https://github.com/llm4s/llm4s/issues/94" target="_blank" rel="nofollow noopener noreferrer">llm4s GitHub repo&lt;/a>
+ highlights a key challenge:&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;em>&amp;ldquo;Using LLM4S code generation requires understanding internal prompts and usage patterns that may not be intuitive for
+new users. The goal is to improve usability and ergonomics so that Scala developers can easily leverage the power of
+LLM4S.&amp;rdquo;&lt;/em>&lt;/p>&lt;/blockquote>
+&lt;p>This blog captures how we transformed a vague onboarding barrier into a streamlined developer experience using Giter8 –
+in essence, turning friction into flow.&lt;/p></description></item></channel></rss>

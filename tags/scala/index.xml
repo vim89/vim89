@@ -1,6 +1,51 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Scala on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/scala/</link><description>Recent content in Scala on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Wed, 16 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/scala/index.xml" rel="self" type="application/rss+xml"/><item><title>My Road to Google Developer Expert (GDE): A hands-on guide from an Engineer who walked the path</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</link><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</guid><description>&lt;p>If you&amp;rsquo;re reading this, you’re probably thinking of applying for the &lt;a href="https://developers.google.com/community/experts" target="_blank" rel="nofollow noopener noreferrer">Google Developer Expert (GDE)&lt;/a>
- program - or at least curious what it takes. I’ve walked that path. This post is a no-BS breakdown of my journey, including what worked, what didn’t, and what surprised me along the way.&lt;/p>
-&lt;p>{{ $img := resources.Get &amp;ldquo;images/vitthal-gde.png&amp;rdquo; | images.Resize &amp;ldquo;900x&amp;rdquo; }}
-&lt;img src="{{ $img.RelPermalink }}" alt="Ready to rub shoulders with GDEs">&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Scala on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/scala/</link><description>Recent content in Scala on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Wed, 16 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/scala/index.xml" rel="self" type="application/rss+xml"/><item><title>My Road to Google Developer Expert (GDE): A hands-on guide from an Engineer who walked the path</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</link><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</guid><description>&lt;p>If you&amp;rsquo;re reading this, you’re probably thinking of applying for
+the &lt;a href="https://developers.google.com/community/experts" target="_blank" rel="nofollow noopener noreferrer">Google Developer Expert (GDE)&lt;/a>
+ program - or at least curious what
+it takes. I’ve walked that path. This post is a no-BS breakdown of my journey, including what worked, what didn’t, and
+what surprised me along the way.&lt;/p>
+&lt;p>
+ &lt;img src="images/vitthal-gde.png" alt="vitthal-gde.png">
+
+
+
+ &lt;img src="images/vitthal-gde1.png" alt="vitthal-gde1.png">
+
+&lt;/p>
 &lt;h2 id="-why-i-chose-the-gde-path">🧭 Why I Chose the GDE Path&lt;/h2>
-&lt;p>For me, GDE wasn’t about a title - it was about &lt;strong>recognizing and amplifying&lt;/strong> the work I was already doing. I’ve been in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE program felt like a natural next step to formalize those contributions.&lt;/p></description></item></channel></rss>
+&lt;p>For me, GDE wasn’t about a title - it was about &lt;strong>recognizing and amplifying&lt;/strong> the work I was already doing. I’ve been
+in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE
+program felt like a natural next step to formalize those contributions.&lt;/p></description></item><item><title>DQ Is Not Dairy Queen: Building My Own Data Quality Framework</title><link>https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-my-own-data-quality-framework/</link><pubDate>Tue, 15 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-my-own-data-quality-framework/</guid><description>&lt;h2 id="-dq--ice-cream">🍦 DQ ≠ Ice Cream&lt;/h2>
+&lt;p>When someone hears “DQ Framework,” I get asked if it comes with sprinkles. It doesn’t. It comes with sanity-saving data
+validations, automatable quality checks, and opinionated constraints that don’t melt under pressure.&lt;/p>
+&lt;p>So no, this isn’t about Dairy Queen. But it &lt;em>does&lt;/em> prevent frozen pipelines. ❄️&lt;/p>
+&lt;hr>
+&lt;h2 id="-why-i-built-it">💡 Why I Built It&lt;/h2>
+&lt;p>Every data engineer has been there:&lt;/p>
+&lt;ul>
+&lt;li>A critical job runs on time&amp;hellip; and writes garbage.&lt;/li>
+&lt;li>Downstream dashboards look suspiciously optimistic.&lt;/li>
+&lt;li>Stakeholders smile because they don’t know 18% of yesterday’s rows are NULL.&lt;/li>
+&lt;/ul>
+&lt;p>I couldn’t keep slapping &lt;code>WHERE col IS NOT NULL&lt;/code> forever. So I built a reusable, testable &lt;strong>Data Quality Framework&lt;/strong> (
+DQF) and paired it with a &lt;strong>Declarative Pipeline Assurance Tool&lt;/strong> (DPAT).&lt;/p></description></item><item><title>Scala Meets Data Engineering: Functional Tools I Wish Existed</title><link>https://vitthalmirji.com/2025/06/scala-meets-data-engineering-functional-tools-i-wish-existed/</link><pubDate>Sat, 28 Jun 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/06/scala-meets-data-engineering-functional-tools-i-wish-existed/</guid><description>&lt;h2 id="-i-got-tired-of-repeating-myself-so-i-wrote-scala-code-that-repeats-me-better-than-i-do">🔁 &amp;ldquo;I got tired of repeating myself. So I wrote Scala code that repeats me better than I do.&amp;rdquo;&lt;/h2>
+&lt;p>Growing up in data engineering, I constantly saw the same patterns: filter, map, explode, transform—not once, but dozens
+of times across projects. I realized I needed tools that were like helpers on speed dial. Enter the &lt;strong>Data Engineering
+Functional Extensions&lt;/strong> I built and shared on GitHub.&lt;/p>
+&lt;h2 id="-whats-in-the-repo">🚀 What’s In the Repo&lt;/h2>
+&lt;pre class="code-block language-gohtml">
+ &lt;code>&lt;a href="https://github.com/vim89/dataengineering-savvy" target="_blank" rel="noopener">
+🔗 View on GitHub: vim89/dataengineering-savvy
+&lt;/a>&lt;/code>
+&lt;/pre>&lt;p>Inside, you&amp;rsquo;ll find:&lt;/p></description></item><item><title>GCP + scala + bash = Data pipeline automation done right</title><link>https://vitthalmirji.com/2025/05/gcp--scala--bash-data-pipeline-automation-done-right/</link><pubDate>Sun, 11 May 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/05/gcp--scala--bash-data-pipeline-automation-done-right/</guid><description>&lt;p>🎤 Side note: this would make a killer conference talk too&lt;/p></description></item><item><title>Behind the Scenes: How I Crafted My Scala Days CFP</title><link>https://vitthalmirji.com/2025/04/behind-the-scenes-how-i-crafted-my-scala-days-cfp/</link><pubDate>Tue, 15 Apr 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/04/behind-the-scenes-how-i-crafted-my-scala-days-cfp/</guid><description>&lt;p>Ever wondered what goes on behind the curtain when someone crafts their Scala Days CFP? Spoiler alert: it’s not just
+throwing together some fancy words and hitting submit. It’s a rollercoaster of ideas, rejections, revisions, and a dash
+of technical bravado. Pull up a chair, and let me take you on a journey through my CFP saga — from the initial spark to
+the final submission.&lt;/p>
+&lt;h2 id="the-spark-where-ideas-ignite">The Spark: Where Ideas Ignite&lt;/h2>
+&lt;p>Every talk starts with a seed - a tiny idea that refuses to let go. For me, it was the desire to share something
+genuinely useful and fresh about Scala, something that would resonate with both newcomers and seasoned pros.&lt;/p></description></item><item><title>Talk First, Code Later: Why I Applied for Google Developer Expert</title><link>https://vitthalmirji.com/2025/02/talk-first-code-later-why-i-applied-for-google-developer-expert/</link><pubDate>Fri, 28 Feb 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/02/talk-first-code-later-why-i-applied-for-google-developer-expert/</guid><description>&lt;p>🔥 Add section: “Everything I learned the hard way”&lt;/p></description></item><item><title>Data Lakes: Some thoughts on Hadoop, Hive, HBase, and Spark</title><link>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</link><pubDate>Sat, 04 Nov 2017 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>&lt;em>This article will talk about how organizations can make use of the wonderful thing that is commonly referred to as
+“Data Lake” - what constitutes a Data Lake, how probably should (and shouldn’t) use it to gather insights and why
+evaluating technologies is just as important as understanding your data.&lt;/em>&lt;/p>
+&lt;p>When organizations talk about the need to utilize data as part of their IT and business strategy, they usually have
+certain goals in mind. A common question usually boils down to “How can we make use of the data that we have available
+within our organization?”&lt;/p></description></item></channel></rss>

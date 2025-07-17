@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Data Quality on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/data-quality/</link><description>Recent content in Data Quality on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Tue, 15 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/data-quality/index.xml" rel="self" type="application/rss+xml"/><item><title>DQ Is Not Dairy Queen: Building My Own Data Quality Framework</title><link>https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-my-own-data-quality-framework/</link><pubDate>Tue, 15 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-my-own-data-quality-framework/</guid><description>&lt;h2 id="-dq--ice-cream">🍦 DQ ≠ Ice Cream&lt;/h2>
+&lt;p>When someone hears “DQ Framework,” I get asked if it comes with sprinkles. It doesn’t. It comes with sanity-saving data
+validations, automatable quality checks, and opinionated constraints that don’t melt under pressure.&lt;/p>
+&lt;p>So no, this isn’t about Dairy Queen. But it &lt;em>does&lt;/em> prevent frozen pipelines. ❄️&lt;/p>
+&lt;hr>
+&lt;h2 id="-why-i-built-it">💡 Why I Built It&lt;/h2>
+&lt;p>Every data engineer has been there:&lt;/p>
+&lt;ul>
+&lt;li>A critical job runs on time&amp;hellip; and writes garbage.&lt;/li>
+&lt;li>Downstream dashboards look suspiciously optimistic.&lt;/li>
+&lt;li>Stakeholders smile because they don’t know 18% of yesterday’s rows are NULL.&lt;/li>
+&lt;/ul>
+&lt;p>I couldn’t keep slapping &lt;code>WHERE col IS NOT NULL&lt;/code> forever. So I built a reusable, testable &lt;strong>Data Quality Framework&lt;/strong> (
+DQF) and paired it with a &lt;strong>Declarative Pipeline Assurance Tool&lt;/strong> (DPAT).&lt;/p></description></item><item><title>How I Cut Delivery Errors by 82% Without Losing My Sanity</title><link>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-without-losing-my-sanity/</link><pubDate>Sun, 15 Jun 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-without-losing-my-sanity/</guid><description>&lt;h2 id="-the-problem-errors-everywhere">🚨 The Problem: Errors Everywhere&lt;/h2>
+&lt;p>At my organization, we were shipping data pipelines faster than ever—but the delivery error rate stayed stubbornly
+around &lt;strong>12%&lt;/strong>, which meant:&lt;/p>
+&lt;ul>
+&lt;li>😓 Manual rollbacks, dashboards showing stale or missing data&lt;/li>
+&lt;li>👎 Frustrated teams notifying stakeholders (and me) daily&lt;/li>
+&lt;li>🕒 A few hours lost per incident, every day&lt;/li>
+&lt;/ul>
+&lt;p>It wasn&amp;rsquo;t sustainable—and I&amp;rsquo;d had enough.&lt;/p>
+&lt;hr>
+&lt;h2 id="-the-goal">🎯 The Goal&lt;/h2>
+&lt;p>Implement a &lt;strong>self-healing pipeline&lt;/strong> with:&lt;/p>
+&lt;ul>
+&lt;li>Automated quality gates&lt;/li>
+&lt;li>Full pipeline rollback on failure&lt;/li>
+&lt;li>Clear ownership via data contracts&lt;/li>
+&lt;li>Faster failed-job detection&lt;/li>
+&lt;/ul>
+&lt;p>And yes, keep my sanity intact.&lt;/p></description></item><item><title>Don’t trust the dashboard: How I rewired Data monitoring from the ground up</title><link>https://vitthalmirji.com/2025/04/dont-trust-the-dashboard-how-i-rewired-data-monitoring-from-the-ground-up/</link><pubDate>Sun, 06 Apr 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/04/dont-trust-the-dashboard-how-i-rewired-data-monitoring-from-the-ground-up/</guid><description>&lt;p>🚨 Hook: “Because dashboards lie. And I sleep better now.”&lt;/p></description></item><item><title>Big data? More like big responsibility. Let’s talk governance.</title><link>https://vitthalmirji.com/2025/01/big-data-more-like-big-responsibility.-lets-talk-governance./</link><pubDate>Sun, 26 Jan 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/01/big-data-more-like-big-responsibility.-lets-talk-governance./</guid><description/></item></channel></rss>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Spark on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/spark/</link><description>Recent content in Spark on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Sun, 02 Mar 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/spark/index.xml" rel="self" type="application/rss+xml"/><item><title>SHC, SparkXML, and me: Open source journeys that made me a better engineer</title><link>https://vitthalmirji.com/2025/03/shc-sparkxml-and-me-open-source-journeys-that-made-me-a-better-engineer/</link><pubDate>Sun, 02 Mar 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/03/shc-sparkxml-and-me-open-source-journeys-that-made-me-a-better-engineer/</guid><description>&lt;p>❤️ Highlight lessons learned + favorite PR moment&lt;/p></description></item><item><title>A Data Engineering Perspective on Go vs. Python (Part 2 - Dataflow)</title><link>https://vitthalmirji.com/2020/07/a-data-engineering-perspective-on-go-vs.-python-part-2-dataflow/</link><pubDate>Mon, 06 Jul 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/07/a-data-engineering-perspective-on-go-vs.-python-part-2-dataflow/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In Part 2 of our comparison of Python and go from a Data Engineering perspective, we&amp;rsquo;ll finally take a look at Apache
+Beam and Google Dataflow and how the go SDK and the Python SDK differ, what drawbacks we&amp;rsquo;re dealing with, how fast it is
+by running extensive benchmarks,and how feasible it is to make the switch.&lt;/p>
+&lt;blockquote>
+&lt;p>You can
+find &lt;a href="https://vitthalmirji.com/blog/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/" target="_blank" rel="nofollow noopener noreferrer">Part 1 here&lt;/a>
+&lt;/p>&lt;/blockquote>
+&lt;h2 id="apache-beam--google-dataflow">Apache Beam &amp;amp; Google Dataflow&lt;/h2>
+&lt;p>While we have used &lt;a href="https://beam.apache.org/" target="_blank" rel="nofollow noopener noreferrer">Apache Beam&lt;/a>
+ on several
+occasions &lt;a href="https://vitthalmirji.com/blog/2018/06/analyzing-reddits-top-posts-images-with-google-cloud-part-1/#introducing-data-flow" target="_blank" rel="nofollow noopener noreferrer">before&lt;/a>
+,
+allow me to give another short introduction.&lt;/p></description></item><item><title>A Data Engineering Perspective on Go vs. Python (Part 1)</title><link>https://vitthalmirji.com/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/</link><pubDate>Thu, 11 Jun 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;blockquote>
+&lt;p>Exploring golang - can we ditch Python for go? And have we (as in &amp;ldquo;folks that work with a lot of data regularly&amp;rdquo;)
+finally found a use case for go? Part 1 explores high-level differences between Python and go and gives specific
+examples on the two languages, aiming to answer the question based on Apache Beam and Google Dataflow as a real-world
+example.&lt;/p>&lt;/blockquote>
+&lt;p>&lt;a href="https://beam.apache.org/" target="_blank" rel="nofollow noopener noreferrer">Apache Beam&lt;/a>
+ is something I&amp;rsquo;ve used on this blog a couple of times before: It&amp;rsquo;s a unified
+programming model for both batch and streaming use cases that can
+handle &lt;a href="https://en.wikipedia.org/wiki/Embarrassingly_parallel" target="_blank" rel="nofollow noopener noreferrer">delightfully parallel workloads&lt;/a>
+, allows for a lot of
+custom I/O and other connectors, and runs on a multitude of execution platforms, most notably Flink, Spark, and Google
+Cloud&amp;rsquo;s Dataflow.&lt;/p></description></item><item><title>A look at Apache Hadoop in 2019</title><link>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</link><pubDate>Mon, 01 Jul 2019 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In this article, we&amp;rsquo;ll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data
+processing an analytics on the rise.&lt;/p>
+&lt;p>When I first started using the Apache Hadoop Ecosystem, things around the magic buzzwords of “Big Data” and “Machine
+Learning” were quite different compared to what happened since. In this article, we will take a look at what happened
+since and how it compares against powerful, managed Cloud providers in 2019.&lt;/p></description></item><item><title>Data Lakes: Some thoughts on Hadoop, Hive, HBase, and Spark</title><link>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</link><pubDate>Sat, 04 Nov 2017 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>&lt;em>This article will talk about how organizations can make use of the wonderful thing that is commonly referred to as
+“Data Lake” - what constitutes a Data Lake, how probably should (and shouldn’t) use it to gather insights and why
+evaluating technologies is just as important as understanding your data.&lt;/em>&lt;/p>
+&lt;p>When organizations talk about the need to utilize data as part of their IT and business strategy, they usually have
+certain goals in mind. A common question usually boils down to “How can we make use of the data that we have available
+within our organization?”&lt;/p></description></item></channel></rss>

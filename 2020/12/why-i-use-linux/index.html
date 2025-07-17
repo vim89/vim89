@@ -1,0 +1,332 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Why I use Linux - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="Why I use Linux"><meta itemprop=description content="One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development work. An attempt at a simple response."><meta itemprop=datePublished content="2020-12-21T00:00:00+00:00"><meta itemprop=dateModified content="2020-12-21T00:00:00+00:00"><meta itemprop=wordCount content="3638"><meta itemprop=keywords content="Linux,Gnu,Programming,Bsd,Mac,Windows"><meta property="og:url" content="https://vitthalmirji.com/2020/12/why-i-use-linux/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="Why I use Linux"><meta property="og:description" content="One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development work. An attempt at a simple response."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-12-21T00:00:00+00:00"><meta property="article:modified_time" content="2020-12-21T00:00:00+00:00"><meta property="article:tag" content="Linux"><meta property="article:tag" content="Gnu"><meta property="article:tag" content="Programming"><meta property="article:tag" content="Bsd"><meta property="article:tag" content="Mac"><meta property="article:tag" content="Windows"><meta name=twitter:card content="summary"><meta name=twitter:title content="Why I use Linux"><meta name=twitter:description content="One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development work. An attempt at a simple response."><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>21</span>
+<span class=rest>Dec 2020</span></div></div><div class=matter><h1 class=title>Why I use Linux</h1></div></div><aside class=toc id=static-toc><header><h3>Contents</h3></header><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#cross-platform-is-slang-for-only-some-things-work-properly>Cross Platform is slang for &ldquo;only some things work properly&rdquo;</a></li><li><a href=#do-one-thing-and-do-it-well>Do one thing, and do it well</a></li><li><a href=#dependency-management-on-war-and-peace>Dependency Management: On War and Peace</a></li><li><a href=#permissions-computer-says-no>Permissions: Computer says no</a></li><li><a href=#guis-and-terminals-the-metamorphosis>GUIs and Terminals: The Metamorphosis</a></li><li><a href=#speed-has-never-killed-anyone-suddenly-becoming-stationary-however>Speed has never killed anyone. Suddenly becoming stationary, however&mldr;</a></li><li><a href=#flexibility--open-source>Flexibility & Open Source</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><h2 id=introduction>Introduction</h2><p>One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development
+work.</p><p>This article aims to clear some of the confusion, without getting lost in technical details or long ramblings about the
+shortcomings of <code>systemd</code>.</p><p>I will also refrain from comparing it to <code>Windows</code> too much - I use <code>Windows</code> for video games and am sure that with
+modern <code>Powershell</code>, some of the things I&rsquo;ll be talking about are covered there as well.</p><p><img src=images/ketamine_tux.jpg alt=ketamine_tux.jpg></p><h2 id=cross-platform-is-slang-for-only-some-things-work-properly>Cross Platform is slang for &ldquo;only some things work properly&rdquo;</h2><p>The best way to describe my daily work is &ldquo;Data Engineering&rdquo;: Code, usually in <code>Python</code>, <code>go</code>, <code>Scala</code>, or <code>Java</code>,
+running on a distributed cluster of different machines and/or containers, churning away at large amounts of data.</p><p>But be it my line of work or more traditional backend work (like writing API endpoints for your favorite websites and
+apps), at the end of the day, the software I write will inevitably run on servers that run <code>Linux</code>, mostly LTS-variants,
+such as <code>Debian</code> or <code>RHEL</code>. They run Linux because it&rsquo;s free (as in cost and source), it&rsquo;s stable and doesn&rsquo;t require
+reboots, it is extendable and customizable, it can be easily audited, there is tons of software available that was
+designed for UNIX-likes when Windows was a single-user OS, it&rsquo;s lightweight, there&rsquo;s tons of fun kernel tricks to make
+sure things run as fast as possible, and people spend a lot of time on making sure there&rsquo;s no security vulnerabilities.</p><p>The ability to work on a system that is close to, if not identical to your target platform, avoids many issues that
+usually occur when going from &ldquo;Well, it works on my machine!&rdquo; to production.</p><p>The interesting part about Data Engineering in particular is the distributed nature of the work, and the inherently high
+demand for computational capacity it entails. While a lot of us, even the ones with CS degrees, view the workings of an
+Operating System something abstract, low-level, and completely irrelevant to the average developer (a <code>for loop</code> is a
+<code>for loop</code>, right?), even fairly high-level languages, such as <code>Python</code>, have to interact with the OS turning your
+hardware into more than a shiny block of silicon.</p><p>To give you a tangible example: What does this code do?<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>multiprocessing</span> <span class=k>as</span> <span class=nn>mp</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>worker</span><span class=p>(</span><span class=n>i</span><span class=p>:</span> <span class=nb>int</span><span class=p>):</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;</span><span class=si>{</span><span class=n>os</span><span class=o>.</span><span class=n>getpid</span><span class=p>()</span><span class=si>}</span><span class=s1>: Working hard on </span><span class=si>{</span><span class=n>i</span><span class=si>}</span><span class=s1>&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>2500</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s1>&#39;</span><span class=si>{</span><span class=n>os</span><span class=o>.</span><span class=n>getpid</span><span class=p>()</span><span class=si>}</span><span class=s1>: Done with </span><span class=si>{</span><span class=n>i</span><span class=si>}</span><span class=s1>!&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>main</span><span class=p>():</span>
+</span></span><span class=line><span class=cl><span class=n>pool</span> <span class=o>=</span> <span class=n>mp</span><span class=o>.</span><span class=n>Pool</span><span class=p>(</span><span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>pool</span><span class=o>.</span><span class=n>map</span><span class=p>(</span><span class=n>worker</span><span class=p>,</span> <span class=p>(</span><span class=mi>0</span><span class=p>,</span><span class=mi>1</span><span class=p>,</span><span class=mi>2</span><span class=p>,</span><span class=mi>3</span><span class=p>,))</span>
+</span></span><span class=line><span class=cl><span class=n>pool</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>pool</span><span class=o>.</span><span class=n>join</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s1>&#39;All done!&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s1>&#39;__main__&#39;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl><span class=n>main</span><span class=p>()</span></span></span></code></pre></td></tr></table></div></div></p><p>Correct: Pretty much nothing, 4 times in parallel - but for a long time.</p><p><img src=images/python-htop1.png alt=python-htop1.png></p><p>If it were an actual problem, we&rsquo;d need to find out what does it actually <em>does right now</em>? We now could take a look at
+<code>/proc/$pid/</code> to see all the different process details.</p><p>For instance <code>/proc/$pid/stack</code> gives us the main thread&rsquo;s stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>vim @ mac-os ➜ <span class=m>326589</span> sudo cat ./stack
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> futex_wait_queue_me+0xbb/0x120
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> futex_wait+0x105/0x240
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> do_futex+0x14d/0x890
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> __x64_sys_futex+0x13f/0x16c
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> do_syscall_64+0x49/0xc0
+</span></span><span class=line><span class=cl><span class=o>[</span>&lt;0&gt;<span class=o>]</span> entry_SYSCALL_64_after_hwframe+0x44/0xa9</span></span></code></pre></td></tr></table></div></div><p>This, for instance, leads us to <a href=https://www.kernel.org/doc/htmldocs/kernel-locking/API-futex-wait-queue-me.html target=_blank rel="nofollow noopener noreferrer"><code>futex_wait_queue_me</code></a>
+, which &ldquo;queue_me
+and wait for wakeup, timeout, or signal&rdquo;, which could be caused by a deadlock, as described
+in <a href=https://github.com/torvalds/linux/commit/76835b0ebf8a7fe85beb03c75121419a7dec52f0 target=_blank rel="nofollow noopener noreferrer">this commit</a>
+(in this example,
+we&rsquo;re intentionally waiting for nothing in particular, of course).</p><p>Or maybe we&rsquo;re creating too many file descriptors due to network activity? We can always check <code>/proc/$pid/fd</code>. The list
+goes on.</p><p>In any case, chances are that we&rsquo;d encounter this issue on the local development Linux machine, as well as on our
+production machines - under Windows, for instance, the spawning of processes works very differently and is, if I may say
+so, not nearly as transparent.</p><p>And even if we are on different Kernel versions - the approach to debugging will stay the same.</p><p>Most tools are also incredibly portable. I
+maintain <a href=https://github.com/vim89/debian-scripts target=_blank rel="nofollow noopener noreferrer">this little repo on GitHub</a>
+that contains configuration files
+and other little helper script that I just clone whenever I get to a new machine (unless I cannot, in which case, I can
+always manually re-create my favorite <code>.zshrc</code>).</p><h2 id=do-one-thing-and-do-it-well>Do one thing, and do it well</h2><p>The &ldquo;Unix philosophy&rdquo; is something that might be regarded as archaic by some, given the modern trend of colossal pieces
+of software that do everything short of making coffee - web browsers are a great example - but here&rsquo;s the summary
+straight from Wiki regardless:</p><p><img src=images/Douglas_McIlroy.jpeg alt=Douglas_McIlroy.jpeg>
+<em>(Doug McIlroy by Denise Panyik-Dale, CC BY
+2.0: <a href=https://en.wikipedia.org/wiki/Douglas_McIlroy#/media/File:Douglas_McIlroy.jpeg target=_blank rel="nofollow noopener noreferrer">https://en.wikipedia.org/wiki/Douglas_McIlroy#/media/File:Douglas_McIlroy.jpeg</a>
+)</em></p><blockquote><p>Make each program do one thing well. To do a new job, build afresh rather than complicate old programs by adding new "
+features".</p><p>Expect the output of every program to become the input to another, as yet unknown, program. Don&rsquo;t clutter output with
+extraneous information. Avoid stringently columnar or binary input formats. Don&rsquo;t insist on interactive input.</p><p>&mldr;</p><p><em>Doug McIlroy, 1978</em></p></blockquote><p>These principles might not be 100% applicable for actual software development in <code>$CURRENT_YEAR</code>, but that doesn&rsquo;t mean
+the general idea is obsolete.</p><p>In any modern Linux-based environment, many daily, repeatable, and ad-hoc tasks can be achieved by piping simple, often
+single-purpose commands on any shell.</p><blockquote><p>In Unix-like computer operating systems, a pipeline is a mechanism for inter-process communication using message
+passing. A pipeline is a set of processes chained together by their standard streams, so that the output text of each
+process (stdout) is passed directly as input (stdin) to the next one.</p><p><em><a href=https://en.wikipedia.org/wiki/Pipeline_%28Unix%29 target=_blank rel="nofollow noopener noreferrer">https://en.wikipedia.org/wiki/Pipeline_(Unix)</a></em></p></blockquote><p>Take this example: <em>In this blog&rsquo;s repository, how many images are stored in the various sub-folders?</em> This might be the
+baseline for a query to make sure all files are compressed, which they are not.</p><p>We can get to that answer by simply piping together (&ldquo;daisy-chaining&rdquo;) some commands:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>find ./content -type f -regex <span class=s1>&#39;.*\.\(jpg\|jpeg\|png\|svg\|gif\)&#39;</span> <span class=p>|</span> uniq <span class=p>|</span> wc -l</span></span></code></pre></td></tr></table></div></div></p><p>And to break it down:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>find ./content -type f -regex <span class=s1>&#39;.*\.\(jpg\|jpeg\|png\|svg\|gif\)&#39;</span> <span class=c1># Find every file in the folder `content` that matches</span>
+</span></span><span class=line><span class=cl>the regex <span class=o>(</span>which means <span class=s2>&#34;a file ending in either of those suffixes&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>uniq <span class=c1># Only show unique results</span>
+</span></span><span class=line><span class=cl>wc -l <span class=c1># Count the lines on stdout</span></span></span></code></pre></td></tr></table></div></div></p><p>Each one of those 3 commands does one specific thing:</p><ul><li><code>find</code> - search for files in a directory hierarchy</li><li><code>uniq</code> - report or omit repeated lines</li><li><code>wc</code> - print newline, word, and byte counts for each file</li></ul><p>The ability to build queries for a task, almost based on the English language (<strong>find</strong> files, then make sure they are *
+*uniq<strong>ue, then <strong>w</strong>ord</strong>c**ount them) can automate daily tasks fascinatingly quickly, as it is provides simple, yet
+effective interfaces that are compatible with one another across environments.</p><h2 id=dependency-management-on-war-and-peace>Dependency Management: On War and Peace</h2><p>Generally speaking, installing software - or installing software to write software - has always been an ordeal. On
+<code>Windows</code> (which, see above, I use for video games), I find myself dealing with the following:</p><ul><li>Binary blobs (<code>.exe</code> files) that..<ul><li>&mldr;don&rsquo;t ship their own update tool. This software will remain on the version it was shipped as, unless I upgrade
+manually</li><li>&mldr; ship their custom updater, providing a custom way to &ldquo;check for updates&rdquo;</li><li>&mldr; ship one, but just ask you to download a new <code>.exe</code> file from a website</li></ul></li><li>Portable, binary blobs with the same update-permutations as above</li><li>Windows-store apps</li><li>Custom stores with their own update-processes, such as <code>GoG</code> or <code>Steam</code></li><li><code>pip3</code>, <code>conda</code>, <code>chocolatey</code> and co.</li><li>Some with checksum/signing checks from <code>Windows</code>, others without it</li></ul><p>Take a look at the updater for the software that my brand-new, shiny Gigabyte RTX 3080 came with:
+<img src=images/windows-aorus-update.png alt=windows-aorus-update.png></p><p>And now, compare that against say, <code>Steam</code>, which neatly updates my games automatically:
+<img src=images/windows-steam-update.png alt=windows-steam-update></p><p>Now, as long as we are talking about relatively unimportant software, having a less-than-streamlined process for
+installing and updating software can be dealt with.</p><p>However, once we reach a point where stability, unified management and control, as well as security are important,
+having a unified package manager that takes care of these things for us becomes paramount.</p><p>Depending on your flavor of <code>Linux</code>, you&rsquo;ll be dealing with various package managers - <code>apt</code>, <code>yum</code>, <code>pacman</code> - and
+naturally, you will not get away from cross-platform apps shipping with their own updater. I won&rsquo;t even mention the
+endless permutations of tools like <code>snap</code> or <code>flatpack</code>.</p><p>However, just using <code>apt</code> on <code>PopOS</code> as an example, take a look at the dependency tree for <code>hugo</code>, which this blog is
+rendered with:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>vim @ amc-os ➜  ~  apt-rdepends hugo      
+</span></span><span class=line><span class=cl>Reading package lists... Done
+</span></span><span class=line><span class=cl>Building dependency tree       
+</span></span><span class=line><span class=cl>Reading state information... Done
+</span></span><span class=line><span class=cl>hugo
+</span></span><span class=line><span class=cl>Depends: libc6 <span class=o>(</span>&gt;<span class=o>=</span> 2.4<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libsass1 <span class=o>(</span>&gt;<span class=o>=</span> 3.6.3<span class=o>)</span>
+</span></span><span class=line><span class=cl>libc6
+</span></span><span class=line><span class=cl>Depends: libcrypt1 <span class=o>(</span>&gt;<span class=o>=</span> 1:4.4.10-10ubuntu4<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libgcc-s1
+</span></span><span class=line><span class=cl>libcrypt1
+</span></span><span class=line><span class=cl>Depends: libc6 <span class=o>(</span>&gt;<span class=o>=</span> 2.25<span class=o>)</span>
+</span></span><span class=line><span class=cl>libgcc-s1
+</span></span><span class=line><span class=cl>Depends: gcc-10-base <span class=o>(=</span> 10.2.0-5ubuntu1~20.04<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libc6 <span class=o>(</span>&gt;<span class=o>=</span> 2.14<span class=o>)</span>
+</span></span><span class=line><span class=cl>gcc-10-base
+</span></span><span class=line><span class=cl>libsass1
+</span></span><span class=line><span class=cl>Depends: libc6 <span class=o>(</span>&gt;<span class=o>=</span> 2.29<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libgcc-s1 <span class=o>(</span>&gt;<span class=o>=</span> 3.0<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libstdc++6 <span class=o>(</span>&gt;<span class=o>=</span> 9<span class=o>)</span>
+</span></span><span class=line><span class=cl>libstdc++6
+</span></span><span class=line><span class=cl>Depends: gcc-10-base <span class=o>(=</span> 10.2.0-5ubuntu1~20.04<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libc6 <span class=o>(</span>&gt;<span class=o>=</span> 2.18<span class=o>)</span>
+</span></span><span class=line><span class=cl>Depends: libgcc-s1 <span class=o>(</span>&gt;<span class=o>=</span> 4.2<span class=o>)</span></span></span></code></pre></td></tr></table></div></div></p><p>Or, if you care for pretty pictures:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>debtree --with-suggests hugo <span class=p>|</span> dot -T png -o hugo-deptree.png</span></span></code></pre></td></tr></table></div></div></p><p><img src=images/hugo-deptree.png alt=hugo-deptree.png></p><p>We can see the exact dependencies, including version strings, for each library that <code>hugo</code> asks for. <code>apt</code> will not only
+install it for us, it can also keep everything up-to-date.</p><p>Interestingly, the concept of a package manager like <code>apt</code> (initial release 1998) is pretty much the basis for any
+modern &ldquo;app store&rdquo; - a centralized (albeit expandable) repository of software binaries or src that keep a tree of their
+respective dependencies.</p><p>This, of course, is great if it works. I haven&rsquo;t actually read Tolstoy&rsquo;s monstrosity, but any form of dependency
+management is always a story of times of peace and harmony (you update, it works) and war and anguish (you update, it
+doesn&rsquo;t work), as signatures expire, repositories cease to exist, or dependencies get so out of whack that sometimes
+installing a package from scratch is the best way to go.</p><p>That being said, in the theme of the article, I much prefer <code>apt install $package</code> over trying to find some sketchy
+binary or hoping for it to be in some overly-curated &ldquo;app store&rdquo; that I cannot extend with repositories for more obscure
+use-cases.</p><h2 id=permissions-computer-says-no>Permissions: Computer says no</h2><p>Unix-likes have this wonderful system, called <code>chmod</code> and <code>chown</code>, that controls permissions on each file on the system,
+which in term make up the system as a whole (as everything is a file). This was invented in 1971 and the idea (
+independent of the implementation) hasn&rsquo;t changed too much since.</p><p>Each user on the system has exactly one name and potentially many groups.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>vim @ mac-os ➜  ~  id    
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>1000<span class=o>(</span>vim<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>1000<span class=o>(</span>vim<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>1000<span class=o>(</span>vim<span class=o>)</span>,4<span class=o>(</span>adm<span class=o>)</span>,27<span class=o>(</span>sudo<span class=o>)</span>,998<span class=o>(</span>docker<span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p>Each file has 3 permission elements: The <code>user</code>, the <code>group</code>, and <code>others</code>. Each of those can have one of multiple
+modes:</p><table><thead><tr><th style=text-align:center>#</th><th style=text-align:center>Permission</th><th style=text-align:center>rwx</th><th style=text-align:center>Binary</th></tr></thead><tbody><tr><td style=text-align:center>7</td><td style=text-align:center>read, write and execute</td><td style=text-align:center>rwx</td><td style=text-align:center>111</td></tr><tr><td style=text-align:center>6</td><td style=text-align:center>read and write</td><td style=text-align:center>rw-</td><td style=text-align:center>110</td></tr><tr><td style=text-align:center>5</td><td style=text-align:center>read and execute</td><td style=text-align:center>r-x</td><td style=text-align:center>101</td></tr><tr><td style=text-align:center>4</td><td style=text-align:center>read only</td><td style=text-align:center>r&ndash;</td><td style=text-align:center>100</td></tr><tr><td style=text-align:center>3</td><td style=text-align:center>write and execute</td><td style=text-align:center>-wx</td><td style=text-align:center>011</td></tr><tr><td style=text-align:center>2</td><td style=text-align:center>write only</td><td style=text-align:center>-w-</td><td style=text-align:center>010</td></tr><tr><td style=text-align:center>1</td><td style=text-align:center>execute only</td><td style=text-align:center>&ndash;x</td><td style=text-align:center>001</td></tr><tr><td style=text-align:center>0</td><td style=text-align:center>none</td><td style=text-align:center>&mdash;</td><td style=text-align:center>000</td></tr></tbody></table><p>While (like with any topics in this article) you can go into the details on Wikipedia or
+the <a href=https://wiki.archlinux.org/index.php/File_permissions_and_attributes target=_blank rel="nofollow noopener noreferrer">Arch Wiki</a>
+, a dead simple system like this
+makes working on systems with many users possible.</p><p>My <code>home</code> directory, for instance, can only be edited by myself (and <code>root</code>, of course). A service user, such as <code>http</code>,
+might only be able to read and write data in <code>/var/www</code>. Or a CI/CD service user might be eternally damned to a life in
+a <code>chroot</code> jail.</p><p>It also adds a security benefit, as files without the <code>+x</code> bit cannot be executed - independent of whether they are
+actually executable files in the first place.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>vim @ mac-os ➜ images git:<span class=o>(</span>development<span class=o>)</span> ✗ ./hugo-deptree.png
+</span></span><span class=line><span class=cl>zsh: permission denied: ./hugo-deptree.png
+</span></span><span class=line><span class=cl>vim @ mac-os ➜ images git:<span class=o>(</span>development<span class=o>)</span> ✗ chmod +x ./hugo-deptree.png
+</span></span><span class=line><span class=cl>vim @ mac-os ➜ images git:<span class=o>(</span>development<span class=o>)</span> ✗ ./hugo-deptree.png
+</span></span><span class=line><span class=cl>zsh: <span class=nb>exec</span> format error: ./hugo-deptree.png</span></span></code></pre></td></tr></table></div></div><p><code>Windows</code> (for instance) uses Access Control Entires under
+NTFS (<a href=https://docs.microsoft.com/en-us/windows/win32/secauthz/access-control-entries target=_blank rel="nofollow noopener noreferrer">ACE</a>
+) that work similarly, but
+are rarely exposed to the user and an order of magnitude more complicated that the simple & secure system on Linux.
+<code>macOS</code> is POSIX certified, but doesn&rsquo;t expose the root user by default.</p><p>Permissions can also be easily validated (for instance, <code>ssh</code> keys should not be exposed) and have an equally simple CLI
+attached to them. They also happen to work on any major file system. As with other examples, simplicity is key.</p><h2 id=guis-and-terminals-the-metamorphosis>GUIs and Terminals: The Metamorphosis</h2><p>This is certainly a controversial one, but one thing that throws people off when having to deal with Linux is the
+frequent use of Terminal Emulators (shells). While many consumer focussed distributions, such as <code>PopOS</code> or <code>Ubuntu</code>,
+ship with many tools these days that abstract the user from having to deal with them, at the end of the day, a shell is
+always available.</p><p>And my take on that is simple: Working with a shell is faster than working with a GUI, once you are used to it. It also
+exposes any tool that you have installed (be it on the <code>PATH</code> or not) with a couple of keystrokes - you can even launch
+GUIs from the terminal.</p><p>The key to speed, besides the obvious &ldquo;getting used to a workflow&rdquo;, is little to no context switches and avoid using the
+mouse. That&rsquo;s why many people, myself included, love <code>vim</code> for what is is: A powerful editor that is entirely keyboard
+based. This philosophy has come to light even in the graphical world, with window managers
+like <a href=https://wiki.archlinux.org/index.php/i3 target=_blank rel="nofollow noopener noreferrer">i3</a>
+.</p><p>Modern shells, such as <code>zsh</code>, provide tons of comfort features such as auto-completion, powerful pattern-matching or
+fully-indexed search histories - even Bash (3+) has a lot of options hidden in the <code>.bashrc</code> file that enable similar
+feature sets.</p><p>So, here&rsquo;s a workflow a lot of you will be familiar with: In a <code>Python</code> project, create a new local <code>git</code> branch, enable
+a fresh virtual environment, make sure it&rsquo;s ignored by git, install some packages, get some test data, and run your
+magical code.</p><p>On a shell, it&rsquo;ll look a little something like this:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git checkout -b feature/magic
+</span></span><span class=line><span class=cl>python3 -m venv env
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;env&#34;</span> &gt;&gt; .gitignore
+</span></span><span class=line><span class=cl><span class=nb>source</span> env/bin/activate
+</span></span><span class=line><span class=cl>pip3 install pandas --upgrade
+</span></span><span class=line><span class=cl>wget https://example.com/files/abc.csv
+</span></span><span class=line><span class=cl>python3 main.py</span></span></code></pre></td></tr></table></div></div></p><p>Shells also support forms of multi-threading that I won&rsquo;t get into, but having something like a download run in a
+browser to not block a shell session is not a concern.</p><p>The same workflow, using large IDEs or GUIs in general, would work as such:</p><ol><li>Create a new branch in your IDE by going to the VCS tab and creating one</li><li>Open a shell regardless to activate the venv or hope for a plugin</li><li>Open an editor to add &ldquo;env&rdquo; to your .gitignore</li><li>Jump to a package manager interface to install your packages</li><li>Go to your browser to download a file and move it to your target directory</li><li>Context switch to the <code>Run</code> tab of your IDE</li></ol><p>The fact that I do not do that often might show here.</p><p>Furthermore, GUIs expose inherent complexity and design challenges, whereas CLIs are to ship with a <code>man</code> page that
+exposes all options:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>christian @ pop-os ➜  ~ ✗ man git <span class=p>|</span> head -15
+</span></span><span class=line><span class=cl>GIT<span class=o>(</span>1<span class=o>)</span>                                                                                 Git Manual GIT<span class=o>(</span>1<span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>NAME
+</span></span><span class=line><span class=cl>git - the stupid content tracker
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>SYNOPSIS
+</span></span><span class=line><span class=cl>git <span class=o>[</span>--version<span class=o>]</span> <span class=o>[</span>--help<span class=o>]</span> <span class=o>[</span>-C &lt;path&gt;<span class=o>]</span> <span class=o>[</span>-c &lt;name&gt;<span class=o>=</span>&lt;value&gt;<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>--exec-path<span class=o>[=</span>&lt;path&gt;<span class=o>]]</span> <span class=o>[</span>--html-path<span class=o>]</span> <span class=o>[</span>--man-path<span class=o>]</span> <span class=o>[</span>--info-path<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>-p<span class=p>|</span>--paginate<span class=p>|</span>-P<span class=p>|</span>--no-pager<span class=o>]</span> <span class=o>[</span>--no-replace-objects<span class=o>]</span> <span class=o>[</span>--bare<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>--git-dir<span class=o>=</span>&lt;path&gt;<span class=o>]</span> <span class=o>[</span>--work-tree<span class=o>=</span>&lt;path&gt;<span class=o>]</span> <span class=o>[</span>--namespace<span class=o>=</span>&lt;name&gt;<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>--super-prefix<span class=o>=</span>&lt;path&gt;<span class=o>]</span>
+</span></span><span class=line><span class=cl>&lt;command&gt; <span class=o>[</span>&lt;args&gt;<span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>DESCRIPTION
+</span></span><span class=line><span class=cl>Git is a fast, scalable, distributed revision control system with an unusually rich <span class=nb>command</span> <span class=nb>set</span> that provides both
+</span></span><span class=line><span class=cl>high-level operations and full access to internals.</span></span></code></pre></td></tr></table></div></div></p><p>GUIs have to, one way or another, expose all their options eventually, either through deep setting window trees, or
+straight up on one screen (or, in recent history, just don&rsquo;t give you any options at all). Take a look at Tortoise Git
+for Windows&rsquo; context menu:</p><p><img src=images/Tortoise_ContextMenuDirControl.png alt=Tortoise_ContextMenuDirControl.png>
+(<a href=https://tortoisegit.org/about/screenshots target=_blank rel="nofollow noopener noreferrer">https://tortoisegit.org/about/screenshots</a>
+)</p><p>It might just be me, but I haven&rsquo;t had to create a <code>patch</code> in a long time - I did, however, use <code>git archive</code> very
+recently.</p><p>Obviously, I don&rsquo;t want to be the &ldquo;Old Man Yells at Cloud&rdquo; guy - there is a time and a place for GUIs (I am writing this
+in VS code with a handful of shell sessions as part of the window), but once you are used to doing things by writing (
+and frequent use of tabs), rather than &ldquo;point and click&rdquo;, you will find it hard to go back for most daily development
+tasks.</p><p>I&rsquo;d also wager to say that most applications are CLI first, GUI second - it&rsquo;s easy to slap a GUI on a tool, once it
+already does what it needs to do.</p><p><img src=images/wget.png alt=wget.png>
+(<a href=https://blog.codinghorror.com/this-is-what-happens-when-you-let-developers-create-ui/ target=_blank rel="nofollow noopener noreferrer">https://blog.codinghorror.com/this-is-what-happens-when-you-let-developers-create-ui/</a>
+)</p><p>My last point here is also a problem that I have encountered primarily with junior developers: Dependence on GUIs
+abstracts people from the fundamental workings of systems, such as <code>git</code>. Every time I find myself in a teaching role, I
+try to <em>explain</em> how <code>git</code> works, rather than where to click or what commands to copy-paste: Working directory, staging,
+local and remote repositories, and where e.g. a <code>git add</code> actually affects anything.</p><p>Similar to how people who rely on sat-nav have difficulties remembering which interstate goes where (I am certainly one
+of them), relying on too many helpers and abstractions will prevent a learning curve that is important to really
+understand and, eventually, debug issues that inevitably will arise with complex systems. And this is coming from
+somebody who cannot remember the standard flags to decompress a <code>tar.gz</code> bundle. Do as I say, not as I do. :)</p><h2 id=speed-has-never-killed-anyone-suddenly-becoming-stationary-however>Speed has never killed anyone. Suddenly becoming stationary, however&mldr;</h2><p>My <a href=https://vitthalmirji.com/ target=_blank rel="nofollow noopener noreferrer">website</a>
+is very, well, minimalistic. The reason for that is simple: I don&rsquo;t expect
+everybody to access is on a 10Gbit SFP+ link on a AMD Threadripper with 128GB memory with a set of RTX 3090s.</p><p>Depending on your flavor of Linux, it runs on figuratively anything: AMD, Intel, ARM, RISC-V, a lot of memory, not a lot
+of memory, a screen, many screens, or no screens (&mldr;) - it&rsquo;ll run. <a href=http://tinycorelinux.net/faq.html#req><code>Tiny Core</code></a>
+requires a total of 46MB of RAM.</p><p>Now, a maybe more common use case is <code>ssh</code>. While, yes, you can use <code>X11</code> forwarding, by default, you&rsquo;ll be greeted with
+a blinking cursor on a black screen. Remembering what I said above: Now, you can do everything (except for things that
+absolutely require a window sever) that the Kernel and your applications can do, all over a very, very slim network
+link.</p><p>The operating principles are identical to using Linux locally - your permissions, programs, editors (&mldr;) work just the
+same, and from the bed of a truck with a satellite link in rural Wyoming, if you so desire. I&rsquo;ve been subject to
+horrible connections that can barely handle drawing a single image on the screen, not to mention 30, 60, or 120 a
+second. As the system itself is fundamentally based on being controlled by a shell, you don&rsquo;t really lose anything of
+value - if you are comfortable with it.</p><p>Also, SSH can be very information-dense - because it&rsquo;s text. Here&rsquo;s a picture of my server&rsquo;s UPS (which counts as a GUI,
+right?):
+<img src=images/ups.jpg alt=ups.jpg></p><p>And here&rsquo;s a lot more information via SSH:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>christian @ bigiron ➜  ~  sudo pwrstat -status  
+</span></span><span class=line><span class=cl>The UPS information shows as following:
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	Properties:
+</span></span><span class=line><span class=cl>		Model Name................... OR1500LCDRM1Ua
+</span></span><span class=line><span class=cl>		Firmware Number.............. xxx
+</span></span><span class=line><span class=cl>		Rating Voltage............... <span class=m>120</span> V
+</span></span><span class=line><span class=cl>		Rating Power................. <span class=m>900</span> Watt<span class=o>(</span><span class=m>1500</span> VA<span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	Current UPS status:
+</span></span><span class=line><span class=cl>		State........................ Normal
+</span></span><span class=line><span class=cl>		Power Supply by.............. Utility Power
+</span></span><span class=line><span class=cl>		Utility Voltage.............. <span class=m>121</span> V
+</span></span><span class=line><span class=cl>		Output Voltage............... <span class=m>121</span> V
+</span></span><span class=line><span class=cl>		Battery Capacity............. <span class=m>100</span> %
+</span></span><span class=line><span class=cl>		Remaining Runtime............ <span class=m>90</span> min.
+</span></span><span class=line><span class=cl>		Load......................... <span class=m>108</span> Watt<span class=o>(</span><span class=m>12</span> %<span class=o>)</span>
+</span></span><span class=line><span class=cl>		Line Interaction............. None
+</span></span><span class=line><span class=cl>		Test Result.................. Unknown
+</span></span><span class=line><span class=cl>		Last Power Event............. Blackout at xxxx <span class=k>for</span> <span class=m>70</span> min.</span></span></code></pre></td></tr></table></div></div></p><h2 id=flexibility--open-source>Flexibility & Open Source</h2><p>My last point will be kept short, as it has been the inspiration for countless philosophical debates for decades now (do
+yourself a favor and read some posts from the early 1990&rsquo;s
+on <a href="https://www.usenetarchives.com/groups.php?c=comp&amp;p=31" target=_blank rel="nofollow noopener noreferrer">Usenet archives</a>
+), but having control and insights is better
+than the opposite.</p><p>Everything on a truly free GNU/Linux system is Open Source and licensed appropriately. Issues you encounter can be
+explained, in most cases, by looking at the code that caused the issue. Configurations and behaviors of seemingly
+obscure problems (did you know there&rsquo;s limits on the Kernel&rsquo;s keyring in <code>/proc/sys/kernel/keys/maxkeys</code>?) can be
+explained if the system they operate in is transparent.</p><p>And if you don&rsquo;t like something about the way your system works, there&rsquo;s virtually nothing stopping you from changing
+it. Don&rsquo;t like the file manager? Get a new one. Don&rsquo;t like the limit on open file descriptors? Remove it. Don&rsquo;t like the
+way <code>syscall</code> abc works? Change it and build a new Kernel.</p><p>You don&rsquo;t <em>have</em> to do any of these - but you certainly can. And sometimes, you might even need to, if you find yourself
+being responsible for a highly-specific use case.</p><h2 id=conclusion>Conclusion</h2><p>I&rsquo;ve only outlined a handful of points as to why I prefer GNU/Linux over Windows (and even macOS, which I quite enjoy,
+purely for it&rsquo;s UNIX roots). This is by no means a complete list, or even a very in-depth one; but I hope I was able to
+enlighten some of you as to why I do what I do and why maybe, you should give it a shot some time.</p><p>And, naturally, this is only <em>my perspective</em>. I&rsquo;m simply not a &ldquo;Windows guy&rdquo; - but just like with most things, you
+should be able to use what you feel most comfortable with. Microsoft&rsquo;s WSL adventures to seem to indicate that I am not
+alone in this, however. :)</p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#cross-platform-is-slang-for-only-some-things-work-properly>Cross Platform is slang for &ldquo;only some things work properly&rdquo;</a></li><li><a href=#do-one-thing-and-do-it-well>Do one thing, and do it well</a></li><li><a href=#dependency-management-on-war-and-peace>Dependency Management: On War and Peace</a></li><li><a href=#permissions-computer-says-no>Permissions: Computer says no</a></li><li><a href=#guis-and-terminals-the-metamorphosis>GUIs and Terminals: The Metamorphosis</a></li><li><a href=#speed-has-never-killed-anyone-suddenly-becoming-stationary-however>Speed has never killed anyone. Suddenly becoming stationary, however&mldr;</a></li><li><a href=#flexibility--open-source>Flexibility & Open Source</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags><ul class=flat><li class=tag-li><a href=../../../tags/linux>linux</a></li><li class=tag-li><a href=../../../tags/gnu>gnu</a></li><li class=tag-li><a href=../../../tags/programming>programming</a></li><li class=tag-li><a href=../../../tags/bsd>bsd</a></li><li class=tag-li><a href=../../../tags/mac>mac</a></li><li class=tag-li><a href=../../../tags/windows>windows</a></li></ul></div><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2020/12/why-i-use-linux/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"What Tiger King can teach us about x86 Assembly"</i></div></div></div><div class="footer wrapper"><nav class=nav><div>2020 © Copyright notice</div></nav></div><script>feather.replace()</script><script>var enableTruncate=!0,filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const e=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio>0){var t=document.querySelectorAll(`nav li a[href="#${n}"]`);t!=null&&t.forEach(e=>{if(e!=null){var t=getDepth(e.parentElement);filterDepth&&t<=MAX_DEPTH&&(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))}else filterDepth||(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))})}})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(t=>{e.observe(t)})});function isVisible(e){if(!(e instanceof Element))return!1;const n=getComputedStyle(e);if(n.display==="none")return!1;if(n.visibility!=="visible")return!1;if(n.opacity<.1)return!1;if(e.offsetWidth+e.offsetHeight+e.getBoundingClientRect().height+e.getBoundingClientRect().width===0)return!1;const t={x:e.getBoundingClientRect().left+e.offsetWidth/2,y:e.getBoundingClientRect().top+e.offsetHeight/2};if(t.x<0)return!1;if(t.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(t.y<0)return!1;if(t.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(t.x,t.y);do if(s===e)return!0;while(s=s.parentNode)return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){for(var t=0;e!==null&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){var e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href!=null&&e.hash.startsWith("#"))}function lasItemInNavBarVisible(){var e=navItems().slice(-1)[0];return isVisible(e)}document.addEventListener("DOMContentLoaded",function(){if(!enableTruncate)return;var e=navItems();console.log(e),lasItemInNavBarVisible()||(filterDepth=!0,e.forEach(function(e){var t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))})</script></body></html>

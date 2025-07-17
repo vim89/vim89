@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Python on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/python/</link><description>Recent content in Python on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Mon, 06 Jul 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/python/index.xml" rel="self" type="application/rss+xml"/><item><title>A Data Engineering Perspective on Go vs. Python (Part 2 - Dataflow)</title><link>https://vitthalmirji.com/2020/07/a-data-engineering-perspective-on-go-vs.-python-part-2-dataflow/</link><pubDate>Mon, 06 Jul 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/07/a-data-engineering-perspective-on-go-vs.-python-part-2-dataflow/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In Part 2 of our comparison of Python and go from a Data Engineering perspective, we&amp;rsquo;ll finally take a look at Apache
+Beam and Google Dataflow and how the go SDK and the Python SDK differ, what drawbacks we&amp;rsquo;re dealing with, how fast it is
+by running extensive benchmarks,and how feasible it is to make the switch.&lt;/p>
+&lt;blockquote>
+&lt;p>You can
+find &lt;a href="https://vitthalmirji.com/blog/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/" target="_blank" rel="nofollow noopener noreferrer">Part 1 here&lt;/a>
+&lt;/p>&lt;/blockquote>
+&lt;h2 id="apache-beam--google-dataflow">Apache Beam &amp;amp; Google Dataflow&lt;/h2>
+&lt;p>While we have used &lt;a href="https://beam.apache.org/" target="_blank" rel="nofollow noopener noreferrer">Apache Beam&lt;/a>
+ on several
+occasions &lt;a href="https://vitthalmirji.com/blog/2018/06/analyzing-reddits-top-posts-images-with-google-cloud-part-1/#introducing-data-flow" target="_blank" rel="nofollow noopener noreferrer">before&lt;/a>
+,
+allow me to give another short introduction.&lt;/p></description></item><item><title>A Data Engineering Perspective on Go vs. Python (Part 1)</title><link>https://vitthalmirji.com/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/</link><pubDate>Thu, 11 Jun 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/06/a-data-engineering-perspective-on-go-vs.-python-part-1/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;blockquote>
+&lt;p>Exploring golang - can we ditch Python for go? And have we (as in &amp;ldquo;folks that work with a lot of data regularly&amp;rdquo;)
+finally found a use case for go? Part 1 explores high-level differences between Python and go and gives specific
+examples on the two languages, aiming to answer the question based on Apache Beam and Google Dataflow as a real-world
+example.&lt;/p>&lt;/blockquote>
+&lt;p>&lt;a href="https://beam.apache.org/" target="_blank" rel="nofollow noopener noreferrer">Apache Beam&lt;/a>
+ is something I&amp;rsquo;ve used on this blog a couple of times before: It&amp;rsquo;s a unified
+programming model for both batch and streaming use cases that can
+handle &lt;a href="https://en.wikipedia.org/wiki/Embarrassingly_parallel" target="_blank" rel="nofollow noopener noreferrer">delightfully parallel workloads&lt;/a>
+, allows for a lot of
+custom I/O and other connectors, and runs on a multitude of execution platforms, most notably Flink, Spark, and Google
+Cloud&amp;rsquo;s Dataflow.&lt;/p></description></item></channel></rss>

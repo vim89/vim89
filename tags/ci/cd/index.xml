@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>CI/CD on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/ci/cd/</link><description>Recent content in CI/CD on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Sun, 15 Jun 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/ci/cd/index.xml" rel="self" type="application/rss+xml"/><item><title>How I Cut Delivery Errors by 82% Without Losing My Sanity</title><link>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-without-losing-my-sanity/</link><pubDate>Sun, 15 Jun 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-without-losing-my-sanity/</guid><description>&lt;h2 id="-the-problem-errors-everywhere">🚨 The Problem: Errors Everywhere&lt;/h2>
+&lt;p>At my organization, we were shipping data pipelines faster than ever—but the delivery error rate stayed stubbornly
+around &lt;strong>12%&lt;/strong>, which meant:&lt;/p>
+&lt;ul>
+&lt;li>😓 Manual rollbacks, dashboards showing stale or missing data&lt;/li>
+&lt;li>👎 Frustrated teams notifying stakeholders (and me) daily&lt;/li>
+&lt;li>🕒 A few hours lost per incident, every day&lt;/li>
+&lt;/ul>
+&lt;p>It wasn&amp;rsquo;t sustainable—and I&amp;rsquo;d had enough.&lt;/p>
+&lt;hr>
+&lt;h2 id="-the-goal">🎯 The Goal&lt;/h2>
+&lt;p>Implement a &lt;strong>self-healing pipeline&lt;/strong> with:&lt;/p>
+&lt;ul>
+&lt;li>Automated quality gates&lt;/li>
+&lt;li>Full pipeline rollback on failure&lt;/li>
+&lt;li>Clear ownership via data contracts&lt;/li>
+&lt;li>Faster failed-job detection&lt;/li>
+&lt;/ul>
+&lt;p>And yes, keep my sanity intact.&lt;/p></description></item><item><title>Goodbye, WordPress - Hello, Hugo &amp; nginx</title><link>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/</link><pubDate>Thu, 21 May 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>For the past 4 or so years, I&amp;rsquo;ve been using WordPress to push content to this blog. I originally chose it because my
+knowledge of anything to do with Web and Mobile Development is spotty at best - and because &amp;ldquo;back in the day&amp;rdquo;™, it was
+the only CMS I was somewhat familiar with.&lt;/p>
+&lt;p>Maybe you&amp;rsquo;ve seen the sluggish mess that the blog is - and today, we&amp;rsquo;ll change it.&lt;/p></description></item></channel></rss>

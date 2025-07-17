@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/linux/</link><description>Recent content in Linux on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Mon, 21 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/linux/index.xml" rel="self" type="application/rss+xml"/><item><title>Why I use Linux</title><link>https://vitthalmirji.com/2020/12/why-i-use-linux/</link><pubDate>Mon, 21 Dec 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/12/why-i-use-linux/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development
+work.&lt;/p>
+&lt;p>This article aims to clear some of the confusion, without getting lost in technical details or long ramblings about the
+shortcomings of &lt;code>systemd&lt;/code>.&lt;/p>
+&lt;p>I will also refrain from comparing it to &lt;code>Windows&lt;/code> too much - I use &lt;code>Windows&lt;/code> for video games and am sure that with
+modern &lt;code>Powershell&lt;/code>, some of the things I&amp;rsquo;ll be talking about are covered there as well.&lt;/p></description></item><item><title>Goodbye, WordPress - Hello, Hugo &amp; nginx</title><link>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/</link><pubDate>Thu, 21 May 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>For the past 4 or so years, I&amp;rsquo;ve been using WordPress to push content to this blog. I originally chose it because my
+knowledge of anything to do with Web and Mobile Development is spotty at best - and because &amp;ldquo;back in the day&amp;rdquo;™, it was
+the only CMS I was somewhat familiar with.&lt;/p>
+&lt;p>Maybe you&amp;rsquo;ve seen the sluggish mess that the blog is - and today, we&amp;rsquo;ll change it.&lt;/p></description></item><item><title>A look at Apache Hadoop in 2019</title><link>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</link><pubDate>Mon, 01 Jul 2019 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In this article, we&amp;rsquo;ll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data
+processing an analytics on the rise.&lt;/p>
+&lt;p>When I first started using the Apache Hadoop Ecosystem, things around the magic buzzwords of “Big Data” and “Machine
+Learning” were quite different compared to what happened since. In this article, we will take a look at what happened
+since and how it compares against powerful, managed Cloud providers in 2019.&lt;/p></description></item></channel></rss>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Hive on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/hive/</link><description>Recent content in Hive on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Mon, 01 Jul 2019 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/hive/index.xml" rel="self" type="application/rss+xml"/><item><title>A look at Apache Hadoop in 2019</title><link>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</link><pubDate>Mon, 01 Jul 2019 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2019/07/a-look-at-apache-hadoop-in-2019/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In this article, we&amp;rsquo;ll take a look at whether Apache Hadoop still a viable option in 2019, with Cloud driven data
+processing an analytics on the rise.&lt;/p>
+&lt;p>When I first started using the Apache Hadoop Ecosystem, things around the magic buzzwords of “Big Data” and “Machine
+Learning” were quite different compared to what happened since. In this article, we will take a look at what happened
+since and how it compares against powerful, managed Cloud providers in 2019.&lt;/p></description></item><item><title>Data Lakes: Some thoughts on Hadoop, Hive, HBase, and Spark</title><link>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</link><pubDate>Sat, 04 Nov 2017 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2017/11/data-lakes-some-thoughts-on-hadoop-hive-hbase-and-spark/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>&lt;em>This article will talk about how organizations can make use of the wonderful thing that is commonly referred to as
+“Data Lake” - what constitutes a Data Lake, how probably should (and shouldn’t) use it to gather insights and why
+evaluating technologies is just as important as understanding your data.&lt;/em>&lt;/p>
+&lt;p>When organizations talk about the need to utilize data as part of their IT and business strategy, they usually have
+certain goals in mind. A common question usually boils down to “How can we make use of the data that we have available
+within our organization?”&lt;/p></description></item></channel></rss>

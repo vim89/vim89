@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Bsd on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/bsd/</link><description>Recent content in Bsd on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Mon, 21 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/bsd/index.xml" rel="self" type="application/rss+xml"/><item><title>Why I use Linux</title><link>https://vitthalmirji.com/2020/12/why-i-use-linux/</link><pubDate>Mon, 21 Dec 2020 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2020/12/why-i-use-linux/</guid><description>&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>One question I do get in earnest quite frequently is why I put up with running GNU/Linux distributions for development
+work.&lt;/p>
+&lt;p>This article aims to clear some of the confusion, without getting lost in technical details or long ramblings about the
+shortcomings of &lt;code>systemd&lt;/code>.&lt;/p>
+&lt;p>I will also refrain from comparing it to &lt;code>Windows&lt;/code> too much - I use &lt;code>Windows&lt;/code> for video games and am sure that with
+modern &lt;code>Powershell&lt;/code>, some of the things I&amp;rsquo;ll be talking about are covered there as well.&lt;/p></description></item></channel></rss>

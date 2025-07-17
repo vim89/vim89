@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Functional on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/functional/</link><description>Recent content in Functional on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Sat, 28 Jun 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/functional/index.xml" rel="self" type="application/rss+xml"/><item><title>Scala Meets Data Engineering: Functional Tools I Wish Existed</title><link>https://vitthalmirji.com/2025/06/scala-meets-data-engineering-functional-tools-i-wish-existed/</link><pubDate>Sat, 28 Jun 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/06/scala-meets-data-engineering-functional-tools-i-wish-existed/</guid><description>&lt;h2 id="-i-got-tired-of-repeating-myself-so-i-wrote-scala-code-that-repeats-me-better-than-i-do">🔁 &amp;ldquo;I got tired of repeating myself. So I wrote Scala code that repeats me better than I do.&amp;rdquo;&lt;/h2>
+&lt;p>Growing up in data engineering, I constantly saw the same patterns: filter, map, explode, transform—not once, but dozens
+of times across projects. I realized I needed tools that were like helpers on speed dial. Enter the &lt;strong>Data Engineering
+Functional Extensions&lt;/strong> I built and shared on GitHub.&lt;/p>
+&lt;h2 id="-whats-in-the-repo">🚀 What’s In the Repo&lt;/h2>
+&lt;pre class="code-block language-gohtml">
+ &lt;code>&lt;a href="https://github.com/vim89/dataengineering-savvy" target="_blank" rel="noopener">
+🔗 View on GitHub: vim89/dataengineering-savvy
+&lt;/a>&lt;/code>
+&lt;/pre>&lt;p>Inside, you&amp;rsquo;ll find:&lt;/p></description></item></channel></rss>
