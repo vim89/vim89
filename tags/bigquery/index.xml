@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Bigquery on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/bigquery/</link><description>Recent content in Bigquery on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Fri, 18 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/bigquery/index.xml" rel="self" type="application/rss+xml"/><item><title>Slicing Time at Scale: Building a Cloud-Native Data Engineering SDK in Scala (on GCP)</title><link>https://vitthalmirji.com/2025/07/slicing-time-at-scale-building-a-cloud-native-data-engineering-sdk-in-scala-on-gcp/</link><pubDate>Fri, 18 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/slicing-time-at-scale-building-a-cloud-native-data-engineering-sdk-in-scala-on-gcp/</guid><description>&lt;blockquote>
+&lt;p>“When scale knocks, APIs shouldn’t break. They should smile back.”&lt;/p>&lt;/blockquote>
+&lt;hr>
+&lt;h1 id="-intro--data-engineering-at-scale-the-real-deal">🧠 Intro – Data Engineering at Scale: The Real Deal&lt;/h1>
+&lt;p>Forget the buzzwords and “intro to Spark” tutorials. Real Data Engineering at scale is a beast that chews through naïve
+assumptions, burns your cloud credits, and laughs at your YAML configs.&lt;/p>
+&lt;p>This blog isn’t a primer. It’s a battle-tested story—how we built a cloud-native SDK in Scala on GCP to tame petabyte
+lakes, orchestrate CDC without ACID, and whisper to partitions so you only scan what &lt;em>actually&lt;/em> changed.&lt;/p></description></item></channel></rss>

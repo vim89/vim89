@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Update an HBase table with Hive or sed - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="Update an HBase table with Hive or sed"><meta itemprop=description content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><meta itemprop=datePublished content="2016-09-04T00:00:00+00:00"><meta itemprop=dateModified content="2016-09-04T00:00:00+00:00"><meta itemprop=wordCount content="1891"><meta property="og:url" content="https://vitthalmirji.com/2016/09/update-an-hbase-table-with-hive-or-sed/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="Update an HBase table with Hive or sed"><meta property="og:description" content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2016-09-04T00:00:00+00:00"><meta property="article:modified_time" content="2016-09-04T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="Update an HBase table with Hive or sed"><meta name=twitter:description content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>04</span>
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Update an HBase table with Hive or sed - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="Update an HBase table with Hive or sed"><meta itemprop=description content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><meta itemprop=datePublished content="2016-09-04T00:00:00+00:00"><meta itemprop=dateModified content="2016-09-04T00:00:00+00:00"><meta itemprop=wordCount content="1957"><meta property="og:url" content="https://vitthalmirji.com/2016/09/update-an-hbase-table-with-hive-or-sed/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="Update an HBase table with Hive or sed"><meta property="og:description" content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2016-09-04T00:00:00+00:00"><meta property="article:modified_time" content="2016-09-04T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="Update an HBase table with Hive or sed"><meta name=twitter:description content="This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how to do it properly with Hive."><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>04</span>
 <span class=rest>Sep 2016</span></div></div><div class=matter><h1 class=title>Update an HBase table with Hive or sed</h1></div></div><aside class=toc id=static-toc><header><h3>Contents</h3></header><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#the-scenario>The scenario</a></li><li><a href=#set-the-stage>Set the stage</a></li><li><a href=#hive-magic>Hive magic</a></li><li><a href=#why-you-should-not-do-this>Why you should not do this</a></li><li><a href=#the-right-way>The right way</a></li></ol></nav></aside><h2 id=introduction>Introduction</h2><p><em>This article explains how to edit a structured number of records in HBase by combining Hive on M/R2 and sed - and how
 to do it properly with Hive.</em></p><p><strong>HBase</strong> is an impressive piece of software - massively scalable, super-fast and built upon Google&rsquo;s BigTable&mldr; and if
 anyone knows &ldquo;How To Big Data&rdquo;, it ought to be these guys.</p><p>But whether you are new to HBase or just never felt the need, working with it&rsquo;s internals tends not to be the most
@@ -15,51 +15,79 @@ every record indicating &ldquo;client&rdquo; is one off! 1 is now 0 (making me u
 to Windows - and suddenly, Linux is of the charts. But don&rsquo;t panic - Hive to the rescue!</p><h2 id=set-the-stage>Set the stage</h2><p>Here&rsquo;s what we&rsquo;ll use:</p><ul><li><a href=http://hadoop.apache.org/releases.html>Hadoop</a>
 2.6.0 (HDFS + YARN)</li><li><a href=http://www.apache.org/dyn/closer.cgi/hbase/>HBase</a>
 1.2.2</li><li><a href=https://hive.apache.org/downloads.html target=_blank rel="nofollow noopener noreferrer">Hive</a>
-2.1.0</li><li>A custom create script for the data</li><li>OS X 10.11.6</li></ul><p>And here&rsquo;s what we&rsquo;re going to do: First, we&rsquo;ll create our HBase table.</p><pre class="code-block language-shell">
-  <code>hbase shell
-create 'action', 'cf', {NUMREGIONS => 15, SPLITALGO => 'HexStringSplit'}</code>
-</pre><p><img src=images/Screen-Shot-2016-09-02-at-13.42.55.png alt=hbase></p><p>Bam, good to go! The table&rsquo;s empty - but we&rsquo;ll get to that in a second.</p><p>In order to do anything with our view, we need data. I&rsquo;ve written a small Spark app that you can
+2.1.0</li><li>A custom create script for the data</li><li>OS X 10.11.6</li></ul><p>And here&rsquo;s what we&rsquo;re going to do: First, we&rsquo;ll create our HBase table.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>hbase shell
+</span></span><span class=line><span class=cl>create <span class=s1>&#39;action&#39;</span>, <span class=s1>&#39;cf&#39;</span>, <span class=o>{</span><span class=nv>NUMREGIONS</span> <span class=o>=</span>&gt; 15, <span class=nv>SPLITALGO</span> <span class=o>=</span>&gt; <span class=s1>&#39;HexStringSplit&#39;</span><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><img src=images/Screen-Shot-2016-09-02-at-13.42.55.png alt=hbase></p><p>Bam, good to go! The table&rsquo;s empty - but we&rsquo;ll get to that in a second.</p><p>In order to do anything with our view, we need data. I&rsquo;ve written a small Spark app that you can
 get <a href=https://github.com/vim89/sparkdatagenerator target=_blank rel="nofollow noopener noreferrer">here</a>
-and run as such:</p><pre class="code-block language-bash">
-  <code>git clone ...
-mvn clean install
-cd target
-spark-submit \
---class com.otterinasuit.spark.datagenerator.Main \
---master localhost:9000 \
---deploy-mode client \
-CreateTestHBaseRecords-1.0-SNAPSHOT.jar \
-2000000 \ # number of records
-4 # threads</code>
-</pre><p>Let&rsquo;s run it with a charming 2,000,000 records and see where that goes. On my mid-2014 MacBook Pro with i5 and 8GB of
-Ram, the job ran for 9.8 minutes. Might want to speed that up with a cluster of choice!</p><p>If you want to check the results, you can use good ol&rsquo; mapreduce:</p><pre class="code-block language-bash">
-  <code>hbase org.apache.hadoop.hbase.mapreduce.RowCounter 'action'</code>
-</pre><p>Alternatively:</p><pre class="code-block language-bash">
-  <code>hbase shell count 'action', INTERVAL=>100000</code>
-</pre><p><img src=images/Screen-Shot-2016-09-02-at-15.27.24.png alt=hbasecount></p><p>Granted, you would not have needed Spark for this, but Spark is awesome! Also, it&rsquo;s overhead in relation to it&rsquo;s
+and run as such:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git clone ...
+</span></span><span class=line><span class=cl>mvn clean install
+</span></span><span class=line><span class=cl><span class=nb>cd</span> target
+</span></span><span class=line><span class=cl>spark-submit <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--class com.otterinasuit.spark.datagenerator.Main <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--master localhost:9000 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--deploy-mode client <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>CreateTestHBaseRecords-1.0-SNAPSHOT.jar <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span><span class=m>2000000</span> <span class=se>\ </span><span class=c1># number of records</span>
+</span></span><span class=line><span class=cl><span class=m>4</span> <span class=c1># threads</span>
+</span></span></code></pre></td></tr></table></div></div><p>Let&rsquo;s run it with a charming 2,000,000 records and see where that goes. On my mid-2014 MacBook Pro with i5 and 8GB of
+Ram, the job ran for 9.8 minutes. Might want to speed that up with a cluster of choice!</p><p>If you want to check the results, you can use good ol&rsquo; mapreduce:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hbase org.apache.hadoop.hbase.mapreduce.RowCounter <span class=s1>&#39;action&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Alternatively:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hbase shell count <span class=s1>&#39;action&#39;</span>, <span class=nv>INTERVAL</span><span class=o>=</span>&gt;100000
+</span></span></code></pre></td></tr></table></div></div><p><img src=images/Screen-Shot-2016-09-02-at-15.27.24.png alt=hbasecount></p><p>Granted, you would not have needed Spark for this, but Spark is awesome! Also, it&rsquo;s overhead in relation to it&rsquo;s
 performance benefits beats shell- or python scripts doing the same job in many daily use cases (surely not running on a
 tiny laptop, but that&rsquo;s not the point). I was forced to use some semi-smart approaches (Spark mllib for Random data and
-changing the type with a map()-function might be one) - but hey, it works!</p><p>Next, an external Hive view - the baseline for all our Hive interactions with HBase.</p><pre class="code-block language-sql">
-  <code>CREATE DATABASE IF NOT EXISTS test;
-CREATE EXTERNAL TABLE test.action(
-key string
-, userf int
-, action int
-, ts bigint
-, client int
-)
-STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
-WITH SERDEPROPERTIES (
-"hbase.columns.mapping" = "
-:key
-, cf:user#b
-, cf:action#b
-, cf:ts#b
-, cf:client#b
-"
-)
-TBLPROPERTIES("hbase.table.name" = "action");</code>
-</pre><p>Unless you are trying to abuse it (like we&rsquo;re about to do!), Hive is a really awesome tool. Its HQL, SQL-like query
+changing the type with a map()-function might be one) - but hey, it works!</p><p>Next, an external Hive view - the baseline for all our Hive interactions with HBase.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>DATABASE</span><span class=w> </span><span class=k>IF</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>EXISTS</span><span class=w> </span><span class=n>test</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>EXTERNAL</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>key</span><span class=w> </span><span class=n>string</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=w> </span><span class=n>userf</span><span class=w> </span><span class=nb>int</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=w> </span><span class=n>action</span><span class=w> </span><span class=nb>int</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=nb>bigint</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>,</span><span class=w> </span><span class=n>client</span><span class=w> </span><span class=nb>int</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>STORED</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=s1>&#39;org.apache.hadoop.hive.hbase.HBaseStorageHandler&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WITH</span><span class=w> </span><span class=n>SERDEPROPERTIES</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=s2>&#34;hbase.columns.mapping&#34;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>:key
+</span></span></span><span class=line><span class=cl><span class=s2>, cf:user#b
+</span></span></span><span class=line><span class=cl><span class=s2>, cf:action#b
+</span></span></span><span class=line><span class=cl><span class=s2>, cf:ts#b
+</span></span></span><span class=line><span class=cl><span class=s2>, cf:client#b
+</span></span></span><span class=line><span class=cl><span class=s2>&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>TBLPROPERTIES</span><span class=p>(</span><span class=s2>&#34;hbase.table.name&#34;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&#34;action&#34;</span><span class=p>);</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Unless you are trying to abuse it (like we&rsquo;re about to do!), Hive is a really awesome tool. Its HQL, SQL-like query
 language comes really natural to most developers and it can be used in a big variety of sources and for an even bigger
 variety of use cases. Hive is, however, a tool that operates on top of MapReduce2 by default and with that, it comes
 with a notable performance overhead. So do yourself a favor and have a look
@@ -67,12 +95,13 @@ at <a href=http://www.cloudera.com/products/apache-hadoop/impala.html>Impala</a>
 , <a href=http://tez.apache.org>Tez</a>
 and <a href=http://drill.apache.org>Drill</a>
 or running Hive on Spark. But let&rsquo;s abuse Hive with M/R2 a bit more first.</p><h2 id=hive-magic>Hive magic</h2><p>We now have an HBase table, a Hive external table and data. Let&rsquo;s translate our problem from before to HQL. In the
-statement, 1471824000 equals 2016-08-22(midnight), 1472083199 is 2016-08-24 (23:59:59).</p><pre class="code-block language-sql">
-  <code>UPDATE test.action SET client = client+1 WHERE ts >= 1471824000 AND ts <= 1472083199;</code>
-</pre><p>But what&rsquo;s that?</p><pre class="code-block language-bash">
-  <code>FAILED: SemanticException [Error 10294]: Attempt to do update or delete using transaction manager that does not support
-these operations.</code>
-</pre><p>The reason why this doesn&rsquo;t work is simple:</p><blockquote><p>If a table is to be used in ACID writes (insert, update, delete) then the table property &ldquo;transactional&rdquo; must be set
+statement, 1471824000 equals 2016-08-22(midnight), 1472083199 is 2016-08-24 (23:59:59).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>UPDATE</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>SET</span><span class=w> </span><span class=n>client</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>client</span><span class=o>+</span><span class=mi>1</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=mi>1471824000</span><span class=w> </span><span class=k>AND</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&lt;=</span><span class=w> </span><span class=mi>1472083199</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>But what&rsquo;s that?</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>FAILED: SemanticException <span class=o>[</span>Error 10294<span class=o>]</span>: Attempt to <span class=k>do</span> update or delete using transaction manager that does not support
+</span></span><span class=line><span class=cl>these operations.
+</span></span></code></pre></td></tr></table></div></div><p>The reason why this doesn&rsquo;t work is simple:</p><blockquote><p>If a table is to be used in ACID writes (insert, update, delete) then the table property &ldquo;transactional&rdquo; must be set
 on that table, starting with Hive 0.14.0. Without this value, inserts will be done in the old style; updates and
 deletes
 will be prohibited.</p><p><a href=https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions target=_blank rel="nofollow noopener noreferrer">https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions</a></p></blockquote><p>Apart from setting a table property, we will also need to edit the Hive configuration and change the default values for
@@ -82,58 +111,78 @@ in <a href=https://cwiki.apache.org/confluence/display/Hive/LanguageManual+ORC t
 format - not for us.</p><p>But one thing Hive can also do is to create <strong>managed tables</strong>. A managed table (instead of an external table like we
 created above), the table is more comparable to a traditional RDBMS table, as it will be actually managed by Hive as
 opposed to be just a layer atop of an HBase table. By defining <em>STORED AS TEXTFILE</em>, Hive manages the data with a set of
-textfiles on HDFS.</p><pre class="code-block language-sql">
-  <code>CREATE TABLE IF NOT EXISTS test.action_hdfs(
-`key` string,
-`userf` int,
-`action` int,
-`ts` bigint,
-`client` int
-)
-ROW FORMAT DELIMITED
-STORED AS TEXTFILE
-LOCATION '/data';
-
-SELECT COUNT(*) FROM test.action_hdfs;</code>
-</pre><p>The result will be 0:</p><p><img src=images/Screen-Shot-2016-09-02-at-18.36.57.png alt=hiveempty></p><p>So that needs content - let&rsquo;s re-use the statement from above:</p><pre class="code-block language-sql">
-  <code>INSERT OVERWRITE DIRECTORY '/data' SELECT key,userf,ts,action,client FROM test.action WHERE ts >= 1471824000 AND ts <=
-1472083199;</code>
-</pre><p>This runs a query on our initial, external table and stores the result into HDFS. It tells you not to use M/R2 anymore.</p><p><img src=images/Screen-Shot-2016-09-02-at-18.27.25.png alt=hivehdfs></p><p>And since it now boils down to a simple text file on HDFS, we can simply read and update its contents using table #2!
-So, let&rsquo;s see what&rsquo;s in the file:</p><pre class="code-block language-bash">
-  <code>hdfs dfs -ls /data
-hdfs dfs -cat /data/000000_0 | head</code>
-</pre><p><img src=images/Screen-Shot-2016-09-02-at-23.14.03.png alt="Screen Shot 2016-09-02 at 23.14.03">
+textfiles on HDFS.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=k>IF</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>EXISTS</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_hdfs</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=o>`</span><span class=k>key</span><span class=o>`</span><span class=w> </span><span class=n>string</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=o>`</span><span class=n>userf</span><span class=o>`</span><span class=w> </span><span class=nb>int</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=o>`</span><span class=n>action</span><span class=o>`</span><span class=w> </span><span class=nb>int</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=o>`</span><span class=n>ts</span><span class=o>`</span><span class=w> </span><span class=nb>bigint</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=o>`</span><span class=n>client</span><span class=o>`</span><span class=w> </span><span class=nb>int</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ROW</span><span class=w> </span><span class=n>FORMAT</span><span class=w> </span><span class=n>DELIMITED</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>STORED</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>TEXTFILE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>LOCATION</span><span class=w> </span><span class=s1>&#39;/data&#39;</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_hdfs</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The result will be 0:</p><p><img src=images/Screen-Shot-2016-09-02-at-18.36.57.png alt=hiveempty></p><p>So that needs content - let&rsquo;s re-use the statement from above:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>INSERT</span><span class=w> </span><span class=n>OVERWRITE</span><span class=w> </span><span class=n>DIRECTORY</span><span class=w> </span><span class=s1>&#39;/data&#39;</span><span class=w> </span><span class=k>SELECT</span><span class=w> </span><span class=k>key</span><span class=p>,</span><span class=n>userf</span><span class=p>,</span><span class=n>ts</span><span class=p>,</span><span class=n>action</span><span class=p>,</span><span class=n>client</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=mi>1471824000</span><span class=w> </span><span class=k>AND</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&lt;=</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=mi>1472083199</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This runs a query on our initial, external table and stores the result into HDFS. It tells you not to use M/R2 anymore.</p><p><img src=images/Screen-Shot-2016-09-02-at-18.27.25.png alt=hivehdfs></p><p>And since it now boils down to a simple text file on HDFS, we can simply read and update its contents using table #2!
+So, let&rsquo;s see what&rsquo;s in the file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hdfs dfs -ls /data
+</span></span><span class=line><span class=cl>hdfs dfs -cat /data/000000_0 <span class=p>|</span> head
+</span></span></code></pre></td></tr></table></div></div><p><img src=images/Screen-Shot-2016-09-02-at-23.14.03.png alt="Screen Shot 2016-09-02 at 23.14.03">
 That doesn&rsquo;t look terribly
 convincing, but the reason is simple - Hive uses the ^A (\x01) character as delimiter by default. We can even prove
-that:</p><pre class="code-block language-bash">
-  <code>hdfs dfs -copyToLocal /data/000000_0
-hexdump -C 000000_0 | head</code>
-</pre><p><img src=images/Screen-Shot-2016-09-02-at-23.14.55.png alt="Screen Shot 2016-09-02 at 23.14.55">
+that:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hdfs dfs -copyToLocal /data/000000_0
+</span></span><span class=line><span class=cl>hexdump -C 000000_0 <span class=p>|</span> head
+</span></span></code></pre></td></tr></table></div></div><p><img src=images/Screen-Shot-2016-09-02-at-23.14.55.png alt="Screen Shot 2016-09-02 at 23.14.55">
 For those of you who are still
 afraid of HexDumps: After the length of each field, the next character is an an 0x01. Or, in other words: Every byte in
 a line after the last 0x01 byte will be our client variable. Or, just use cat -v:</p><p><img src=images/Screen-Shot-2016-09-02-at-23.17.01.png alt="Screen Shot 2016-09-02 at 23.17.01"></p><p>Seems like a random sequence of numbers, but is actually a cheaply stored separated file. An ^Asv, if you will.</p><p>Let&rsquo;s finally use all that knowledge and do what we came here to do: Increment our client setting! This is the command
-we&rsquo;re going to use for our data manipulation dry run:</p><pre class="code-block language-bash">
-  <code>hadoop fs -cat /data/000000_0 | while read line; do c=${line: -1} && c=$((++c)) | echo $line | sed -e 's/[0-9]$/'$c'/' ;
-done | head
-hdfs dfs -cat /data/000000_0 | head</code>
-</pre><p>Let&rsquo;s breake that down: <em>hadoop fs -cat /data/000000_0</em> will pipe our HDFS file to stdout <em>while read line; do</em> will
+we&rsquo;re going to use for our data manipulation dry run:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hadoop fs -cat /data/000000_0 <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> line<span class=p>;</span> <span class=k>do</span> <span class=nv>c</span><span class=o>=</span><span class=si>${</span><span class=nv>line</span><span class=p>: -1</span><span class=si>}</span> <span class=o>&amp;&amp;</span> <span class=nv>c</span><span class=o>=</span><span class=k>$((</span><span class=o>++</span>c<span class=k>))</span> <span class=p>|</span> <span class=nb>echo</span> <span class=nv>$line</span> <span class=p>|</span> sed -e <span class=s1>&#39;s/[0-9]$/&#39;</span><span class=nv>$c</span><span class=s1>&#39;/&#39;</span> <span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span> <span class=p>|</span> head
+</span></span><span class=line><span class=cl>hdfs dfs -cat /data/000000_0 <span class=p>|</span> head
+</span></span></code></pre></td></tr></table></div></div><p>Let&rsquo;s breake that down: <em>hadoop fs -cat /data/000000_0</em> will pipe our HDFS file to stdout <em>while read line; do</em> will
 start a loop for every line <em>c=${line: -1}</em> will take the line&rsquo;s last character (our client!) as variable $c
 <em>c=$((++c))</em> will increment said number _echo $line_sends it to stdout where <em>sed</em> is waiting <em>sed -e &rsquo;s/[0-9]$/&rsquo;$
 c&rsquo;/&rsquo;</em> replaces every number ([0-9]$) at the end of a string ([0-9]$) with the newly-incremented variable $
 c.
 <img src=images/Screen-Shot-2016-09-02-at-23.18.11.png alt="Screen Shot 2016-09-02 at 23.18.11">
 And there you have it! Note the
-last number increased by one.</p><p>By the way: sed does not support Negative Lookaheads in regex. Learned that one the hard way.</p><p>If we now want to move that data back to hadoop, all we need to do is pipe to HDFS instead of stdout:</p><pre class="code-block language-bash">
-  <code>hadoop fs -cat /data/000000_0 | while read line; do c=${line: -1} && c=$((++c)) | echo $line | sed -e 's/[0-9]$/'$c'/' ;
-done | hadoop fs -put - /data/000000_2
-hdfs dfs -cat /data/000000_2 | head</code>
-</pre><p>In order to get that data back in our original HBase table, load up hive again:</p><pre class="code-block language-sql">
-  <code>LOAD DATA INPATH '/data/000000_2' INTO TABLE test.action_hdfs;
-SELECT client, COUNT(*) FROM test.action GROUP BY client;</code>
-</pre><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>0</td><td>16387</td></tr><tr><td>1</td><td>666258</td></tr><tr><td>2</td><td>665843</td></tr><tr><td>3</td><td>651512</td></tr></tbody></table><p>16,387 invalid records that are immediately spottable as well as those hiding in client 1 and 2 - damn!</p><pre class="code-block language-sql">
-  <code>INSERT OVERWRITE TABLE test.action SELECT key,userf,action,ts,client FROM test.action_hdfs;
-SELECT client, COUNT(*) FROM test.action GROUP BY client;</code>
-</pre><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>666293</td></tr><tr><td>2</td><td>665948</td></tr><tr><td>3</td><td>667759</td></tr></tbody></table><p>As 0 used to be an undefined state and the result is now 0 and used to be 16,387, we seem to have fixed our mistake. You
+last number increased by one.</p><p>By the way: sed does not support Negative Lookaheads in regex. Learned that one the hard way.</p><p>If we now want to move that data back to hadoop, all we need to do is pipe to HDFS instead of stdout:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hadoop fs -cat /data/000000_0 <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> line<span class=p>;</span> <span class=k>do</span> <span class=nv>c</span><span class=o>=</span><span class=si>${</span><span class=nv>line</span><span class=p>: -1</span><span class=si>}</span> <span class=o>&amp;&amp;</span> <span class=nv>c</span><span class=o>=</span><span class=k>$((</span><span class=o>++</span>c<span class=k>))</span> <span class=p>|</span> <span class=nb>echo</span> <span class=nv>$line</span> <span class=p>|</span> sed -e <span class=s1>&#39;s/[0-9]$/&#39;</span><span class=nv>$c</span><span class=s1>&#39;/&#39;</span> <span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span> <span class=p>|</span> hadoop fs -put - /data/000000_2
+</span></span><span class=line><span class=cl>hdfs dfs -cat /data/000000_2 <span class=p>|</span> head
+</span></span></code></pre></td></tr></table></div></div><p>In order to get that data back in our original HBase table, load up hive again:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>LOAD</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>INPATH</span><span class=w> </span><span class=s1>&#39;/data/000000_2&#39;</span><span class=w> </span><span class=k>INTO</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_hdfs</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>client</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>client</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>0</td><td>16387</td></tr><tr><td>1</td><td>666258</td></tr><tr><td>2</td><td>665843</td></tr><tr><td>3</td><td>651512</td></tr></tbody></table><p>16,387 invalid records that are immediately spottable as well as those hiding in client 1 and 2 - damn!</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>INSERT</span><span class=w> </span><span class=n>OVERWRITE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>SELECT</span><span class=w> </span><span class=k>key</span><span class=p>,</span><span class=n>userf</span><span class=p>,</span><span class=n>action</span><span class=p>,</span><span class=n>ts</span><span class=p>,</span><span class=n>client</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_hdfs</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>client</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>client</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>666293</td></tr><tr><td>2</td><td>665948</td></tr><tr><td>3</td><td>667759</td></tr></tbody></table><p>As 0 used to be an undefined state and the result is now 0 and used to be 16,387, we seem to have fixed our mistake. You
 can further validate this with a full COUNT(*) or by calculating the differences between the client-values.</p><h2 id=why-you-should-not-do-this>Why you should not do this</h2><p>Let&rsquo;s breake down what we had to do: - Create two Hive tables - Export our data to HDFS (where, technically speaking, it
 already resides) - Learn how to interpret an Hive HDFS datafile - Write and execute some crazy sed-regex-monstrosity -
 Do all of that manipulation on a single machine, using stdout and hence memory - Do all that without ACID or any form of
@@ -157,10 +206,11 @@ financials in Macro-loaded Excel files. It works, but it is inefficient, complic
 </span></span></span><span class=line><span class=cl><span class=w></span><span class=n>client</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=mi>1</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>client</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=mi>1471824000</span><span class=w> </span><span class=k>AND</span><span class=w> </span><span class=n>ts</span><span class=w> </span><span class=o>&lt;=</span><span class=w> </span><span class=mi>1472083199</span><span class=p>;</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>client</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_buffer</span><span class=w> </span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>client</span><span class=p>;</span></span></span></code></pre></td></tr></table></div></div></p><p>That gives us:</p><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>16387</td></tr><tr><td>2</td><td>16352</td></tr><tr><td>3</td><td>16247</td></tr></tbody></table><pre class="code-block language-sql">
-  <code>INSERT OVERWRITE TABLE test.action SELECT key,userf,action,ts,client FROM test.action_buffer;
-SELECT client, COUNT(*) FROM test.action_buffer GROUP BY client;</code>
-</pre><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>666293</td></tr><tr><td>2</td><td>665948</td></tr><tr><td>3</td><td>667759</td></tr></tbody></table><p>The idea here is quickly explained: Instead of updating a record, i.e. trying to modify HBase columns directly, our
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>client</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_buffer</span><span class=w> </span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>client</span><span class=p>;</span></span></span></code></pre></td></tr></table></div></div></p><p>That gives us:</p><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>16387</td></tr><tr><td>2</td><td>16352</td></tr><tr><td>3</td><td>16247</td></tr></tbody></table><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>INSERT</span><span class=w> </span><span class=n>OVERWRITE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action</span><span class=w> </span><span class=k>SELECT</span><span class=w> </span><span class=k>key</span><span class=p>,</span><span class=n>userf</span><span class=p>,</span><span class=n>action</span><span class=p>,</span><span class=n>ts</span><span class=p>,</span><span class=n>client</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_buffer</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>client</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>test</span><span class=p>.</span><span class=n>action_buffer</span><span class=w> </span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>client</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><table><thead><tr><th>Client</th><th>Count</th></tr></thead><tbody><tr><td>1</td><td>666293</td></tr><tr><td>2</td><td>665948</td></tr><tr><td>3</td><td>667759</td></tr></tbody></table><p>The idea here is quickly explained: Instead of updating a record, i.e. trying to modify HBase columns directly, our
 current Hive query is comparable with a simple put() operation on HBase. While we will overwrite the entire record,
 there is no downside to it - the keys and other information stays identical. There you have it - the same result (no
 client = 0), much faster, much easier and executed on your distributed computing engine of choice!</p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#the-scenario>The scenario</a></li><li><a href=#set-the-stage>Set the stage</a></li><li><a href=#hive-magic>Hive magic</a></li><li><a href=#why-you-should-not-do-this>Why you should not do this</a></li><li><a href=#the-right-way>The right way</a></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags></div><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2016/09/edit-an-hbase-table-with-hive-or-sed/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"What Tiger King can teach us about x86 Assembly"</i></div></div></div><div class="footer wrapper"><nav class=nav><div>2016 © Copyright notice</div></nav></div><script>feather.replace()</script><script>var enableTruncate=!0,filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const e=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio>0){var t=document.querySelectorAll(`nav li a[href="#${n}"]`);t!=null&&t.forEach(e=>{if(e!=null){var t=getDepth(e.parentElement);filterDepth&&t<=MAX_DEPTH&&(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))}else filterDepth||(clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"))})}})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(t=>{e.observe(t)})});function isVisible(e){if(!(e instanceof Element))return!1;const n=getComputedStyle(e);if(n.display==="none")return!1;if(n.visibility!=="visible")return!1;if(n.opacity<.1)return!1;if(e.offsetWidth+e.offsetHeight+e.getBoundingClientRect().height+e.getBoundingClientRect().width===0)return!1;const t={x:e.getBoundingClientRect().left+e.offsetWidth/2,y:e.getBoundingClientRect().top+e.offsetHeight/2};if(t.x<0)return!1;if(t.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(t.y<0)return!1;if(t.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(t.x,t.y);do if(s===e)return!0;while(s=s.parentNode)return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){for(var t=0;e!==null&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){var e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href!=null&&e.hash.startsWith("#"))}function lasItemInNavBarVisible(){var e=navItems().slice(-1)[0];return isVisible(e)}document.addEventListener("DOMContentLoaded",function(){if(!enableTruncate)return;var e=navItems();console.log(e),lasItemInNavBarVisible()||(filterDepth=!0,e.forEach(function(e){var t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))})</script></body></html>

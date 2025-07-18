@@ -1,11 +1,11 @@
-<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Goodbye, WordPress - Hello, Hugo & nginx - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="Goodbye, WordPress - Hello, Hugo & nginx"><meta itemprop=description content="Ditching WordPress for a static site generator"><meta itemprop=datePublished content="2020-05-21T00:00:00+00:00"><meta itemprop=dateModified content="2020-05-21T00:00:00+00:00"><meta itemprop=wordCount content="2634"><meta itemprop=keywords content="Linux,Web,Hugo,Html,Css,Go,CI/CD,Github Actions,Javascript"><meta property="og:url" content="https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="Goodbye, WordPress - Hello, Hugo & nginx"><meta property="og:description" content="Ditching WordPress for a static site generator"><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-05-21T00:00:00+00:00"><meta property="article:modified_time" content="2020-05-21T00:00:00+00:00"><meta property="article:tag" content="Linux"><meta property="article:tag" content="Web"><meta property="article:tag" content="Hugo"><meta property="article:tag" content="Html"><meta property="article:tag" content="Css"><meta property="article:tag" content="Go"><meta name=twitter:card content="summary"><meta name=twitter:title content="Goodbye, WordPress - Hello, Hugo & nginx"><meta name=twitter:description content="Ditching WordPress for a static site generator"><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>21</span>
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Goodbye, WordPress - Hello, Hugo & nginx - Vitthal Mirji</title><link rel=icon type=image/png href=favicon.ico><meta name=viewport content="width=device-width,initial-scale=1"><meta itemprop=name content="Goodbye, WordPress - Hello, Hugo & nginx"><meta itemprop=description content="Ditching WordPress for a static site generator"><meta itemprop=datePublished content="2020-05-21T00:00:00+00:00"><meta itemprop=dateModified content="2020-05-21T00:00:00+00:00"><meta itemprop=wordCount content="2793"><meta itemprop=keywords content="Linux,Web,Hugo,Html,Css,Go,CI/CD,Github Actions,Javascript"><meta property="og:url" content="https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo-nginx/"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:title" content="Goodbye, WordPress - Hello, Hugo & nginx"><meta property="og:description" content="Ditching WordPress for a static site generator"><meta property="og:locale" content="en_us"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2020-05-21T00:00:00+00:00"><meta property="article:modified_time" content="2020-05-21T00:00:00+00:00"><meta property="article:tag" content="Linux"><meta property="article:tag" content="Web"><meta property="article:tag" content="Hugo"><meta property="article:tag" content="Html"><meta property="article:tag" content="Css"><meta property="article:tag" content="Go"><meta name=twitter:card content="summary"><meta name=twitter:title content="Goodbye, WordPress - Hello, Hugo & nginx"><meta name=twitter:description content="Ditching WordPress for a static site generator"><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://vitthalmirji.com/css/main.css><link rel=stylesheet type=text/css href=https://vitthalmirji.com/[css/override.css]><link id=dark-scheme rel=stylesheet type=text/css href=https://vitthalmirji.com/css/dark.css><script src=https://vitthalmirji.com/js/feather.min.js></script><script src=https://vitthalmirji.com/js/main.js></script></head><body><div class="container-wide wrapper"><link rel=icon href=../../../favicon.ico sizes=any><link rel=icon type=image/png href=../../../favicon.png><link rel=apple-touch-icon href=../../../apple-touch-icon.png><link rel=manifest href=../../../site.webmanifest><meta name=theme-color content="#ffffff"><link rel=stylesheet href=../../../syntax.css><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, GNU/Linux, Data, ML, and other things</p><nav class="nav social"><ul class=flat><li><a href=https://github.com/vim89/ title=Github><i data-feather=github></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter><i data-feather=twitter></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn><i data-feather=linkedin></i></a></li><li><a href=../../../index.xml title=RSS><i data-feather=rss></i></a></li><span class=scheme-toggle><a href=# id=scheme-toggle></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=../../../>Home</a></li><li><a href=../../../about>About</a></li><li><a href=../../../tags>Tags & Stats</a></li></ul></nav></div><div class=article-nav id=article-nav-id><div class=post><div class=post-header><div class=meta><div class=date><span class=day>21</span>
 <span class=rest>May 2020</span></div></div><div class=matter><h1 class=title>Goodbye, WordPress - Hello, Hugo & nginx</h1></div></div><aside class=toc id=static-toc><header><h3>Contents</h3></header><nav id=TableOfContents><ol><li><a href=#introduction>Introduction</a></li><li><a href=#pain-points>Pain Points</a></li><li><a href=#workflow>Workflow</a></li><li><a href=#the-idea>The Idea</a></li><li><a href=#hugo>Hugo</a><ol><li><a href=#install-hugo>Install Hugo</a></li><li><a href=#exporting-all-old-posts>Exporting all old posts</a></li><li><a href=#testing>Testing</a></li><li><a href=#themes>Themes</a></li><li><a href=#adjusting-exported-blog-posts>Adjusting exported blog posts</a></li><li><a href=#shortcuts>Shortcuts</a></li><li><a href=#permalinks>Permalinks</a></li></ol></li><li><a href=#deployment>Deployment</a><ol><li><a href=#workflowyml><code>workflow.yml</code></a></li><li><a href=#rssh><code>rssh</code></a></li></ol></li><li><a href=#the-result>The result</a></li><li><a href=#conclusion>Conclusion</a></li></ol></nav></aside><h2 id=introduction>Introduction</h2><p>For the past 4 or so years, I&rsquo;ve been using WordPress to push content to this blog. I originally chose it because my
 knowledge of anything to do with Web and Mobile Development is spotty at best - and because &ldquo;back in the day&rdquo;™, it was
 the only CMS I was somewhat familiar with.</p><p>Maybe you&rsquo;ve seen the sluggish mess that the blog is - and today, we&rsquo;ll change it.</p><h2 id=pain-points>Pain Points</h2><p>The issues I&rsquo;ve had with WordPress were numerous, but to name a few:</p><ul><li>You have to be online</li><li>A complicated setup to keep PHP, MariaDB, nginx and other components working</li><li>Several security issues in the past</li><li>A horrible WYSIWYG editor, without any markdown support, save for external plugins</li><li>No <code>vi</code> bindings, such as in <code>VS Code</code>, or, well, <code>vim</code> - everything is mouse-driven</li><li>The entire thing is slow - navigating, updating, preview</li><li>Constant bot-spam in the comments</li><li>No version control</li><li>No decent template model</li><li>No external contributors</li><li>No native syntax highlighting; Plugins have a tendency to mess things up</li><li>2.5MB transfer and 47 requests / network activity <em>per page load</em></li><li>Up to 40s (!) loading times on slow connections</li></ul><p>While I&rsquo;m sure somebody who is super familiar with WordPress can figure some of those out, but one thing that comes to
 mind is <a href=https://aws.amazon.com/blogs/architecture/wordpress-best-practices-on-aws/ target=_blank rel="nofollow noopener noreferrer">this horrifying contraption</a>
 for
 running Wordpress.</p><blockquote><p>For comparison: My actual website, which is plain <code>HTML</code> and <code>CSS</code>, loads 32KB (most of which is the little Tux
-<code>favicon</code>) and hence in under 0.3s on a similarly horrible connection.</p></blockquote><p><img src=images/old.png alt="Old Blog"></p><h2 id=workflow>Workflow</h2><p>My <strong>workflow</strong>, however, was the <strong>real</strong> pain point (I accept judgment for this):</p><ol><li>Write the content locally in Sublime or vim, ignoring formatting, so I don&rsquo;t have to deal with network issues and can
+<code>favicon</code>) and hence in under 0.3s on a similarly horrible connection.</p></blockquote><p>Old blog.png</p><h2 id=workflow>Workflow</h2><p>My <strong>workflow</strong>, however, was the <strong>real</strong> pain point (I accept judgment for this):</p><ol><li>Write the content locally in Sublime or vim, ignoring formatting, so I don&rsquo;t have to deal with network issues and can
 work offline</li><li>Copy-paste the code to WordPress, waiting for it to mess up</li><li>Manually add the code with an external SyntaxHighlighter plugin</li><li>Edit the generated HTML to fix any messed up code formatting</li><li>Cry and drink</li><li>Repeat this every 3 months</li></ol><p>In other words, its worse than writing a Confluence page on dial up.</p><p>Accepting feedback and contributions is also difficult - while I have added feedback in the past, it requires me to do
 it. With a more standardized CI/CD process, it would be trivial to simply accept merge requests.</p><p>But since the only person to blame here is me, I now finally managed to fix it.</p><h2 id=the-idea>The Idea</h2><blockquote><p>Using a static side generator is a really old idea and I don&rsquo;t claim any intellectual points for it. However, I am
 documenting this process for the sake of documenting it.</p></blockquote><p>The idea here is to have a workflow that looks like this:</p><ol><li>Write posts in markdown. Add code in pre-defined blocks/shortcodes.</li><li>Store images locally</li><li>Push to Git (GitHub, GitLab)</li><li>Deploy to the web server using a CI/CD flow</li></ol><h2 id=hugo>Hugo</h2><p><code>Hugo</code> is a simple static-site generator written in <code>golang</code>. After thinking about <code>Jekyll</code> and the joys of Ruby, I&rsquo;ve
@@ -16,22 +16,27 @@ exactly what I want.</p><h3 id=install-hugo>Install Hugo</h3><p>We just grab the
 </span><span class=lnt>2
 </span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-zsh data-lang=zsh><span class=line><span class=cl>wget https://github.com/gohugoio/hugo/releases/download/v0.70.0/hugo_0.70.0_Linux-64bit.tar.gz
 </span></span><span class=line><span class=cl>tar xvf hugo_0.70.0_Linux-64bit.tar.gz</span></span></code></pre></td></tr></table></div></div></p><p>We can then set up a page:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-zsh data-lang=zsh><span class=line><span class=cl>hugo new site vitthalmirji.com</span></span></code></pre></td></tr></table></div></div><p>After some small edits to the <code>config.toml</code>, we should be good to go and only need content.</p><pre class="code-block language-yaml">
-  <code>baseURL = "https://vitthalmirji.com/"
-languageCode = "en-us"
-title = "Vitthal Mirji"
-theme = "ink-free"</code>
-</pre><h3 id=exporting-all-old-posts>Exporting all old posts</h3><p>I want to export all old blog posts to Markdown. There&rsquo;s a great
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-zsh data-lang=zsh><span class=line><span class=cl>hugo new site vitthalmirji.com</span></span></code></pre></td></tr></table></div></div><p>After some small edits to the <code>config.toml</code>, we should be good to go and only need content.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>baseURL = &#34;https://vitthalmirji.com/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>languageCode = &#34;en-us&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>title = &#34;Vitthal Mirji&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>theme = &#34;ink-free&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=exporting-all-old-posts>Exporting all old posts</h3><p>I want to export all old blog posts to Markdown. There&rsquo;s a great
 little <a href=https://github.com/lonekorean/wordpress-export-to-markdown target=_blank rel="nofollow noopener noreferrer">tool</a>
-by <code>lonekorean</code> on GitHub.</p><p>All we need is an export of WordPress and run:</p><pre class=code-block>
-  <code>git clone https://github.com/lonekorean/wordpress-export-to-markdown
+by <code>lonekorean</code> on GitHub.</p><p>All we need is an export of WordPress and run:</p><pre tabindex=0><code>git clone https://github.com/lonekorean/wordpress-export-to-markdown
 cd wordpress-export-to-markdown
 npm install
-node index.js</code>
-</pre><p>After that, we can copy the generated files to the posts directory.</p><blockquote><p>There are other tools available <a href=https://gohugo.io/tools/migrations/ target=_blank rel="nofollow noopener noreferrer">here</a>
+node index.js
+</code></pre><p>After that, we can copy the generated files to the posts directory.</p><blockquote><p>There are other tools available <a href=https://gohugo.io/tools/migrations/ target=_blank rel="nofollow noopener noreferrer">here</a>
 , but since I&rsquo;ve already customized
-WordPress quite a bit, the above export was a possible route. Your mileage may wary.</p></blockquote><h3 id=testing>Testing</h3><p>Start a dev server that automatically refreshes once we save a file:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-zsh data-lang=zsh><span class=line><span class=cl>hugo server -D</span></span></code></pre></td></tr></table></div></div></p><p><img src=images/01-hugo.png alt="First try"></p><p>Pretty? Well..</p><h3 id=themes>Themes</h3><p>We also need a real theme for the page.</p><p>My personal decision criteria for a theme were the following:</p><ul><li>No external dependencies to CDNs, googleapis, Google Analytics, trackers&mldr;</li><li>Simplistic interface, without omitting information</li><li>Fast load times even on slow connections</li></ul><p>I chose <a href=https://github.com/knadh/hugo-ink target=_blank rel="nofollow noopener noreferrer">hugo-ink</a>
+WordPress quite a bit, the above export was a possible route. Your mileage may wary.</p></blockquote><h3 id=testing>Testing</h3><p>Start a dev server that automatically refreshes once we save a file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>hugo server -D
+</span></span></code></pre></td></tr></table></div></div><p>This will start a local server on <code>localhost:1313</code>, which we can use to preview our changes.
+First look.png
+Pretty? Well..</p><h3 id=themes>Themes</h3><p>We also need a real theme for the page.</p><p>My personal decision criteria for a theme were the following:</p><ul><li>No external dependencies to CDNs, googleapis, Google Analytics, trackers&mldr;</li><li>Simplistic interface, without omitting information</li><li>Fast load times even on slow connections</li></ul><p>I chose <a href=https://github.com/knadh/hugo-ink target=_blank rel="nofollow noopener noreferrer">hugo-ink</a>
 by <code>knadh</code>, but customized it quite heavily to match some of my
 requirements. This resulted in a fork called <a href=https://github.com/vim89/ink-free target=_blank rel="nofollow noopener noreferrer">ink-free</a>
 .</p><p>Adjustments can be easily made using fairly standard HTML (w/ Hugo&rsquo;s injections) and CSS, which I found easy to figure
@@ -64,14 +69,11 @@ commands:<div class=highlight><div class=chroma><table class=lntable><tr><td cla
 </span></span><span class=line><span class=cl>			Next time, we&#39;ll talk about <span class=p>&lt;</span><span class=nt>i</span><span class=p>&gt;</span>&#34;{{ range .Site.Params.footers | shuffle | first 1 }}{{ . }}&#34;<span class=p>&lt;/</span><span class=nt>i</span><span class=p>&gt;</span>{{ end }}
 </span></span><span class=line><span class=cl>		{{ end }}
 </span></span><span class=line><span class=cl>	{{ end }}
-</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>div</span><span class=p>&gt;</span></span></span></code></pre></td></tr></table></div></div></p><p>And I am reasonably happy with the result:</p><p><img src=images/after.png alt="After adjustments"></p><p>Feel free to check out the theme&rsquo;s repository here: <a href=Github>https://github.com/vim89/ink-free</a></p><h3 id=adjusting-exported-blog-posts>Adjusting exported blog posts</h3><p>Due to my rather interesting <code>WordPress</code> configuration, the exported posts from above need some help.</p><p>The issues I&rsquo;ve found where the following:</p><ul><li>GitHub Gits are not rendered</li><li>Internal Syntax Formatting caused everything to be escaped with <code>\</code>, breaking code</li><li>Headlines are missing</li><li>Tags are missing</li><li>Descriptions are missing</li></ul><h4 id=gists>Gists</h4><p>Gists get inserted as such:
-<img src=images/issue3.png alt="Export issues"></p><p>And look like that:
-<img src=images/issue2.png alt="Export issues"></p><p>Whereas we are expecting:
-<img src=images/issue1.png alt="Export issues"></p><p>We can fix that by replacing</p><pre class="code-block language-html">
-  <code><script src=https://gist.github.com/vim89/8dcc79ab16daf5fcdda3df1a4ccc183a.js></script></code>
-</pre><p>with</p><pre class="code-block language-html">
-  <code>{{< gist vim89 8dcc79ab16daf5fcdda3df1a4ccc183a >}}</code>
-</pre><p>But, of course, doing that by hand would be tedious, so we can script that:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>div</span><span class=p>&gt;</span></span></span></code></pre></td></tr></table></div></div></p><p>And I am reasonably happy with the result:</p><p><img src=images/after.png alt="After enhancements"></p><p>Feel free to check out the theme&rsquo;s repository here: <a href=Github>https://github.com/vim89/ink-free</a></p><h3 id=adjusting-exported-blog-posts>Adjusting exported blog posts</h3><p>Due to my rather interesting <code>WordPress</code> configuration, the exported posts from above need some help.</p><p>The issues I&rsquo;ve found where the following:</p><ul><li>GitHub Gits are not rendered</li><li>Internal Syntax Formatting caused everything to be escaped with <code>\</code>, breaking code</li><li>Headlines are missing</li><li>Tags are missing</li><li>Descriptions are missing</li></ul><h4 id=gists>Gists</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-html data-lang=html><span class=line><span class=cl><span class=p>&lt;</span><span class=nt>script</span> <span class=na>src</span><span class=o>=</span><span class=s>&#34;https://gist.github.com/vim89/8dcc79ab16daf5fcdda3df1a4ccc183a.js&#34;</span><span class=p>&gt;&lt;/</span><span class=nt>script</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>with</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-html data-lang=html><span class=line><span class=cl>{{<span class=p>&lt;</span> <span class=nt>gist</span> <span class=na>vim89</span> <span class=na>8dcc79ab16daf5fcdda3df1a4ccc183a</span> <span class=p>&gt;</span>}}
+</span></span></code></pre></td></tr></table></div></div><p>But, of course, doing that by hand would be tedious, so we can script that:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -247,13 +249,17 @@ after <code>hugo</code> build) and remote <code>RSS</code> feeds:<div class=high
 </span></span><span class=line><span class=cl>	<span class=c1>// Compare</span>
 </span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nf>compareUrls</span><span class=p>(</span><span class=nx>local</span><span class=p>,</span> <span class=nx>remote</span><span class=p>))</span>
 </span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></td></tr></table></div></div></p><p>Which did find some errors.</p><pre class="code-block language-bash">
-  <code>vim @ mac-os ➜ sbin git:(master) ✗ go run check_rss.go | grep "Could not"
-Could not find locally,
-url: https://vitthalmirji.com/blog/2020/02/how-a-broken-memory-module-hid-in-plain-sight-and-how-i-blamed-the-linux-kernel-and-two-innocent-hard-drives/
-Could not find locally,
-url: https://vitthalmirji.com/blog/2019/12/tensorflow-on-edge-building-a-smar-security-camera-with-a-raspberry-pi/</code>
-</pre><p>Which I was able to fix after deploying the first version of this article. <em>Psst, don&rsquo;t check the Git commits. :)</em></p><p>There were more adjustments that needed to be done - like re-adding videos - but for the most part, everything was
+</span></span><span class=line><span class=cl><span class=p>}</span></span></span></code></pre></td></tr></table></div></div></p><p>Which did find some errors.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>vim @ mac-os ➜ sbin git:<span class=o>(</span>master<span class=o>)</span> ✗ go run check_rss.go <span class=p>|</span> grep <span class=s2>&#34;Could not&#34;</span>
+</span></span><span class=line><span class=cl>Could not find locally,
+</span></span><span class=line><span class=cl>url: https://vitthalmirji.com/blog/2020/02/how-a-broken-memory-module-hid-in-plain-sight-and-how-i-blamed-the-linux-kernel-and-two-innocent-hard-drives/
+</span></span><span class=line><span class=cl>Could not find locally,
+</span></span><span class=line><span class=cl>url: https://vitthalmirji.com/blog/2019/12/tensorflow-on-edge-building-a-smar-security-camera-with-a-raspberry-pi/
+</span></span></code></pre></td></tr></table></div></div><p>Which I was able to fix after deploying the first version of this article. <em>Psst, don&rsquo;t check the Git commits. :)</em></p><p>There were more adjustments that needed to be done - like re-adding videos - but for the most part, everything was
 working fine. I will spare you the tedious details.</p><h2 id=deployment>Deployment</h2><p>For the deployment, the goal is to deploy the static HTML to the existing webserver over
 at <a href=https://vitthalmirji.com target=_blank rel="nofollow noopener noreferrer">vitthalmirji.com</a>
 , which runs <code>nginx</code> and <code>docker</code> containers. Externally hosted sites, like
@@ -314,61 +320,120 @@ pipeline)</li></ol><h3 id=workflowyml><code>workflow.yml</code></h3><p>We&rsquo;
 </span><span class=lnt>53
 </span><span class=lnt>54
 </span><span class=lnt>55
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yml data-lang=yml><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>build, test, audit &amp; deploy vitthalmirji.com site</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>on</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Trigger the workflow on push or pull request,</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># but only for the master branch</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>push</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>branches</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=l>master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>push</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>branches</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=w> </span><span class=l>master, main ]</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pull_request</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>branches</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=l>master</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jobs</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-18.04</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>steps</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Git checkout</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>branches</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=w> </span><span class=l>master, main ]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>workflow_dispatch</span><span class=p>:</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Update theme</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=c># Update themes</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>git submodule update --init --recursive</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Setup hugo</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>peaceiris/actions-hugo@v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>build-test-audit-deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>📥 Checkout code with submodules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v4</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>hugo-version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0.70.0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>submodules</span><span class=p>:</span><span class=w> </span><span class=l>recursive</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Build</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>hugo --minify -d blog</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>                
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>List status</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>working-directory</span><span class=p>:</span><span class=w> </span><span class=l>${{ github.workspace }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>ls -larth blog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>⚙️ Setup Hugo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>peaceiris/actions-hugo@v3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>hugo-version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;0.148.1&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>extended</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>✅ Validate taxonomies via taxlimits.yaml</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>continue-on-error</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install SSH key</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>shimataro/ssh-key-action@v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>          valid_terms=$(yq e &#39;.tags + .categories + .series&#39; data/taxlimits.yaml | sed &#39;s/- //g&#39;)
+</span></span></span><span class=line><span class=cl><span class=sd>          find content -name &#34;*.md&#34; | while read -r md; do
+</span></span></span><span class=line><span class=cl><span class=sd>            for term in $(grep -E &#39;^(tags|categories|series):&#39; -A3 &#34;$md&#34; | sed -n &#39;s/- //p&#39;); do
+</span></span></span><span class=line><span class=cl><span class=sd>              if ! grep -qx &#34;$term&#34; &lt;&lt;&lt; &#34;$valid_terms&#34;; then
+</span></span></span><span class=line><span class=cl><span class=sd>                echo &#34;❌ Invalid taxonomy term &#39;$term&#39; in $md&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>                exit 1
+</span></span></span><span class=line><span class=cl><span class=sd>              fi
+</span></span></span><span class=line><span class=cl><span class=sd>            done
+</span></span></span><span class=line><span class=cl><span class=sd>          done</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>🏗️ Build Hugo site</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>hugo --gc --minify</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>🚦 Run Lighthouse audits</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>treosh/lighthouse-ci-action@v12</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>continue-on-error</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
 </span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.KEY }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>id_rsa</span><span class=w> </span><span class=c># optional</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>known_hosts</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.KNOWN_HOSTS }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sshpass</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>sudo apt-get install -y sshpass </span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        
-</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Deploy</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>env</span><span class=p>:</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.PASSWORD }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.USERNAME }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>HOST</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.HOST }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>TARGET_DIR</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.TARGET_DIR }}</span><span class=w>
-</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>sshpass -p &#34;$PASSWORD&#34; scp -r blog/ &#34;$USERNAME&#34;@&#34;$HOST&#34;:&#34;$TARGET_DIR&#34;</span></span></span></code></pre></td></tr></table></div></div><blockquote><p>You can use some of the pre-configured SCP Actions instead of using <code>bash</code>. I had issues with those and since all
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>urls</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;https://vitthalmirji.com&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>uploadArtifacts</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Setup Node.js</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/setup-node@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>node-version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;20&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install Pa11y CLI</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>npm install -g pa11y-ci</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Cache Node.js dependencies</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/cache@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>~/.npm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>${{ runner.os }}-node-${{ hashFiles(&#39;**/package-lock.json&#39;) }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>restore-keys</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>            ${{ runner.os }}-node-</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>♿ Run accessibility checks (Pa11y)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>PUPPETEER_EXECUTABLE_PATH=$(which chromium-browser || which chromium || true) \</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=l>npx pa11y-ci --chrome-launcher-flags=&#34;--no-sandbox&#34; --config .github/workflows/.pa11yci.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>continue-on-error</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>📦 Upload to GitHub Pages (gh-pages)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>peaceiris/actions-gh-pages@v3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>personal_token</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.PERSONAL_TOKEN }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>publish_dir</span><span class=p>:</span><span class=w> </span><span class=l>./public</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>external_repository</span><span class=p>:</span><span class=w> </span><span class=l>vim89/vim89</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>📤 Deploy to InfinityFree via FTP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>SamKirkland/FTP-Deploy-Action@v4.3.5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>server</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.FTP_HOST }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>username</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.FTP_USERNAME }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.FTP_PASSWORD }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>local-dir</span><span class=p>:</span><span class=w> </span><span class=l>./public/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>server-dir</span><span class=p>:</span><span class=w> </span><span class=l>/htdocs/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>dangerous-clean-slate</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><blockquote><p>You can use some of the pre-configured SCP Actions instead of using <code>bash</code>. I had issues with those and since all
 Actions I&rsquo;ve found either don&rsquo;t support key passphrases or don&rsquo;t supply proper debug logs, I gave up and used a <code>bash</code>
 action for deployment.</p></blockquote><blockquote><p>If you have any idea what &ldquo;Exit code 1&rdquo;, despite a successful connection on the server (as per <code>syslosg</code> anf
 <code>auth.log</code>), means, do let me know!</p></blockquote><p><img src=images/deploy.png alt></p><h3 id=rssh><code>rssh</code></h3><p>We&rsquo;ll deploy via SCP, but only with a specific user that has restricted permissions.</p><p>Add the user:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
