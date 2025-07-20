@@ -12,7 +12,7 @@
   - [Nested Complex Data typed Data Parsing in Spark](https://github.com/vim89/pyspark-xml-parsing) 🎭, a prototype library implementing to Derive new attributes from XML when you have XPATH transformations. Accelerate boring stuff in #Pyspark & Python Also check out how to handle multi line XML
   - [Vitthal Mirji Blog](https://github.com/vim89/vitthalmirji-blog) 🧪, My blog
 
-- 💬 Ask me about **Data Engineering, Machine Learning, Building Frameworks, Low-level Design Patterns, Data Warehousing, Java, Scala, Cats (still learning), Akka, Python, SQL and Kotlin**
+- 💬 Ask me about **Data Engineering, Building Frameworks, Low-level Design Patterns, Data Warehousing, Java, Scala, Cats (still learning), Akka, Python, SQL and Kotlin**
 
 - 📄 Know about my experiences [https://www.linkedin.com/in/vitthal10/](https://www.linkedin.com/in/vitthal10/)
 
