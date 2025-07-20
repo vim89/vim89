@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AI on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/ai/</link><description>Recent content in AI on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Thu, 17 Jul 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/ai/index.xml" rel="self" type="application/rss+xml"/><item><title>llm4s.g8 – A Developer Experience Boost for LLM4S SDK (Issue #94)</title><link>https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394/</link><pubDate>Thu, 17 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394/</guid><description>&lt;h2 id="-background">🎯 Background&lt;/h2>
+&lt;h3 id="llm4s-github-repo">&lt;a href="https://github.com/llm4s/llm4s/issues/94" target="_blank" rel="nofollow noopener noreferrer">llm4s: Github repo&lt;/a>
+&lt;/h3>
+&lt;p>In the rapidly evolving landscape of software development, where artificial intelligence and language models are reshaping how we build applications, the &lt;strong>LLM4S SDK&lt;/strong> stands out as a powerful toolkit for Scala developers eager to harness the potential of large language models. However, as with many sophisticated tools, the initial onboarding experience can often feel like navigating a labyrinth without a map. This was precisely the challenge highlighted in &lt;strong>Issue #94&lt;/strong> on the &lt;a href="https://github.com/llm4s/llm4s/issues/94" target="_blank" rel="nofollow noopener noreferrer">llm4s GitHub repo&lt;/a>
+:&lt;/p></description></item><item><title>My Road to Google Developer Expert (GDE): A hands-on guide from an Engineer who walked the path</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</link><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-a-hands-on-guide-from-an-engineer-who-walked-the-path/</guid><description>&lt;p>If you&amp;rsquo;re reading this, you’re probably thinking of applying for
+the &lt;a href="https://developers.google.com/community/experts" target="_blank" rel="nofollow noopener noreferrer">Google Developer Expert (GDE)&lt;/a>
+ program - or at least curious what
+it takes. I’ve walked that path. This post is a no-BS breakdown of my journey, including what worked, what didn’t, and
+what surprised me along the way.&lt;/p>
+&lt;p>
+ &lt;img src="images/vitthal-gde.png" alt="vitthal-gde.png">
+
+
+
+ &lt;img src="images/vitthal-gde1.png" alt="vitthal-gde1.png">
+
+&lt;/p>
+&lt;h2 id="-why-i-chose-the-gde-path">🧭 Why I Chose the GDE Path&lt;/h2>
+&lt;p>For me, GDE wasn’t about a title - it was about &lt;strong>recognizing and amplifying&lt;/strong> the work I was already doing. I’ve been
+in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE
+program felt like a natural next step to formalize those contributions.&lt;/p></description></item></channel></rss>
