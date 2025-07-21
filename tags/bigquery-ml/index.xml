@@ -1,1 +1,14 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>BigQuery ML on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/bigquery-ml/</link><description>Recent content in BigQuery ML on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Thu, 22 May 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/bigquery-ml/index.xml" rel="self" type="application/rss+xml"/><item><title>Cloud-Native AI Workflows - BigQuery ML Vertex AI for cloud-native AI pipelines</title><link>https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml-vertex-ai-for-cloud-native-ai-pipelines/</link><pubDate>Thu, 22 May 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml-vertex-ai-for-cloud-native-ai-pipelines/</guid><description>&lt;p>📎 Focus: Hands-on workflows using GCP’s AI tools + Open Source LLMs&lt;/p></description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>BigQuery ML on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/bigquery-ml/</link><description>Recent content in BigQuery ML on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Sat, 17 May 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/bigquery-ml/index.xml" rel="self" type="application/rss+xml"/><item><title>Cloud-native AI workflows - BigQuery ML Vertex AI for cloud-native AI pipelines</title><link>https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml-vertex-ai-for-cloud-native-ai-pipelines/</link><pubDate>Sat, 17 May 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml-vertex-ai-for-cloud-native-ai-pipelines/</guid><description>&lt;h2 id="-why-cloud-native-ai-workflows-matter">🚀 Why cloud-native ai workflows matter&lt;/h2>
+&lt;p>Gone are the days when ML meant “export to CSV, train locally, drop results into spreadsheet.”
+Today, you want models closer to data, less friction, and faster iteration. That’s where &lt;strong>BigQuery ML + Vertex AI&lt;/strong> shine—no data movement, built-in MLOps, SQL-first modeling, Python API for custom steps, and powerful pipelines to tie it all together.&lt;/p>
+&lt;p>This post walks through:&lt;/p>
+&lt;ul>
+&lt;li>bigquery data prep + bqml modeling&lt;/li>
+&lt;li>registering models in vertex ai model registry&lt;/li>
+&lt;li>deploying real-time endpoints&lt;/li>
+&lt;li>building automated pipelines&lt;/li>
+&lt;li>monitoring and feature store integration&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="-end-to-end-architecture">🧩 end-to-end architecture&lt;/h2>
+&lt;p>Here’s the full picture:&lt;/p></description></item></channel></rss>
