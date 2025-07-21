@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Flink on Vitthal Mirji</title><link>https://vitthalmirji.com/tags/flink/</link><description>Recent content in Flink on Vitthal Mirji</description><generator>Hugo</generator><language>en-us</language><copyright>© Copyright notice</copyright><lastBuildDate>Wed, 21 May 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/flink/index.xml" rel="self" type="application/rss+xml"/><item><title>Kotlin‑backend-design for data‑Centric architectures &amp; data‑pipelines</title><link>https://vitthalmirji.com/2025/05/kotlinbackend-design-for-datacentric-architectures-datapipelines/</link><pubDate>Wed, 21 May 2025 00:00:00 +0000</pubDate><guid>https://vitthalmirji.com/2025/05/kotlinbackend-design-for-datacentric-architectures-datapipelines/</guid><description>&lt;h2 id="-overview">🎯 Overview&lt;/h2>
+&lt;p>In modern cloud systems, &amp;ldquo;data is the new oil.&amp;rdquo; To extract value, we need robust backends and pipelines—but not just any pipelines. We&amp;rsquo;re building &lt;strong>data‑centric architectures&lt;/strong>: systems that prioritize &lt;strong>clean data ingress, transformation, storage, observability, and AI enrichment&lt;/strong>. Kotlin&amp;rsquo;s a fantastic match thanks to its:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Concise syntax&lt;/strong> with null-safety&lt;/li>
+&lt;li>&lt;strong>Coroutines&lt;/strong> for async flow&lt;/li>
+&lt;li>Data classes + &lt;code>kotlinx.serialization&lt;/code>&lt;/li>
+&lt;li>Great compatibility with Spark, Flink, Kafka&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="-section-1-pipeline-pattern-in-kotlin">🛠️ Section 1: Pipeline Pattern in Kotlin&lt;/h2>
+&lt;p>A classic &lt;em>pipeline-of-transformations&lt;/em> lets us compose reusable stages:&lt;/p></description></item></channel></rss>
