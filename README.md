@@ -54,6 +54,7 @@
 
 
 <h3 align="left">GitHub snapshot</h3>
+
 [![Vitthal's GitHub stats](https://github-readme-stats.vercel.app/api?username=vim89)](https://github.com/vim89/github-readme-stats)
 
 [![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=vim89&size_weight=0.5&count_weight=0.5&langs_count=7&exclude_repo=covid19,datacamp,machine-learning-practice,NLP)](https://github.com/vim89/github-readme-stats)
