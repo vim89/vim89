@@ -36,7 +36,7 @@
 
 ## Talks
 
-- I speak at international conferences on Scala, data engineering, and reliable AI systems.
+- I speak at technical conferences on Scala, data engineering, and reliable AI systems.
 
 <h3 align="left">Connect with me:</h3>
 <p align="left">
