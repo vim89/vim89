@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380">
+  <style>
+    .title { font: 700 22px Inter, Segoe UI, Arial, sans-serif; }
+    .hdr { font: 600 16px Inter, Segoe UI, Arial, sans-serif; fill: #0b1f33; }
+    .cell { font: 15px Inter, Segoe UI, Arial, sans-serif; fill: #233; }
+    .box { fill: #f8fbff; stroke: #b7d2f0; stroke-width: 1; }
+    .ok { fill: #e8f6ee; stroke: #3aa65a; }
+    .warn { fill: #fff6e5; stroke: #d99a00; }
+    .bad { fill: #feecec; stroke: #db3a3a; }
+  </style>
+  <text x="20" y="30" class="title">Policy Lattice (Exact / Backward / Forward)</text>
+  <g transform="translate(20,60)">
+    <rect class="box" x="0" y="0" width="220" height="42" rx="6"/>
+    <text class="hdr" x="16" y="28">Policy</text>
+    <rect class="box" x="220" y="0" width="260" height="42" rx="6"/>
+    <text class="hdr" x="236" y="28">Missing Fields</text>
+    <rect class="box" x="480" y="0" width="200" height="42" rx="6"/>
+    <text class="hdr" x="496" y="28">Extra Fields</text>
+    <rect class="box" x="680" y="0" width="220" height="42" rx="6"/>
+    <text class="hdr" x="696" y="28">Type Mismatch</text>
+    <rect class="box" x="900" y="0" width="260" height="42" rx="6"/>
+    <text class="hdr" x="916" y="28">Order / Case / Position</text>
+
+    <!-- Exact -->
+    <rect class="box" x="0" y="52" width="220" height="56" rx="6"/>
+    <text class="cell" x="16" y="86">Exact</text>
+    <rect class="bad" x="220" y="52" width="260" height="56" rx="6"/>
+    <text class="cell" x="236" y="86">❌ reject</text>
+    <rect class="bad" x="480" y="52" width="200" height="56" rx="6"/>
+    <text class="cell" x="496" y="86">❌ reject</text>
+    <rect class="bad" x="680" y="52" width="220" height="56" rx="6"/>
+    <text class="cell" x="696" y="86">❌ reject</text>
+    <rect class="box" x="900" y="52" width="260" height="56" rx="6"/>
+    <text class="cell" x="916" y="86">As configured (Ordered/CI/By‑Pos)</text>
+
+    <!-- Backward -->
+    <rect class="box" x="0" y="118" width="220" height="56" rx="6"/>
+    <text class="cell" x="16" y="152">Backward</text>
+    <rect class="warn" x="220" y="118" width="260" height="56" rx="6"/>
+    <text class="cell" x="236" y="152">⚠ allow if optional/defaulted</text>
+    <rect class="ok" x="480" y="118" width="200" height="56" rx="6"/>
+    <text class="cell" x="496" y="152">✅ allow</text>
+    <rect class="bad" x="680" y="118" width="220" height="56" rx="6"/>
+    <text class="cell" x="696" y="152">❌ reject</text>
+    <rect class="box" x="900" y="118" width="260" height="56" rx="6"/>
+    <text class="cell" x="916" y="152">Flexible (Order/Case/By‑Pos)</text>
+
+    <!-- Forward -->
+    <rect class="box" x="0" y="184" width="220" height="56" rx="6"/>
+    <text class="cell" x="16" y="218">Forward</text>
+    <rect class="ok" x="220" y="184" width="260" height="56" rx="6"/>
+    <text class="cell" x="236" y="218">✅ allow</text>
+    <rect class="bad" x="480" y="184" width="200" height="56" rx="6"/>
+    <text class="cell" x="496" y="218">❌ reject</text>
+    <rect class="bad" x="680" y="184" width="220" height="56" rx="6"/>
+    <text class="cell" x="696" y="218">❌ reject</text>
+    <rect class="box" x="900" y="184" width="260" height="56" rx="6"/>
+    <text class="cell" x="916" y="218">Flexible (Order/Case/By‑Pos)</text>
+
+    <!-- Full -->
+    <rect class="box" x="0" y="250" width="220" height="56" rx="6"/>
+    <text class="cell" x="16" y="284">Full</text>
+    <rect class="ok" x="220" y="250" width="260" height="56" rx="6"/>
+    <text class="cell" x="236" y="284">✅ allow</text>
+    <rect class="ok" x="480" y="250" width="200" height="56" rx="6"/>
+    <text class="cell" x="496" y="284">✅ allow</text>
+    <rect class="ok" x="680" y="250" width="220" height="56" rx="6"/>
+    <text class="cell" x="696" y="284">✅ allow</text>
+    <rect class="box" x="900" y="250" width="260" height="56" rx="6"/>
+    <text class="cell" x="916" y="284">Flexible (Order/Case/By‑Pos)</text>
+  </g>
+</svg>
+

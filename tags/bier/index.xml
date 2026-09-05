@@ -1,0 +1,801 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/bier/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 05 Sep 2026 14:53:13 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/bier/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>From कड़वा to süffig: how Natur Radler changed my Bier map</title><link>https://vitthalmirji.com/2026/08/discovering-german-natur-radler/</link><guid isPermaLink="true">https://vitthalmirji.com/2026/08/discovering-german-natur-radler/</guid><pubDate>Sun, 30 Aug 2026 00:00:00 +0200</pubDate><dc:creator>vitthal-mirji</dc:creator><category>natur-radler</category><category>radler</category><category>german-beer</category><category>beer-tasting</category><category>monchshof</category><category>hochdorfer</category><category>gosser</category><category>stuttgart</category><category>alcohol-free</category><category>personal-story</category><category>travel</category><category>explore</category><category>bier</category><category>deutschland</category><category>Life</category><category>Germany</category><category>Food and drink</category><description>I avoided beer because it tasted कड़वा. Then two German friends, one Natur Radler and a World Cup match sent me into a full Stuttgart tasting audit.</description><content:encoded><![CDATA[<p class="lead"><p>I never avoided alcohol. I avoided Bier.</p>
+<p>In my head, Bier had one word attached to it: <strong>kadva-कड़वा</strong>. In Hindi, <em>बीयर कड़वी है</em>: beer is bitter / erbittert. That was my <strong>कड़वा सच</strong>-for German readers, <em>die bittere Wahrheit</em>: <strong>Nicht das Bier war das Problem, sondern meine ersten Erfahrungen damit.</strong> Bier itself was not the problem; I had mistaken a narrow, bruising introduction for the whole category.</p>
+<p>German also makes a useful distinction I did not yet have. <em>Bitter</em> is literal bitterness; <em>herb</em> can mean pleasantly
+dry, tart or hoppy. I had put both, plus every Bier on Earth, into one rejected bucket.</p>
+<p>Then Johann and Mario handed me a Natur Radler during a World Cup quarter-final, two days before my birthday. One
+cloudy, lemony bottle made a very old opinion wobble.</p>
+</p>
+
+
+<h2 id="my-drinks-had-a-spreadsheet-bier-had-a-rejection-slip">My drinks had a spreadsheet. Bier had a rejection slip</h2>
+<p>This was never a teetotaller-meets-alcohol story. My old liquor workbook would laugh at that idea.</p>
+<p>It compared bottle prices across Goa, Delhi, Chandigarh and
+Mumbai. <a href="https://www.malts.com/en/products/lagavulin-16-year-old-single-malt-scotch-whisky-70cl"  target="_blank" rel="nofollow noopener noreferrer">Lagavulin 16</a>
+ carried
+the instruction <strong>&ldquo;must buy always.&rdquo;</strong> <a href="https://www.laphroaig.com/en-gb/whiskies/10-year-old"  target="_blank" rel="nofollow noopener noreferrer">Laphroaig 10</a>
+ was the
+smoke experiment. The then
+10-year-old <a href="https://www.glenmorangie.com/pages/the-original-12-years-old"  target="_blank" rel="nofollow noopener noreferrer">Glenmorangie Original</a>
+ was &ldquo;very
+nice&rdquo;; <a href="https://www.johnniewalker.com/en/our-whisky/core-range/johnnie-walker-double-black/"  target="_blank" rel="nofollow noopener noreferrer">Johnnie Walker Double Black</a>
+
+was &ldquo;very, very smooth&rdquo;; <a href="https://www.jamesonwhiskey.com/en/our-whiskey"  target="_blank" rel="nofollow noopener noreferrer">Jameson</a>
+ belonged to its own school of
+diplomacy. The Gin and Vodka page moved from Bombay Sapphire, Stolichnaya/Stoli (Best Russian Vodka) and Beefeater to Hendrick’s, with the annotation: &ldquo;cucumber&rdquo;</p>
+<p>My favourites atlas mapped Glenlivet, Glenfiddich, Glenmorangie, Balvenie, Lagavulin, Laphroaig,
+<a href="https://www.ardbeg.com/en-int/products/ardbeg-ten-years-old"  target="_blank" rel="nofollow noopener noreferrer">Ardbeg Ten</a>
+ and Jameson—smoky Ardbeg and smooth Aberlour
+coexisted.</p>
+
+<figure >
+    
+        <img src="images/PersonalHomeBar.jpeg"
+            alt="An old photograph of my personal home bar displaying a Scotch-heavy selection of whisky bottles and presentation boxes"
+            width="1136"
+            height="640" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Old Scotch-heavy cabinet meeting at home. Attendance: representative, never exhaustive.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<blockquote>
+<p>Islay was the glorious exception proving I never feared difficult flavour.</p>
+</blockquote>
+<p>Peat smoke, brine, seaweed and Atlantic medicine sound like a maritime hospital report; in the glass they become Lagavulin&rsquo;s slow fire, Laphroaig&rsquo;s coastal slap
+and Ardbeg’s complexity. Speyside offered fruit and diplomacy. Islay brought an argument and won.</p>
+
+<figure >
+    
+        <img src="images/ScotchFlavorMap.jpeg"
+            alt="A Scotch flavour map plotting whiskies by bourbon-to-sherry influence, peat or maltiness, and intensity"
+            width="1586"
+            height="1125" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    A useful compass for my Scotch detours-Islay naturally gathers near maximum peat.
+
+
+                
+                    <a href="https://www.reddit.com/r/Scotch/comments/17w0a81/new_scotch_flavor_map_20/">
+                
+                
+                    <small style="margin: -0.5rem 0 0 0;">
+                       [Scotch Flavor Map 2.0 by u/Shoddy_Ad7511, courtesy of r/Scotch]
+                    </small>
+                
+                </a>
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<p>Irish whiskey remains underrated because it arrives without a peat fog machine or age-statement sermon.
+Triple-distilled, smooth and diplomatic, Jameson shakes hands with everyone and lets dinner continue. Scotch purists may
+scoff, but quiet is not the absence of character. Irish is quietly formidable.</p>
+<p>I liked genuine imported Scotch, vodka, gin and wine. <strong>I also liked drinks rooted closer to Indian soil: Goa’s seasonal
+Urrak and Feni, Himachal’s Lugdi, and, on the right evening, desi santra. My palate was not timid. It was nosy.</strong></p>
+<p>Nor was I a blind disciple of expensive Scotch. Scotch is not overrated; it is worshipped too much. An age statement
+tells me how long a spirit waited, not whether I will enjoy the conversation. A famous label is not a flavour note. My
+buying rule became simple: <strong>I’ll pay for barrels that sing, not labels that shout.</strong></p>
+<p>I had given whisky origins, casks, smoke and value-per-rupee serious attention. Bier got no such hearing. It received a
+childhood verdict, one word long, and no appeal.</p>
+<h2 id="wine-got-homework-and-field-trips">Wine got homework and field trips</h2>
+<p>Wine received an even fairer trial. I am already studying towards
+the <a href="https://www.wsetglobal.com/qualifications/?subject=Wine"  target="_blank" rel="nofollow noopener noreferrer">Wine &amp; Spirit Education Trust (WSET)</a>
+, <a href="https://www.winescholarguild.com/certifications/scholar-programs/french-wine-scholar"  target="_blank" rel="nofollow noopener noreferrer">French Wine Scholar® (FWS)</a>
+, <a href="https://www.winescholarguild.com/certifications/scholar-programs/italian-wine-scholar"  target="_blank" rel="nofollow noopener noreferrer">Italian Wine Scholar® (IWS)</a>
+
+and <a href="https://www.winescholarguild.com/certifications/scholar-programs/german-wine-scholar"  target="_blank" rel="nofollow noopener noreferrer">German Wine Scholar® (GWS)</a>
+
+paths. I added GWS in 2026, when classroom providers were beginning to offer it; the independent online programme had
+become available in late 2025.</p>
+<p>भारत में दारू पीओ तो मोहल्ले का verdict अक्सर cork खुलने से पहले आ जाता है: “पीकर घर, पैसा और परिवार बर्बाद करेगा।” मैं
+यह script बदलने वाला हूँ-घर और परिवार सलामत रहेंगे; पैसा चार wine certifications और एक suspiciously detailed tasting map
+बनकर लौटेगा.</p>
+
+<figure >
+    
+        <img src="images/Wine.jpeg"
+            alt="A hand holding a tasting glass of red wine inside a softly lit cellar"
+            width="405"
+            height="720" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Wine had homework, field trips and cellar glasses-not merely postcards.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<p>That curiosity escaped the classroom. France &amp; Paris was not merely France &amp; Paris. They became the sensible place to taste Sylvain
+Pataille&rsquo;s Marsannay Rouge before going to Beaune, and Bernard Baudry&rsquo;s Chinon <em>Les Granges</em> before going to Saumur.
+Reims, Beaune and Saumur formed a Champagne-Burgundy-Loire triangle: Taittinger and Pommery, the Cité des Climats and
+Patriarche, Bouvet-Ladubay and Ackerman.</p>
+<p>The point was education, not postcards. Taste at the table, learn the vocabulary, then visit the landscape that made it.</p>
+<p>That order matters to me. A bottle before a journey creates questions: Why does Marsannay feel different from the
+grander Burgundy names? What is Cabernet Franc doing in Chinon? What changes when Champagne moves from a supermarket
+label to chalk cellars in Reims? The visit then answers with soil, climate, method and people. A photograph can prove I
+stood somewhere. A tasting note can prove I paid attention.</p>
+<p><strong>Whisky had a map. Wine had a syllabus and field trips. Bier alone remained in quarantine.</strong></p>
+<h2 id="bier-alone-remained-in-quarantine">Bier alone remained in quarantine</h2>
+<p>My early beer encounters in India felt like choosing between one strong mass-market lager and another. I did not taste
+barley, bread, yeast, citrus or place. I tasted cold, harsh bitterness and a culture that often sold the “kick” before
+the craft. Being told I would learn to tolerate it was not a convincing sales pitch, boss.</p>
+<div class="admonition caution">
+  <div class="admonition-title">My evidence boundary</div>
+  <div class="admonition-content">
+    I came to think Indian beer was too commercial and adulterated. That is still an honest description of my personal
+suspicion and the scar it left. It is <strong>not</strong> a laboratory conclusion about every Indian beer, and the evidence needs
+cleaner boundaries than my younger self gave it.
+  </div>
+</div>
+<p>There are concrete reasons for distrust. In January 2024, FSSAI and
+Customs <a href="https://www.fssai.gov.in/upload/uploadfiles/files/Press-Release-Eng_180124.pdf"  target="_blank" rel="nofollow noopener noreferrer">seized 45 metric tonnes of expired beer</a>
+,
+worth roughly ₹1 crore, from a bonded Delhi warehouse. FSSAI called the stock a clear violation; it did not say that it
+had reached consumers or prove that beer across India was chemically adulterated.</p>
+<p>A 2024 Comptroller and Auditor
+General <a href="https://cag.gov.in/uploads/download_audit_report/2024/Report-No.-1-of-2024_PA-on-RSLD_English-%2804-03-2024%29-067bd6a9cc9e3b0.26750709.pdf"  target="_blank" rel="nofollow noopener noreferrer">audit of Delhi liquor regulation</a>
+
+found mandatory microbiological reports in only six of 31 domestic beer-brand registrations it examined, while 40 of 51
+foreign-beer registrations examined lacked microbiological testing. It also found annual quality certificates for five
+named Carlsberg and Tuborg beers that appeared identical except for altered report and batch numbers. The CAG called
+those certificates unreliable and recommended forensic examination.</p>
+<p>That proves control failures and suspect paperwork, not an unknown substance in every bottle.</p>
+<p>From late June 2026, enforcement became harder to dismiss as an occasional headline. Maharashtra
+FDA <a href="https://www.hindustantimes.com/cities/mumbai-news/fda-seizes-1-5-tonnes-of-expired-food-in-bhiwandi-raid-101782415748076-amp.html"  target="_blank" rel="nofollow noopener noreferrer">seized about 1.5 tonnes of expired, damaged and spoiled food</a>
+
+from Bhiwandi warehouses, sealed a facility and suspended its licence. Officials said eight earlier raids had uncovered
+more than ₹45 lakh in unsafe products. This was food-supply enforcement, not beer evidence; its relevance is the
+scrutiny of storage, destruction records and alleged recirculation.</p>
+<p>The alcohol evidence then became more direct. Notices went out from 10 July, and on 2 August FSSAI published
+its <a href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2293484&amp;lang=1&amp;reg=1"  target="_blank" rel="nofollow noopener noreferrer">official position on non-permitted flavours and age claims</a>
+.
+Laboratory reports found sampled rum and whisky products substandard because external flavours imitated the character of
+standardised drinks. FSSAI named manufacturers, challenged age claims, prohibited several sales and recorded further
+inspections and notices. This is laboratory-backed evidence-not gossip-but it concerns spirits, not beer, and FSSAI said
+it did not represent the entire industry.</p>
+<p>Expired beer, weak beer-testing controls, mishandled food stock and artificially flavoured spirits are related reasons
+for caution, but they are not the same offence. Throwing them into one scary headline would be exactly the sloppy
+reasoning I disliked in the market.</p>
+<p>The market structure still explains part of my experience. Strong lager at 6-8% ABV
+represented <a href="https://www.abdindia.com/wp-content/uploads/2025/05/b8-to-b9-consent-technopak-and-industry-report.pdf"  target="_blank" rel="nofollow noopener noreferrer">more than 80% of Indian beer consumption</a>
+,
+and three producers held roughly four-fifths of the market. Heat and sunlight can also damage perfectly legitimate beer
+in transport or storage. Community complaints about harshness, odd bottle-to-can differences or beer tasting
+like <a href="https://www.reddit.com/r/beer/comments/xm7lv5/was_looking_for_recommendations_on_beers_in_india/"  target="_blank" rel="nofollow noopener noreferrer">“dishwater”</a>
+ are
+useful signals, but Reddit is not a food laboratory.</p>
+<p>There is a correction on the optimistic side too: India now has
+a <a href="https://theprint.in/ground-reports/beer-craft-breweries-changing-india-drinking-game/2958809/"  target="_blank" rel="nofollow noopener noreferrer">growing craft-beer culture</a>
+
+that is wider than the lager shelf I knew. My instinct that quality control and sameness deserved scrutiny was not
+foolish. My decision to quarantine the whole category was.</p>
+<h2 id="two-days-before-my-birthday-the-model-broke">Two days before my birthday, the model broke</h2>
+<p>On <strong>10 July 2026</strong>, two days before my birthday, Spain played Belgium in a World Cup quarter-final. My local German
+friends Johann and Mario offered me a Radler-more specifically, a <strong>Natur Radler</strong>.</p>
+
+<figure >
+    
+        <img src="images/MarioJohannWorldcup2026.jpeg"
+            alt="A Stuttgarter Hofbräu Naturtrübes Radler bottle beside a projector during an outdoor World Cup screening"
+            width="405"
+            height="720" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Our World Cup setup: projector, Stuttgarter Hofbräu Naturtrübes Radler, and the trouble Johann and Mario  started.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<p>“Radler” had always sounded like a compromise to people who already loved Bier. To me it was a bridge: Bier mixed with
+citrus lemonade, lower in alcohol, softer in bitterness and still recognisably more than fizzy lemon water. <em>Natur</em>
+mattered too. The bottle was <em>naturtrüb</em>-naturally cloudy rather than polished into visual obedience.</p>
+<p>The first surprise was not that it was sweet. The surprise was that it had movement. It was <em>spritzig</em>: lively and
+sparkling. It was also <em>süffig</em>, that dangerously useful German compliment for something pleasant and easy to drink.
+Citrus opened the door; malt and Bier stayed in the room.</p>
+<p>The Radler that became my reference was <strong>Mönchshof Natur Radler</strong>.</p>
+
+<figure >
+    
+        <img src="images/Monchshof.jpeg"
+            alt="Three swing-top bottles of Mönchshof Natur Radler standing in a refrigerator door"
+            width="405"
+            height="720" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Three Mönchshof Natur Radlers: my reference was no one-bottle experiment.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<p>Its public record supported what my palate had
+found: <a href="https://www.beertasting.com/de/beers/kulmbacher-monchshof-natur-radler"  target="_blank" rel="nofollow noopener noreferrer">BeerTasting showed 3.67 from 2,380 ratings</a>
+,
+while <a href="https://untappd.com/b/kulmbacher-brauerei-monchshof-natur-radler/179136"  target="_blank" rel="nofollow noopener noreferrer">Untappd showed 3.32 from 26,028</a>
+ during
+my audit. Those scores belong to different communities and should not be averaged as though they were two thermometers
+in the same room. Their sample sizes do tell me this was not merely birthday-week optimism.</p>
+<p>One bottle made me reconsider Bier. Twenty-seven candidates made me open Excel.</p>
+<h2 id="naturally-i-opened-a-spreadsheet">Naturally, I opened a spreadsheet</h2>
+<p>The question began as <strong>&ldquo;Is anything better than Mönchshof?&rdquo;</strong> It quickly acquired columns.</p>
+<p>I started with names I had tried, recommendations and a Dachtler shop list. It served only as a catalogue and delivery
+source, not a quality signal. I then checked official brewery pages for exact identity; BeerTasting and Untappd for
+rating plus sample size; Reddit, forums, blogs and articles for recurring praise or complaints; and Stuttgart-area shops
+for realistic prices.</p>
+<p>The order mattered:</p>
+<ol>
+<li><strong>Exact product first.</strong> A brewery’s Pils, Weizen or alcohol-free bottle does not prove that its Natur Radler is
+available.</li>
+<li><strong>Score with sample size.</strong> A 3.8 from 40 drinkers and a 3.5 from 50,000 describe different kinds of confidence.</li>
+<li><strong>Sentiment as explanation.</strong> Community comments can reveal sweetness, citrus balance or metallic impressions; they
+cannot turn one bottle into a universal defect.</li>
+<li><strong>Store-list availability by exact SKU.</strong> A product counted only when the named mix itself appeared on the shop’s
+list.</li>
+<li><strong>Price by litre, excluding Pfand.</strong> A 24×0.33-litre <em>Kiste</em> and a 20×0.5-litre <em>Kasten</em> are not equal because
+English calls both a crate. Refundable <em>Pfand</em> is not Bier cost.</li>
+</ol>
+<p>I checked EDEKA, REWE, Lidl, Netto, Penny, Kaufland, HIT, specialist <em>Getränkemärkte</em> and delivery services around
+Stuttgart. Ratings are entertaining. <em>Kistenschleppen</em>-hauling a crate of glass upstairs-is less so. Convenience belongs
+in the decision even when it does not belong in the Bier score.</p>
+<h2 id="what-the-complete-audit-found">What the complete audit found</h2>
+<p>My personal four: three classical Natur Radlers, then one grapefruit-Weizenbier specialty.</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: right">Rank</th>
+          <th>Natur Radler</th>
+          <th>Why it stays here</th>
+          <th>Buying logic</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: right"><strong>1</strong></td>
+          <td><strong>Mönchshof Natur Radler</strong></td>
+          <td>My proven reference; huge review base; lemon-forward but with enough Bier beneath it</td>
+          <td>Restock at <strong>€12.99-13.99</strong> for 20×0.5 L at EDEKA or REWE</td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>2</strong></td>
+          <td><strong>Hochdorfer NaturRadler</strong></td>
+          <td>Strong on both rating platforms and the best locally deliverable classical contender</td>
+          <td>Local delivery: <strong>€23</strong> for 24×0.33 L, excluding Pfand</td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>3</strong></td>
+          <td><strong>Gösser NaturRadler</strong></td>
+          <td>The broadest positive public consensus among the leaders</td>
+          <td>Try a promo can first; buy a crate around <strong>€14.99-16.99</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>4</strong></td>
+          <td><strong>Schöfferhofer Grapefruit</strong></td>
+          <td>My grapefruit-Weizenbier bridge into Level 2</td>
+          <td>Local delivery: <strong>€23</strong> for 24×0.33 L, excluding Pfand</td>
+      </tr>
+  </tbody>
+</table>
+<p>This is not an objective
+podium. <a href="https://untappd.com/b/gosser-brauerei-gosser-naturradler/47226"  target="_blank" rel="nofollow noopener noreferrer">Gösser’s 54,000-plus Untappd ratings</a>
+ give it
+the largest public consensus; <a href="https://www.beertasting.com/de/beers/hochdorfer-naturradler"  target="_blank" rel="nofollow noopener noreferrer">Hochdorfer’s paired results</a>
+
+make it the strongest top-three delivery choice. Mönchshof remains number one because the question began with my glass,
+not an algorithm. Schöfferhofer is Personal #4 across styles.</p>
+<p>Three newcomers earned immediate trials: <strong>Gruibinger Halb/Halb Zitrone</strong>, the best discovery in the store list and a
+2025 European Beer Star silver medallist; <strong>Rothaus Natur Radler Limettenzäpfle</strong>, a well-supported lemon-lime option;
+and <strong>Schönbuch Naturpark Radler</strong>, a locally relevant contender whose larger Untappd sample reinforces its promising
+small BeerTasting result.</p>
+<p>The field became useful once I stopped demanding one winner. Hacker-Pschorr and Paulaner are dependable; Licher is good;
+Schussenrieder is promising but under-reviewed. Fürstenberg, Stuttgarter Hofbräu, Berliner Kindl, Schwaben Bräu and
+Kloster Metzingen form a sensible middle. Dinkelacker may suit a more Bier-led palate. Warsteiner ranks lower, but lower
+is not faulty.</p>
+<p><strong>Welde</strong> and <strong>Lösch-Zwerg</strong> stay in the exploration tier. <strong>Waldhorn</strong> is the value experiment: €15 for 20×0.5 L
+delivered. It is not an online mystery after all-its tiny review samples exist and are merely average. Personal #4 *
+<em>Schöfferhofer Grapefruit</em>* and <strong>Zwiefalter Radler Sauer</strong> remain specialties, not distorted entries in a classical
+sweet-lemon ranking. One is a Weizenbier and grapefruit mix; the other is Bier with soda water, unsweetened.</p>
+<h4 id="complete-alcoholic-ledger-20-classical-radlers-plus-two-specialties">Complete alcoholic ledger: 20 classical Radlers plus two specialties</h4>
+<table>
+  <thead>
+      <tr>
+          <th>Tier</th>
+          <th>Product</th>
+          <th>Evidence snapshot</th>
+          <th style="text-align: right">Exact on shop list?</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Personal #1</td>
+          <td><a href="https://www.beertasting.com/de/beers/kulmbacher-monchshof-natur-radler"  target="_blank" rel="nofollow noopener noreferrer">Mönchshof Natur Radler</a>
+</td>
+          <td>BT 3.67/2,380; UT 3.32/26,028</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Personal #2</td>
+          <td><a href="https://untappd.com/b/hochdorfer-kronenbrauerei-naturradler/395761"  target="_blank" rel="nofollow noopener noreferrer">Hochdorfer NaturRadler</a>
+</td>
+          <td>BT 3.85/288; UT 3.55/3,030</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Personal #3</td>
+          <td><a href="https://www.goesser.at/produkte/"  target="_blank" rel="nofollow noopener noreferrer">Gösser NaturRadler</a>
+</td>
+          <td>UT 3.60/54,186; BT brewery 3.87/6,356</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Personal #4 · Grapefruit specialty</td>
+          <td><a href="https://untappd.com/b/binding-brauerei-schofferhofer-grapefruit/21857"  target="_blank" rel="nofollow noopener noreferrer">Schöfferhofer Grapefruit</a>
+</td>
+          <td>BT 3.44/1,726; UT 3.58/183,088</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Shortlist</td>
+          <td><a href="https://www.gruibinger.de/halb/halb-zitrone-bierpaket"  target="_blank" rel="nofollow noopener noreferrer">Gruibinger Halb/Halb Zitrone</a>
+</td>
+          <td>BT 3.48/47; European Beer Star silver 2025</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Shortlist</td>
+          <td><a href="https://www.rothaus.de/biere/limettenzaepfle-naturtrueb"  target="_blank" rel="nofollow noopener noreferrer">Rothaus Natur Radler Limettenzäpfle</a>
+</td>
+          <td>UT 3.49/about 1,423</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Shortlist</td>
+          <td><a href="https://untappd.com/b/schonbuch-braumanufaktur-naturpark-radler/746373"  target="_blank" rel="nofollow noopener noreferrer">Schönbuch Naturpark Radler</a>
+</td>
+          <td>BT 3.69/72; UT 3.45/1,365</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Explore</td>
+          <td><a href="https://untappd.com/b/welde-braumanufaktur-natur-radler/407540"  target="_blank" rel="nofollow noopener noreferrer">Welde Natur Radler</a>
+</td>
+          <td>UT 3.53/3,607</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Explore</td>
+          <td><a href="https://www.beertasting.com/en/beers/schimpfle-losch-zwerg-natur-radler"  target="_blank" rel="nofollow noopener noreferrer">Lösch-Zwerg Natur Radler</a>
+</td>
+          <td>BT 3.57/566</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Good</td>
+          <td><a href="https://untappd.com/HackerPschorrBrau/beer"  target="_blank" rel="nofollow noopener noreferrer">Hacker-Pschorr Natur Radler</a>
+</td>
+          <td>BT brewery 3.47/2,061; UT 3.31/13,052</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Good</td>
+          <td><a href="https://www.beertasting.com/en/beers/paulaner-natur-radler"  target="_blank" rel="nofollow noopener noreferrer">Paulaner Natur Radler</a>
+</td>
+          <td>BT 3.44/888; UT 3.36/about 17,300</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Good</td>
+          <td><a href="https://untappd.com/b/licher-privatbrauerei-licher-natur-radler/1044558"  target="_blank" rel="nofollow noopener noreferrer">Licher Natur Radler</a>
+</td>
+          <td>BT brewery 3.67; UT 3.33/2,714</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Good, low sample</td>
+          <td><a href="https://www.beertasting.com/de/beers/schussenrieder-ott-natur-radler"  target="_blank" rel="nofollow noopener noreferrer">Schussenrieder Natur Radler</a>
+</td>
+          <td>BT 3.57/89</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Solid</td>
+          <td><a href="https://www.fuerstenberg.de/unsere-biere/natur-radler/natur-radler"  target="_blank" rel="nofollow noopener noreferrer">Fürstenberg Natur Radler</a>
+</td>
+          <td>BT brewery 3.50/436; UT 3.25/3,333</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Solid</td>
+          <td><a href="https://www.stuttgarter-hofbraeu.de/sortiment/radler/"  target="_blank" rel="nofollow noopener noreferrer">Stuttgarter Hofbräu Naturtrübes Radler</a>
+</td>
+          <td>BT 3.41/251; UT 3.22/2,771</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Solid</td>
+          <td><a href="https://www.beertasting.com/en/beers/berliner-kindl-berliner-radler-naturtrub"  target="_blank" rel="nofollow noopener noreferrer">Berliner Kindl Berliner Radler Naturtrüb</a>
+</td>
+          <td>BT 3.33/244</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Solid</td>
+          <td><a href="https://untappd.com/b/dinkelacker-schwaben-brau-schwaben-brau-naturradler/1491208"  target="_blank" rel="nofollow noopener noreferrer">Schwaben Bräu NaturRadler</a>
+</td>
+          <td>UT 3.25/2,342</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Solid</td>
+          <td><a href="https://untappd.com/b/klosterbrauerei-metzingen-kloster-natur-radler/2575609"  target="_blank" rel="nofollow noopener noreferrer">Kloster Natur Radler</a>
+</td>
+          <td>BT 3.25/111; UT 3.23/1,050</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Value experiment</td>
+          <td><a href="https://untappd.com/b/dinkelacker-schwaben-brau-dinkelacker-naturradler/208108"  target="_blank" rel="nofollow noopener noreferrer">Dinkelacker Naturradler</a>
+</td>
+          <td>BT 3.33/81; UT 3.10/1,754</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Value experiment</td>
+          <td><a href="https://www.beertasting.com/de/brewery/waldhorn"  target="_blank" rel="nofollow noopener noreferrer">Waldhorn NaturRadler</a>
+</td>
+          <td>BT brewery 3.26/34; UT 3.11/28</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td>Lower evidence rank</td>
+          <td><a href="https://untappd.com/b/warsteiner-warsteiner-naturradler-zitrone-lemon/5374482"  target="_blank" rel="nofollow noopener noreferrer">Warsteiner NaturRadler Zitrone</a>
+</td>
+          <td>BT brewery 3.20/843; UT 3.22/5,819</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td>Unsweetened specialty</td>
+          <td><a href="https://www.zwiefalter.de/produkte/biermischgetraenke/"  target="_blank" rel="nofollow noopener noreferrer">Zwiefalter Radler Sauer</a>
+</td>
+          <td>Listing 2.57/149; niche style</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>Alcohol-free Radlers needed their own grid. A different recipe cannot inherit the reputation of its alcoholic sibling,
+and <em>alkoholfrei</em> can allow a small residual amount unless the label explicitly says <strong>0.0%</strong>.</p>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: right">AF rank</th>
+          <th>Product</th>
+          <th>Evidence-based reading</th>
+          <th style="text-align: right">Exact on shop list?</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: right"><strong>1</strong></td>
+          <td><strong>Mönchshof Natur Radler 0.0%</strong></td>
+          <td>Best match for my known preference; strong sample and true 0.0 positioning</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>2</strong></td>
+          <td><strong>Gösser NaturRadler 0.0% Zitrone</strong></td>
+          <td>Strongest broad alternative</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>3</strong></td>
+          <td><strong>Hochdorfer NaturRadler Alkoholfrei</strong></td>
+          <td>Worth a trial, though public evidence is mixed and delivery is expensive</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>4</strong></td>
+          <td><strong>Welde Natur Radler Alkoholfrei</strong></td>
+          <td>Credible exploration candidate with several hundred ratings</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right"><strong>5</strong></td>
+          <td><strong>Hacker-Pschorr Radler Alkoholfrei</strong></td>
+          <td>Best-supported conventional local-delivery value in the upper group</td>
+          <td style="text-align: right"><strong>Yes</strong></td>
+      </tr>
+  </tbody>
+</table>
+<h4 id="complete-alcohol-free-ledger-and-exact-shop-list-matches">Complete alcohol-free ledger and exact shop-list matches</h4>
+<table>
+  <thead>
+      <tr>
+          <th style="text-align: right">AF rank</th>
+          <th>Product</th>
+          <th>Evidence snapshot</th>
+          <th style="text-align: right">Exact on shop list?</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: right">1</td>
+          <td><a href="https://www.beertasting.com/de/beers/kulmbacher-monchshof-natur-radler-0-0percent-alkoholfrei"  target="_blank" rel="nofollow noopener noreferrer">Mönchshof Natur Radler 0.0%</a>
+</td>
+          <td>BT 3.44/902; UT 3.23/6,173</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">2</td>
+          <td><a href="https://awards.untappd.com/beers/2789425/"  target="_blank" rel="nofollow noopener noreferrer">Gösser NaturRadler 0.0% Zitrone</a>
+</td>
+          <td>BT brewery 3.43/1,639; UT 3.33</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">3</td>
+          <td><a href="https://www.beertasting.com/de/beers/hochdorfer-naturradler-alkoholfrei"  target="_blank" rel="nofollow noopener noreferrer">Hochdorfer NaturRadler Alkoholfrei</a>
+</td>
+          <td>BT 3.46/105; UT 3.05/355</td>
+          <td style="text-align: right"><strong>Yes-€26, 24×0.33 L</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right">4</td>
+          <td><a href="https://untappd.com/b/welde-braumanufaktur-natur-radler-alkoholfrei/1091481"  target="_blank" rel="nofollow noopener noreferrer">Welde Natur Radler Alkoholfrei</a>
+</td>
+          <td>UT 3.26/602</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">5</td>
+          <td><a href="https://untappd.com/HackerPschorrBrau/beer"  target="_blank" rel="nofollow noopener noreferrer">Hacker-Pschorr Radler Alkoholfrei</a>
+</td>
+          <td>BT brewery 3.34/351; UT 3.26/1,961</td>
+          <td style="text-align: right"><strong>Yes-€23, 20×0.5 L</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right">6</td>
+          <td><a href="https://untappd.com/b/licher-privatbrauerei-licher-natur-radler-alkoholfrei/2631439"  target="_blank" rel="nofollow noopener noreferrer">Licher Natur Radler Alkoholfrei</a>
+</td>
+          <td>UT 3.16/905</td>
+          <td style="text-align: right">No</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">7</td>
+          <td><a href="https://untappd.com/b/dinkelacker-schwaben-brau-das-naturradler-alkoholfrei/5875169"  target="_blank" rel="nofollow noopener noreferrer">Schwaben Bräu Das Naturradler Alkoholfrei</a>
+</td>
+          <td>UT 3.23/25</td>
+          <td style="text-align: right"><strong>Yes-€19.50, 24×0.33 L</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right">8</td>
+          <td><a href="https://www.beertasting.com/de/beers/paulaner-munchen-natur-radler-alkoholfrei"  target="_blank" rel="nofollow noopener noreferrer">Paulaner Natur Radler Alkoholfrei</a>
+</td>
+          <td>BT 3.32/189</td>
+          <td style="text-align: right">No exact SKU</td>
+      </tr>
+      <tr>
+          <td style="text-align: right">9</td>
+          <td><a href="https://untappd.com/b/krombacher-gruppe-krombacher-radler-alkoholfrei/84800"  target="_blank" rel="nofollow noopener noreferrer">Krombacher Radler Alkoholfrei</a>
+</td>
+          <td>BT 3.15/838; UT 2.94/9,065</td>
+          <td style="text-align: right"><strong>Yes-€12, 11×0.5 L</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right">10</td>
+          <td><a href="https://untappd.com/AKB1880/beer"  target="_blank" rel="nofollow noopener noreferrer">Alpirsbacher Radler Naturtrüb 0.0%</a>
+</td>
+          <td>UT brewery 2.94/1,903</td>
+          <td style="text-align: right"><strong>Yes-€25, 24×0.33 L</strong></td>
+      </tr>
+      <tr>
+          <td style="text-align: right">Specialty</td>
+          <td><a href="https://www.beertasting.com/en/beers/schofferhofer-weizen-mix-grapefruit-alkoholfrei"  target="_blank" rel="nofollow noopener noreferrer">Schöfferhofer Grapefruit Alkoholfrei</a>
+</td>
+          <td>BT 3.19/692; UT 2.96/4,505</td>
+          <td style="text-align: right"><strong>Yes-€23, 24×0.33 L</strong></td>
+      </tr>
+  </tbody>
+</table>
+<p>The shop list yielded <strong>18 exact mixes: 12 alcoholic and six alcohol-free</strong>. The alcoholic matches are Waldhorn,
+Dinkelacker, Stuttgarter Hofbräu, Paulaner, Hacker-Pschorr, Schwaben Bräu, Zwiefalter Sauer, Rothaus, Schönbuch,
+Hochdorfer, Schöfferhofer Grapefruit and Gruibinger. The six alcohol-free matches are Krombacher, Hacker-Pschorr,
+Schwaben Bräu, Schöfferhofer Grapefruit, Alpirsbacher and Hochdorfer.</p>
+<p>The delivery ledger also explains why pack size can mislead. Among alcoholic matches, the litre price runs from Waldhorn
+at <strong>€1.50/L</strong> through Stuttgarter Hofbräu and Dinkelacker at <strong>€1.90/L</strong>, then Paulaner at <strong>€2.20/L</strong> and
+Hacker-Pschorr at <strong>€2.30/L</strong>. The 0.33-litre cases climb towards Hochdorfer and Schöfferhofer at <strong>€2.90/L</strong>, with
+Gruibinger at <strong>€3.41/L</strong>. I may still choose the expensive case, but now I know whether I am paying for preference, a
+small bottle format or somebody carrying the Kiste upstairs.</p>
+<p>The audit also removed a few good stories that happened not to be true:</p>
+<ul>
+<li>Waldhorn was <strong>not</strong> unreviewed; it had small, average samples.</li>
+<li>One metallic-taste remark did <strong>not</strong> justify calling Warsteiner an “avoid.” That verdict is retracted.</li>
+<li>Stuttgarter Hofbräu Naturtrübes Radler had been confused with an older, different variant. The exact product is a
+respectable local-value option.</li>
+<li>The shop list’s Fürstenberg Pilsener, Lösch-Zwerg Würzig, Schussenrieder Spezial/Helles, Warsteiner Pilsener and
+Berliner Weisse are not matches for the named Radlers.</li>
+<li>Praise for alcoholic Krombacher or Alpirsbacher could not be pasted onto their alcohol-free delivery listings.</li>
+</ul>
+<p>The spreadsheet did not make taste objective. It made my uncertainty visible.</p>
+<h2 id="stuttgart-is-phase-one-not-the-finish-line">Stuttgart is phase one, not the finish line</h2>
+<p>For now, the buying logic is practical. Mönchshof at <strong>€12.99-13.99</strong> for 20×0.5 L at EDEKA or REWE is a restock. A
+<strong>€0.79</strong> Gösser can at Penny is a cheap audition; a <strong>€14.99-16.99</strong> crate at Kaufland is the promotion to watch.
+Rothaus at HIT for <strong>€14.99</strong> per 24×0.33 L beats the store-list price of €22 when the exact product is in stock.
+Hochdorfer at €23 delivered carries a convenience premium I will pay. Waldhorn at €15 delivered is science on a budget.</p>
+<div class="admonition tip">
+  <div class="admonition-title">My Stuttgart buying rule</div>
+  <div class="admonition-content">
+    <strong>Snapshot:</strong> 29 August 2026 · <strong>Compare:</strong> €/L without Pfand · <strong>Recheck:</strong> exact SKU, branch stock and live offer.
+  </div>
+</div>
+<p>Stuttgart is phase one. I plan to extend the map across <strong>Deutschland and Österreich</strong>: regional breweries,
+supermarkets, Getränkemärkte, Biergärten and Austrian <em>Gasthäuser</em>. There I will also need the ordering vocabulary. A
+<em>Seidl</em> is commonly about 0.3 L; a <em>Krügerl</em> about 0.5 L. If a discovery is genuinely excellent, eastern Austrian slang
+permits one carefully earned <em>leiwand</em>.</p>
+<h2 id="the-tasting-ladder-now-points-across-germany-and-austria">The tasting ladder now points across Germany and Austria</h2>
+<p>This now works like my wine and whisky plans: keep one thing familiar, change one variable, taste, note, stop. It is my
+route, not a universal prescription.</p>
+<h3 id="level-1-establish-my-radler-baseline">Level 1: establish my Radler baseline</h3>
+<ol>
+<li><strong>Mönchshof Natur Radler</strong> - my known reference.</li>
+<li><strong>Hochdorfer NaturRadler</strong> - my locally deliverable contender.</li>
+<li><strong>Gösser NaturRadler</strong> - the large-consensus test.</li>
+<li><strong>Rothaus Natur Radler Limettenzäpfle</strong> - familiar structure, sharper lemon-lime direction.</li>
+</ol>
+
+<figure >
+    
+        <img src="images/Hochdorfer.jpeg"
+            alt="A hand holding a green bottle of Hochdorfer NaturRadler"
+            width="405"
+            height="598" />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Hochdorfer NaturRadler has arrived—and Mönchshof might want to check whether its crown is still secure.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<h3 id="level-2-change-one-support-at-a-time-hahahugoshortcode120s9hbhb">Level 2: change one support at a time <sup class="draft-label">I am here; level almost complete </sup>
+</h3>
+<ol>
+<li><a href="https://www.stiegl.at/produkt/stiegl-radler-naturtrueb-grapefruit/"  target="_blank" rel="nofollow noopener noreferrer"><strong>Stiegl Grapefruit</strong></a>
+ versus <a href="https://www.stiegl.at/produkt/stiegl-radler-naturtrueb-zitrone/"  target="_blank" rel="nofollow noopener noreferrer"><strong>Stiegl Zitrone</strong></a>
+, side by side-both 40% Goldbräu, 60% lemonade; only citrus changes.</li>
+<li><strong>Schöfferhofer Grapefruit</strong> - grapefruit over a Weizenbier base.</li>
+<li>Freshly mixed <a href="https://www.reddit.com/r/Austria/comments/1udlrjh/"  target="_blank" rel="nofollow noopener noreferrer"><em><strong>Saurer Radler</strong></em></a>
+ - Bier and Soda-at an Austrian <em>Gasthaus</em>: sugar goes; dilution stays.</li>
+</ol>
+<h3 id="level-3-remove-the-lemonade">Level 3: remove the lemonade</h3>
+<ol>
+<li><a href="https://www.weihenstephaner.de/unsere-biere/hefeweissbier"  target="_blank" rel="nofollow noopener noreferrer"><strong>Weihenstephaner Hefeweissbier</strong></a>
+-banana, clove, bread
+and a gentle 14 IBU.</li>
+<li><strong>Franziskaner Dunkel Weissbier</strong>-keep wheat and yeast; introduce toast and caramel.</li>
+<li><a href="https://www.stiegl.at/produkt/stiegl-goldbraeu/"  target="_blank" rel="nofollow noopener noreferrer"><strong>Stiegl-Goldbräu</strong></a>
+-taste the actual Bier beneath both Stiegl
+Radlers.</li>
+<li><a href="https://www.augustiner-braeu.de/en/our-beers/"  target="_blank" rel="nofollow noopener noreferrer"><strong>Augustiner Hell vom Fass</strong></a>
+-my clean, malt-led German field test.</li>
+</ol>
+<p><strong>Paulaner Hefeweizen</strong> is an optional A/B; <strong>Gösser Märzen</strong> an optional Austrian comparison. Kellerbier waits. Pils
+comes when bitterness becomes a variable, not punishment.</p>
+<h2 id="one-non-negotiable-field-test">One non-negotiable field test</h2>
+<p>A German Bier journey should not remain trapped in supermarket tables.</p>
+<p>My venue test
+is <a href="https://www.augustiner-biergarten-stuttgart.de/home/getraenkekarte.php"  target="_blank" rel="nofollow noopener noreferrer">Augustiner Biergarten Stuttgart</a>
+: an
+<strong>Augustiner Hell vom Fass</strong>, 0.5 L before I make heroic <em>Maß</em> decisions. My first note said about €4.90 for 0.5 L and
+€9.60 for a Maß. The current official menu lists <strong>€5.20</strong> and <strong>€10.20</strong>. This is why prices need dates.</p>
+<p>Draft Helles tests what bottles and rating sites cannot: freshness, service, food, weather, company and whether Bier
+makes sense when it is allowed to be itself. Johann and Mario should probably be there. They started this trouble.</p>
+<h2 id="what-changed">What changed</h2>
+<p>Natur Radler did not make me love every Bier. Good. That would be one lazy generalisation replacing another.</p>
+<p>It made me give Bier the curiosity, discipline and fair trial I had already given whisky, gin and wine. The whisky
+cartographer who tracked Goa against Delhi, the wine student who wanted Marsannay before Beaune, and the Bier sceptic
+who said <em>बीयर कड़वी है</em> were always the same person. Bier simply needed the right entrance.</p>
+<p>Mönchshof opened it. Hochdorfer and Gösser made it worth mapping. Gruibinger, Rothaus and Schönbuch supplied the next
+coordinates. Stuttgart supplied the first buying rules; Germany and Austria will supply the fieldwork.</p>
+<p>Maybe taste can be acquired. Sequence still matters. You do not teach someone music by beginning with the loudest
+speaker in the shop. You find the sound that makes them curious, then let curiosity do the work.</p>
+<p>Two days before my birthday, Johann and Mario handed me something cloudy, lemony and suspiciously <em>süffig</em>. I called it
+a Radler. My spreadsheet called it the beginning of a much larger problem. <strong>Prost.</strong></p>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>I avoided Bier-not alcohol-after early encounters reduced it to <em>kadva-कड़वा / bitter / erbittert</em>.</li>
+<li>On 10 July 2026, Johann and Mario reopened Bier for me. <strong>Thank you-I truly appreciate you both. Danke-ich schätze
+euch beide sehr.</strong></li>
+<li>Indian enforcement found expired stock and weak controls-not proof that every Indian beer is adulterated.</li>
+<li>My personal alcoholic top four are <strong>Mönchshof, Hochdorfer, Gösser and Schöfferhofer Grapefruit</strong>; number four is
+deliberately a specialty.</li>
+<li>Alcohol-free Radlers have a separate ranking; the store list contains <strong>18 exact mixes</strong>, compared by SKU and €/L.</li>
+<li>I am almost through <strong>Level 2</strong>; next come Weissbier, draft Helles and regional Bier across Deutschland and
+Österreich.</li>
+<li><strong>Prost.🍻</strong></li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2026-08-discovering-german-natur-radler.png" type="image/png"/></item></channel></rss>

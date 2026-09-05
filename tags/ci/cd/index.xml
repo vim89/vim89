@@ -1,0 +1,849 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/ci/cd/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 05 Sep 2026 14:53:13 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/ci/cd/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Goodbye, WordPress: hello Hugo + nginx with fast builds and sane deploys today</title><link>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/</link><guid isPermaLink="true">https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/</guid><pubDate>Thu, 21 May 2020 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>linux</category><category>web</category><category>hugo</category><category>html</category><category>css</category><category>go</category><category>ci/cd</category><category>github actions</category><category>javascript</category><description>Deep-dive guide to migrating from WordPress to Hugo. Fix 40-second page loads and 2.5MB transfers with static HTML, GitHub Actions CI/CD, and nginx deployment. Includes export strategy, theme customization, and a secure deployment setup.</description><content:encoded><![CDATA[<p>You know how it goes - you&rsquo;re trying to publish a blog post, the WordPress editor is crawling, you paste in some code and the WYSIWYG editor mangles it completely, and you end up manually editing HTML at midnight just to get syntax highlighting working. Again.</p>
+<p>That was my life for 4 years.</p>
+<p>I kept telling myself &ldquo;it&rsquo;s fine&rdquo; - until I actually measured it. 2.5MB transfer, 47 network requests, and <strong>40 seconds</strong> to load a single page on a slow connection. My plain HTML homepage? 32KB and 0.3 seconds.</p>
+<p>This post shows you how I ditched WordPress for Hugo, a static site generator that turns markdown into blazing-fast HTML - and deployed it with GitHub Actions and nginx. No more database, no more PHP, no more 2 AM debugging sessions.</p>
+<p>Working migration scripts and deployment pipeline: All the code you need is in this post.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Look, I&rsquo;m not a web developer. I picked WordPress 4 years ago because it was the only CMS I knew. It worked&hellip; until it didn&rsquo;t.</p>
+<p>Here&rsquo;s what I was fighting:</p>
+<p><strong>The technical pain:</strong></p>
+<ul>
+<li>2.5MB transfer and 47 network requests per page load</li>
+<li>40-second load times on slow connections (yes, really)</li>
+<li>PHP + MariaDB + nginx stack just to serve some blog posts</li>
+<li>Security vulnerabilities every few months</li>
+<li>No version control for content</li>
+</ul>
+<p><strong>The workflow pain (and this was the real killer):</strong></p>
+<ol>
+<li>Write content locally in vim (because the online editor is unusable)</li>
+<li>Copy-paste into WordPress and watch it mangle the formatting</li>
+<li>Manually fix broken code blocks with a syntax highlighter plugin</li>
+<li>Edit the generated HTML by hand</li>
+<li>Cry and drink</li>
+<li>Repeat this every 3 months</li>
+</ol>
+<p>I accept judgment for this workflow. It&rsquo;s worse than writing Confluence pages on dial-up.</p>
+<p>And here&rsquo;s the thing - my plain HTML homepage loads 32KB in 0.3 seconds on the same connection. The blog? 2.5MB and 40 seconds. That&rsquo;s an 8,000% size increase for&hellip; a blog.</p>
+<p>AWS published <a href="https://aws.amazon.com/blogs/architecture/wordpress-best-practices-on-aws/"  target="_blank" rel="nofollow noopener noreferrer">this architecture diagram</a>
+ for running WordPress at scale. It&rsquo;s horrifying. Load balancers, RDS instances, ElastiCache, S3, CloudFront - all to serve markdown content.</p>
+<p>There had to be a better way.</p>
+<hr>
+<h2 id="what-well-build">What we&rsquo;ll build</h2>
+<p>Here&rsquo;s the migration plan:</p>
+<ol>
+<li><strong>Export</strong> all WordPress posts to markdown</li>
+<li><strong>Set up Hugo</strong> as the static site generator</li>
+<li><strong>Customize a theme</strong> (remove all external CDN dependencies, add TOC, improve syntax highlighting)</li>
+<li><strong>Migrate content</strong> with scripts to fix broken formatting</li>
+<li><strong>Deploy with GitHub Actions</strong> and nginx</li>
+<li><strong>Secure deployment</strong> with restricted SSH access</li>
+</ol>
+<p><strong>The result?</strong> Write in markdown locally, push to Git, auto-deploy to production. No database, no PHP, no security updates, no 40-second page loads.</p>
+<p>Let&rsquo;s build it.</p>
+<hr>
+<h2 id="part-1---the-wordpress-nightmare-why-i-had-to-leave">Part 1 - The WordPress nightmare: why I had to leave</h2>
+<p>The WordPress pain points weren&rsquo;t just about performance. They were about the entire development experience.</p>
+<p><strong>What drove me crazy:</strong></p>
+<ul>
+<li><strong>No offline work</strong> - Everything happens in a web browser connected to the server</li>
+<li><strong>WYSIWYG hell</strong> - No markdown support, no vim bindings, everything is mouse-driven</li>
+<li><strong>Slow everything</strong> - Navigation, updates, previews all crawl</li>
+<li><strong>Plugin roulette</strong> - Syntax highlighting plugins fight with each other</li>
+<li><strong>No collaboration</strong> - Accepting feedback requires manual work, no pull requests</li>
+<li><strong>Bot spam</strong> - Constant comment spam to clean up</li>
+<li><strong>Template limitations</strong> - WordPress templates are hard to customize without breaking things</li>
+</ul>
+<p>But the workflow was what finally broke me. Writing locally, copying to WordPress, watching it destroy my formatting, manually fixing HTML&hellip; this isn&rsquo;t 2005.</p>
+<p>I wanted: Write markdown in vim → push to Git → see it live. That&rsquo;s it.</p>
+<hr>
+<h2 id="part-2---static-site-generators-the-mental-model">Part 2 - Static site generators: the mental model</h2>
+<p>Here&rsquo;s the key insight: most blogs don&rsquo;t need a database and server-side rendering for every page load. The content doesn&rsquo;t change between requests.</p>
+<p><strong>How static site generators work:</strong></p>
+<ol>
+<li>You write content in markdown files</li>
+<li>The generator reads the files and applies templates</li>
+<li>It outputs plain HTML/CSS/JS</li>
+<li>You serve the static files (no database, no PHP)</li>
+</ol>
+<p><strong>Why this works:</strong></p>
+<ul>
+<li><strong>Fast</strong> - No database queries, no PHP execution, just static files</li>
+<li><strong>Secure</strong> - No login pages, no SQL injection, no PHP vulnerabilities</li>
+<li><strong>Version control</strong> - Everything is text files in Git</li>
+<li><strong>Portable</strong> - Works on any web server (nginx, Apache, S3, GitHub Pages)</li>
+<li><strong>Offline work</strong> - Write locally, preview locally, push when ready</li>
+</ul>
+<p>The workflow becomes:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Write markdown → Run generator → Deploy static HTML</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Instead of:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Log into WordPress → Fight WYSIWYG → Manually fix HTML → Hope it works</span></span></code></pre></td></tr></table>
+</div>
+</div><p>There are several options: Jekyll (Ruby), Hugo (Go), Gatsby (React), 11ty (JavaScript). I chose Hugo because it&rsquo;s a single binary with no dependencies, it&rsquo;s fast, and it has good themes.</p>
+<hr>
+<h2 id="part-3---hugo-setup-getting-started">Part 3 - Hugo setup: getting started</h2>
+<p>Hugo is a static site generator written in Go. It&rsquo;s a single binary with no dependencies. No Ruby gems, no Node modules, no Python packages. Just download and run.</p>
+<p>Why Hugo over Jekyll or Gatsby? Simple:</p>
+<ul>
+<li><strong>One binary</strong> - No runtime dependencies</li>
+<li><strong>Fast builds</strong> - Go is compiled, not interpreted</li>
+<li><strong>Good templates</strong> - Nice MIT-licensed themes available</li>
+<li><strong>Simple syntax</strong> - Easy to learn even for non-web-devs</li>
+</ul>
+<p>I saw it on HackerNews years ago and bookmarked it. Finally got around to using it.</p>
+<h3 id="installing-hugo">Installing Hugo</h3>
+<p>Grab the latest binary for your platform from GitHub:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget https://github.com/gohugoio/hugo/releases/download/v0.70.0/hugo_0.70.0_Linux-64bit.tar.gz
+</span></span><span class="line"><span class="cl">tar xvf hugo_0.70.0_Linux-64bit.tar.gz</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Put it somewhere on your <code>$PATH</code> and you&rsquo;re done. No <code>gem install</code>, no <code>npm install</code>, no dependency hell.</p>
+<h3 id="creating-the-site">Creating the site</h3>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo new site vitthalmirji.com</span></span></code></pre></td></tr></table>
+</div>
+</div><p>This creates the basic structure. Now edit <code>config.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="nx">baseURL</span> <span class="p">=</span> <span class="s2">&#34;https://vitthalmirji.com/&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">languageCode</span> <span class="p">=</span> <span class="s2">&#34;en-us&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">title</span> <span class="p">=</span> <span class="s2">&#34;Vitthal Mirji&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">theme</span> <span class="p">=</span> <span class="s2">&#34;ink-free&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>That&rsquo;s it for basic setup. Now we need content and a theme.</p>
+<h3 id="local-testing">Local testing</h3>
+<p>Hugo has a built-in dev server with auto-reload:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo server -D</span></span></code></pre></td></tr></table>
+</div>
+</div><p>This starts a local server on <code>localhost:1313</code>. Every time you save a file, the browser refreshes automatically. No build step, no manual refresh.</p>
+<p>The <code>-D</code> flag includes drafts. Super useful for previewing work-in-progress posts.</p>
+<hr>
+<h2 id="part-4---migrating-wordpress-content">Part 4 - Migrating WordPress content</h2>
+<p>Now comes the fun part: getting all those old WordPress posts out.</p>
+<h3 id="exporting-wordpress-posts-to-markdown">Exporting WordPress posts to markdown</h3>
+<p>I need to export all old blog posts to markdown. There&rsquo;s a great little <a href="https://github.com/lonekorean/wordpress-export-to-markdown"  target="_blank" rel="nofollow noopener noreferrer">tool</a>
+ by <code>lonekorean</code> on GitHub that does exactly this.</p>
+<p>First, export your WordPress content (Tools → Export in WordPress admin). You&rsquo;ll get an XML file.</p>
+<p>Then run the converter:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/lonekorean/wordpress-export-to-markdown
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> wordpress-export-to-markdown
+</span></span><span class="line"><span class="cl">npm install
+</span></span><span class="line"><span class="cl">node index.js</span></span></code></pre></td></tr></table>
+</div>
+</div><p>It&rsquo;ll prompt you for the WordPress XML file and output directory. The tool generates markdown files with front matter.</p>
+<blockquote>
+<p>Hugo has <a href="https://gohugo.io/tools/migrations/"  target="_blank" rel="nofollow noopener noreferrer">other migration tools</a>
+ available, but since I&rsquo;d customized WordPress heavily, this one worked best for me. Your mileage may vary.</p>
+</blockquote>
+<p>After that, copy the generated files to Hugo&rsquo;s <code>content/posts/</code> directory.</p>
+<h3 id="the-problems-with-exported-content">The problems with exported content</h3>
+<p>Due to my &ldquo;interesting&rdquo; WordPress configuration, the exported posts needed help:</p>
+<ul>
+<li>GitHub Gists not rendered</li>
+<li>Internal syntax formatting caused everything to be escaped with <code>\</code>, breaking code</li>
+<li>Headlines missing</li>
+<li>Tags missing</li>
+<li>Descriptions missing</li>
+</ul>
+<p>Yeah, it was a mess.</p>
+<hr>
+<h2 id="part-5---theme-customization">Part 5 - Theme customization</h2>
+<p>We also need a theme. Hugo&rsquo;s default is&hellip; minimal.</p>
+<p>My requirements:</p>
+<ul>
+<li><strong>No external CDNs</strong> - No googleapis, no Google Analytics, no trackers</li>
+<li><strong>Simple interface</strong> - Clean, without hiding information</li>
+<li><strong>Fast on slow connections</strong> - Remember those 40-second WordPress pages?</li>
+</ul>
+<p>I chose <a href="https://github.com/knadh/hugo-ink"  target="_blank" rel="nofollow noopener noreferrer">hugo-ink</a>
+ by <code>knadh</code>, but customized it heavily. This became a fork called <a href="https://github.com/vim89/ink-free"  target="_blank" rel="nofollow noopener noreferrer">ink-free</a>
+.</p>
+<h3 id="what-i-changed">What I changed</h3>
+<p><strong>Removed privacy invasions:</strong></p>
+<ul>
+<li>All references to Google&rsquo;s font CDN (fonts are now local)</li>
+<li>Analytics code (even if it was toggled off)</li>
+</ul>
+<p><strong>Fixed usability issues:</strong></p>
+<ul>
+<li>Tags display inline instead of as a list</li>
+<li>Syntax highlighting background changed (was grey on grey - unreadable)</li>
+<li>Added a back button to all posts</li>
+<li>Added TOC (table of contents) controlled by a variable</li>
+<li>Added word count, tags, and read time to post previews</li>
+</ul>
+<p><strong>Added random footer messages:</strong>
+This was the fun part. Hugo&rsquo;s templating language (based on Go) lets you pipe commands. I wanted random silly messages at the end of posts:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl"><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&#34;back&#34;</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">  {{ if isset .Site.Params &#34;footers&#34; }}
+</span></span><span class="line"><span class="cl">    {{ if ne .Type &#34;page&#34; }}
+</span></span><span class="line"><span class="cl">      Next time, we&#39;ll talk about <span class="p">&lt;</span><span class="nt">i</span><span class="p">&gt;</span>&#34;{{ range .Site.Params.footers | shuffle | first 1 }}{{ . }}&#34;<span class="p">&lt;/</span><span class="nt">i</span><span class="p">&gt;</span>{{ end }}
+</span></span><span class="line"><span class="cl">    {{ end }}
+</span></span><span class="line"><span class="cl">  {{ end }}
+</span></span><span class="line"><span class="cl"><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This picks a random message from <code>config.toml</code> and displays it. Messages like &ldquo;What Tiger King can teach us about x86 Assembly&rdquo; or &ldquo;Why Spark&rsquo;s lazy evaluation is basically procrastination with a PhD&rdquo;.</p>
+<p>Most theme changes were simple HTML and CSS. Even as someone who&rsquo;s not a web dev, Hugo&rsquo;s templates are straightforward:</p>
+<div class="highlight highlight-css" data-lang="css"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-css" data-lang="css"><span class="line"><span class="cl"><span class="p">.</span><span class="nc">tag-li</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">display</span><span class="p">:</span><span class="kc">inline</span> <span class="cp">!important</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">back</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">padding-top</span><span class="p">:</span> <span class="mi">1</span><span class="kt">em</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">font-size</span><span class="p">:</span> <span class="mi">1</span><span class="kt">em</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>The result:</p>
+<p><picture><source type="image/avif" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_9d85897d5d294f70.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_24d0cba034abfded.png 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_3cd3c32c277e5eb1.png 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_3a53d0c383e8850f.png 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_79459283fb8c4b06.webp 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_3cd0fbbec30b207e.webp 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_f694206043b6bbe3.webp 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_bc0b3e6e9d8a139.webp 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_b920b33263619972.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_90ffc2b11939e5b.png 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_2bb7f2def2a7e02a.png 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_7eadb8d8264b273e.png 1600w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_10c7c586862c39f1.jpg" alt="After theme customization" loading="lazy" width="800" height="394">
+    </picture></p>
+<p>Check out the theme here: <a href="https://github.com/vim89/ink-free"  target="_blank" rel="nofollow noopener noreferrer">ink-free on GitHub</a>
+</p>
+<hr>
+<h2 id="part-6---fixing-exported-content-with-scripts">Part 6 - Fixing exported content with scripts</h2>
+<p>Remember those export problems? Time to fix them.</p>
+<p>The WordPress exporter gave me markdown files, but they were broken:</p>
+<ul>
+<li>GitHub Gists embedded as <code>&lt;script&gt;</code> tags (Hugo needs shortcodes)</li>
+<li>Code blocks escaped with <code>\</code> everywhere</li>
+<li>Missing metadata</li>
+</ul>
+<h3 id="fixing-github-gists">Fixing GitHub Gists</h3>
+<p>WordPress had this:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl"><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&#34;https://gist.github.com/vim89/8dcc79ab16daf5fcdda3df1a4ccc183a.js&#34;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Hugo needs this:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl">{{<span class="p">&lt;</span> <span class="nt">gist</span> <span class="na">vim89</span> <span class="na">8dcc79ab16daf5fcdda3df1a4ccc183a</span> <span class="p">&gt;</span>}}</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Doing this by hand for dozens of posts? No thanks. Let&rsquo;s script it:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">grep <span class="s2">&#34;gist.github.com&#34;</span> *.md <span class="p">|</span> <span class="k">while</span> <span class="nb">read</span> -r line <span class="p">;</span> <span class="k">do</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">guser</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="si">${</span><span class="nv">line</span><span class="si">}</span><span class="s2">&#34;</span> <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f4<span class="k">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">gist</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="si">${</span><span class="nv">line</span><span class="si">}</span><span class="s2">&#34;</span> <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f5 <span class="p">|</span> sed -E <span class="s1">&#39;s/(\.js).+//g&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">repl</span><span class="o">=</span><span class="s2">&#34;{{/* gist &#34;</span><span class="si">${</span><span class="nv">guser</span><span class="si">}</span><span class="s2">&#34; &#34;</span><span class="si">${</span><span class="nv">gist</span><span class="si">}</span><span class="s2">&#34; */&gt;}}&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># Get line number</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">ln</span><span class="o">=</span><span class="k">$(</span>grep -n <span class="s2">&#34;</span><span class="nv">$line</span><span class="s2">&#34;</span> *.md <span class="p">|</span> cut -d : -f 1<span class="k">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># Replace</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Replace line </span><span class="nv">$ln</span><span class="s2"> with </span><span class="si">${</span><span class="nv">repl</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">  sed -Ei <span class="s2">&#34;</span><span class="nv">$ln</span><span class="s2"> s#.*#</span><span class="si">${</span><span class="nv">repl</span><span class="si">}</span><span class="s2">#g&#34;</span> *.md
+</span></span><span class="line"><span class="cl"><span class="k">done</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This finds all Gist URLs, extracts the username and Gist ID, and replaces them with Hugo shortcodes. Saved me hours of manual editing.</p>
+<h3 id="vs-code-shortcuts-for-hugo-syntax">VS Code shortcuts for Hugo syntax</h3>
+<p>I added keyboard shortcuts in VS Code to quickly insert Hugo&rsquo;s syntax highlighter blocks. In <code>keybindings.json</code>:</p>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">[</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;key&#34;</span><span class="p">:</span> <span class="s2">&#34;ctrl+1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;editor.action.insertSnippet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;when&#34;</span><span class="p">:</span> <span class="s2">&#34;editorTextFocus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;snippet&#34;</span><span class="p">:</span> <span class="s2">&#34;{&lt; highlight bash \&#34;linenos=table\&#34; &gt;}&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;key&#34;</span><span class="p">:</span> <span class="s2">&#34;ctrl+2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;editor.action.insertSnippet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;when&#34;</span><span class="p">:</span> <span class="s2">&#34;editorTextFocus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;snippet&#34;</span><span class="p">:</span> <span class="s2">&#34;{&lt; / highlight &gt;}&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now <code>Ctrl+1</code> opens a syntax block, <code>Ctrl+2</code> closes it. Small productivity win.</p>
+<h3 id="preserving-urls-seo-matters">Preserving URLs (SEO matters)</h3>
+<p>I don&rsquo;t want to break existing links. People have bookmarked posts, shared them, indexed them in search engines.</p>
+<p>Hugo needs to generate the same URLs WordPress used. In <code>config.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">permalinks</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">posts</span> <span class="p">=</span> <span class="s2">&#34;/:year/:month/:title&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This matches WordPress&rsquo;s default permalink structure. No 301 redirects needed.</p>
+<h3 id="verifying-the-migration">Verifying the migration</h3>
+<p>How do I know all URLs match? I wrote a quick Go script to compare RSS feeds - WordPress&rsquo;s export vs Hugo&rsquo;s generated feed:</p>
+<div class="highlight highlight-go" data-lang="go"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;os&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;fmt&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;github.com/mmcdole/gofeed&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">feed</span><span class="w"> </span><span class="o">*</span><span class="nx">gofeed</span><span class="p">.</span><span class="nx">Feed</span><span class="p">)</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">output</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">post</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">feed</span><span class="p">.</span><span class="nx">Items</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">output</span><span class="p">[</span><span class="nx">post</span><span class="p">.</span><span class="nx">Link</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">post</span><span class="p">.</span><span class="nx">Title</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">output</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="nx">path</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="nx">gofeed</span><span class="p">.</span><span class="nx">Feed</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">fp</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gofeed</span><span class="p">.</span><span class="nf">NewParser</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">file</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nf">Open</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">defer</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">feed</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fp</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">feed</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">compareUrls</span><span class="p">(</span><span class="nx">local</span><span class="p">,</span><span class="w"> </span><span class="nx">remote</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">allFound</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="nx">k</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">local</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">remote</span><span class="p">[</span><span class="nx">k</span><span class="p">];</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;✓ Found %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;✗ Missing: %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">k</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">allFound</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">allFound</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">remoteFeed</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="s">&#34;./wordpress.xml&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">localFeed</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="s">&#34;../public/index.xml&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">remote</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">remoteFeed</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">local</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">localFeed</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;All URLs match:&#34;</span><span class="p">,</span><span class="w"> </span><span class="nf">compareUrls</span><span class="p">(</span><span class="nx">local</span><span class="p">,</span><span class="w"> </span><span class="nx">remote</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Running this found a couple of posts with mismatched URLs:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">✗ Missing: https://vitthalmirji.com/blog/2020/02/how-a-broken-memory-module-hid-in-plain-sight/
+</span></span><span class="line"><span class="cl">✗ Missing: https://vitthalmirji.com/blog/2019/12/tensorflow-on-edge-building-a-smart-security-camera/</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Fixed those manually. (Psst, don&rsquo;t check the Git commits.)</p>
+<p>There were more adjustments - re-embedding videos, fixing image paths - but this covered the bulk of it. I&rsquo;ll spare you the tedious details.</p>
+<hr>
+<h2 id="part-7---deployment-with-github-actions">Part 7 - Deployment with GitHub Actions</h2>
+<p>Now for the fun part - automated deployment.</p>
+<p>The goal: Every git push to master should automatically build and deploy the site to my nginx server. No manual steps, no FTP clients, no SSH sessions.</p>
+<p>I could use GitHub Pages, but I want to keep everything on my own server. Plus, I&rsquo;m already running nginx and Docker there.</p>
+<p><strong>The deployment flow:</strong></p>
+<ol>
+<li>Git push triggers GitHub Actions</li>
+<li>Checkout code (including theme submodule)</li>
+<li>Download Hugo binary</li>
+<li>Build static HTML/CSS/JS</li>
+<li>Deploy via SCP to server (in a restricted chroot jail for security)</li>
+<li>Optional: Trigger any server-side updates (Docker container refreshes, etc.)</li>
+</ol>
+<p>For CI/CD, I have two free options: Travis CI or GitHub Actions. I chose GitHub Actions to avoid yet another external service. Everything stays within GitHub.</p>
+<h3 id="creating-the-workflow">Creating the workflow</h3>
+<p>Create <code>.github/workflows/workflow.yml</code>:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">build, test, audit &amp; deploy vitthalmirji.com site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">master, main ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">master, main ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build-test-audit-deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📥 Checkout code with submodules</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">⚙️ Setup Hugo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;0.148.1&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">✅ Validate taxonomies via taxlimits.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          valid_terms=$(yq e &#39;.tags + .categories + .series&#39; data/taxlimits.yaml | sed &#39;s/- //g&#39;)
+</span></span></span><span class="line"><span class="cl"><span class="sd">          find content -name &#34;*.md&#34; | while read -r md; do
+</span></span></span><span class="line"><span class="cl"><span class="sd">            for term in $(grep -E &#39;^(tags|categories|series):&#39; -A3 &#34;$md&#34; | sed -n &#39;s/- //p&#39;); do
+</span></span></span><span class="line"><span class="cl"><span class="sd">              if ! grep -qx &#34;$term&#34; &lt;&lt;&lt; &#34;$valid_terms&#34;; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">                echo &#34;❌ Invalid taxonomy term &#39;$term&#39; in $md&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">                exit 1
+</span></span></span><span class="line"><span class="cl"><span class="sd">              fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">            done
+</span></span></span><span class="line"><span class="cl"><span class="sd">          done</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🏗️ Build Hugo site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --gc --minify</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🚦 Run Lighthouse audits</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">treosh/lighthouse-ci-action@v12</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">urls</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;https://vitthalmirji.com&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">uploadArtifacts</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Node.js</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-node@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">node-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;20&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install Pa11y CLI</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npm install -g pa11y-ci</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Cache Node.js dependencies</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/cache@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">~/.npm</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">${{ runner.os }}-node-${{ hashFiles(&#39;**/package-lock.json&#39;) }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">restore-keys</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            ${{ runner.os }}-node-</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">♿ Run accessibility checks (Pa11y)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">PUPPETEER_EXECUTABLE_PATH=$(which chromium-browser || which chromium || true) \</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="l">npx pa11y-ci --chrome-launcher-flags=&#34;--no-sandbox&#34; --config .github/workflows/.pa11yci.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📦 Upload to GitHub Pages (gh-pages)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-gh-pages@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">personal_token</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.PERSONAL_TOKEN }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">external_repository</span><span class="p">:</span><span class="w"> </span><span class="l">vim89/vim89</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📤 Deploy to InfinityFree via FTP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">SamKirkland/FTP-Deploy-Action@v4.3.5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_HOST }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_USERNAME }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_PASSWORD }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">local-dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server-dir</span><span class="p">:</span><span class="w"> </span><span class="l">/htdocs/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">dangerous-clean-slate</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><picture><source type="image/avif" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_fda859c7696c4e57.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_e284ad1e7ae9728e.png 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_712dd82869437359.webp 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_a05d6f3ba5d1348.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_c6026f5de2e441b4.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_68ed265be1c4e3d6.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_7c30d2007a45cf95.jpg" alt="Successful GitHub Actions deployment" loading="lazy" width="800" height="974">
+    </picture></p>
+<blockquote>
+<p><strong>Note on SCP Actions:</strong> I tried using pre-configured SCP Actions from the GitHub marketplace. They either didn&rsquo;t support key passphrases or had terrible debug logs. After fighting &ldquo;Exit code 1&rdquo; errors despite successful connections (verified in <code>syslog</code> and <code>auth.log</code>), I gave up and wrote the bash deployment myself. If you know what causes that error, let me know!</p>
+</blockquote>
+<hr>
+<h2 id="part-8---security-locking-down-deployment">Part 8 - Security: locking down deployment</h2>
+<p>Here&rsquo;s the problem: GitHub Actions needs SSH access to deploy files. But giving full SSH access to an automated system? That&rsquo;s a security nightmare.</p>
+<p>The solution: Create a restricted user that can <em>only</em> upload files via SCP. No shell, no commands, no lateral movement.</p>
+<h3 id="setting-up-rssh-restricted-shell">Setting up rssh (restricted shell)</h3>
+<p><code>rssh</code> is a restricted shell that only allows SCP/SFTP. No bash, no command execution.</p>
+<p><strong>Create the deployment user:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">useradd -m -d /home/github github
+</span></span><span class="line"><span class="cl">passwd github</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Lock down permissions:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Make home directory owned by root (prevents user from writing there)</span>
+</span></span><span class="line"><span class="cl">sudo chown -R root:github /home/github
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Only allow writes to .ssh for key management</span>
+</span></span><span class="line"><span class="cl">sudo chown github:github /home/github/.ssh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Give write access only to the deployment target directory</span>
+</span></span><span class="line"><span class="cl">sudo mkdir -p /var/www/vitthalmirji.com
+</span></span><span class="line"><span class="cl">sudo chown github:github /var/www/vitthalmirji.com</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Compile and install rssh:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget http://prdownloads.sourceforge.net/rssh/rssh-2.3.4.tar.gz
+</span></span><span class="line"><span class="cl">tar -xvf rssh-2.3.4.tar.gz
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> rssh-2.3.4
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">./configure
+</span></span><span class="line"><span class="cl">make
+</span></span><span class="line"><span class="cl">sudo make install</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Configure rssh:</strong></p>
+<p>Edit <code>/usr/local/etc/rssh.conf</code>:</p>
+<div class="highlight highlight-ini" data-lang="ini"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="na">user</span> <span class="o">=</span> <span class="s">&#34;github:022:00001:/var/www/vitthalmirji.com&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This configuration means:</p>
+<ul>
+<li><strong>username</strong>: <code>github</code> (the restricted user)</li>
+<li><strong>umask</strong>: <code>022</code> (files created with rw-r&ndash;r&ndash; permissions)</li>
+<li><strong>access bits</strong>: <code>00001</code> (rsync=0, rdist=0, cvs=0, sftp=0, scp=1)
+<ul>
+<li>Only SCP is allowed</li>
+</ul>
+</li>
+<li><strong>chroot path</strong>: <code>/var/www/vitthalmirji.com</code> (user can&rsquo;t access anything outside this directory)</li>
+</ul>
+<p>See the <a href="https://linux.die.net/man/5/rssh.conf"  target="_blank" rel="nofollow noopener noreferrer">rssh.conf man page</a>
+ for details.</p>
+<blockquote>
+<p><strong>Setting up chroot is complex.</strong> You need to copy required libraries and binaries into the chroot directory. Read the <code>CHROOT</code> file in the rssh source directory carefully. This is a multi-step process that varies by distribution.</p>
+</blockquote>
+<p><strong>Update SSH configuration:</strong></p>
+<p>Edit <code>/etc/ssh/sshd_config</code>:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Ensure github user is allowed</span>
+</span></span><span class="line"><span class="cl">AllowUsers your-user github</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Consider creating separate groups for <code>rssh</code> and regular <code>ssh</code> users if you&rsquo;re doing this on a multi-user system.</p>
+<p>Restart SSH:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">service sshd restart</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Set user shell to rssh:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">usermod -s /usr/bin/rssh github</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now the <code>github</code> user can only SCP files to the deployment directory. They can&rsquo;t:</p>
+<ul>
+<li>Run shell commands</li>
+<li>Access other parts of the filesystem</li>
+<li>SSH in for interactive sessions</li>
+</ul>
+<p><strong>Generate SSH keys:</strong></p>
+<p>For GitHub Actions, generate keys in PEM format (the Ubuntu runner image uses an older OpenSSH version):</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh-keygen -m PEM -t rsa -b <span class="m">4096</span> -f github_deploy_key</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Add the public key to <code>/home/github/.ssh/authorized_keys</code>, then add the private key as a GitHub secret.</p>
+<hr>
+<h2 id="the-result">The result</h2>
+<p>Well, if you&rsquo;re reading this, judge for yourself!</p>
+<p><strong>Performance improvements:</strong></p>
+<ul>
+<li><strong>Before (WordPress)</strong>: 2.5MB transfer, 47 requests, 40 seconds on slow connections</li>
+<li><strong>After (Hugo)</strong>: ~500KB transfer (mostly images), minimal JS/CSS, instant load</li>
+</ul>
+<p>It&rsquo;s not as flashy as the WordPress template. But it&rsquo;s fast, it works, and I can actually write without fighting an editor.</p>
+<p><strong>The workflow now:</strong></p>
+<ol>
+<li>Write markdown in vim (offline)</li>
+<li><code>git push</code></li>
+<li>GitHub Actions builds and deploys automatically</li>
+<li>Live in seconds</li>
+</ol>
+<p>No database, no PHP, no manual HTML editing, no fighting with plugins.</p>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>I&rsquo;m pretty happy with this change. For my sanity, if nothing else.</p>
+<p>Look, I don&rsquo;t get a ton of traffic here (I don&rsquo;t run analytics, so I don&rsquo;t actually know). But <strong>blogging is fun</strong>. Every time I write something, I learn something - whether it&rsquo;s complex ML theory or, like today, getting back into web dev and deployment automation.</p>
+<p>This new setup lets me blog more. I spend time writing code and posts, not fighting WordPress. Faster load times mean less frustration for readers. Version-controlled markdown means no more lock-in - anyone can contribute via pull requests.</p>
+<p>If you&rsquo;re thinking about migrating away from WordPress, or starting a blog, give Hugo (or any static site generator) a try. The workflow is so much cleaner than fighting a WYSIWYG editor.</p>
+<p>And if you want to use GitHub + Hugo + nginx, hopefully this post helps.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li>Migrated from WordPress (40s page loads, horrible editor) to Hugo static site generator</li>
+<li>Hugo: Single Go binary, markdown input, blazing-fast static HTML output</li>
+<li>Exported WordPress posts to markdown with <code>wordpress-export-to-markdown</code> tool</li>
+<li>Fixed broken content with bash/Go scripts (Gists, permalinks, metadata)</li>
+<li>Customized hugo-ink theme: removed CDN dependencies, added TOC, fixed syntax highlighting</li>
+<li>Automated deployment with GitHub Actions: push to Git → auto-build → deploy via SCP</li>
+<li>Secured deployment with rssh (restricted shell): GitHub Actions can only SCP files, no shell access</li>
+<li>Result: 500KB pages that load instantly, markdown workflow in vim, version control, collaborative via PRs</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2020-05-goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today.png" type="image/png"/></item></channel></rss>

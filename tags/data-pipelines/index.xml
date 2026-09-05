@@ -1,0 +1,1371 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/data-pipelines/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 05 Sep 2026 14:53:13 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/data-pipelines/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Kleisli for data engineers: the category trick that makes pipelines compose</title><link>https://vitthalmirji.com/2025/10/kleisli-for-data-engineers-the-category-trick-that-makes-pipelines-compose/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/10/kleisli-for-data-engineers-the-category-trick-that-makes-pipelines-compose/</guid><pubDate>Wed, 08 Oct 2025 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>scala</category><category>cats</category><category>cats-effect</category><category>kleisli</category><category>data-pipelines</category><category>functional-programming</category><category>type-safety</category><category>data-engineering</category><category>apache-spark</category><category>apache-flink</category><category>category-theory</category><description>Learn Kleisli from first principles to compose effectful data pipelines with Cats or Cats Effect, wiring sources, transforms, and sinks with clear errors, observability, and easy tests. Includes a Scala example you can lift into prod.</description><content:encoded><![CDATA[<p>What breaks most data pipelines is not the algorithm, it&rsquo;s the glue (compositions). We chain effectful steps-read, transform, write-sprinkled with logging, retries, and configs. Then at 2 AM, one-step returns <code>None</code>/<code>Left</code>/an <code>Exception</code> and the whole thing craters. The code felt composable, but the functions didn&rsquo;t actually compose.</p>
+<p>This is exactly the corner category theory calls the <strong>Kleisli category of a monad</strong>: wrap the effectful arrow (<code>A =&gt; F[B]</code>) so composition becomes legal again. If that refresher helps, skim the <a href="https://typelevel.org/cats/datatypes/kleisli.html"  target="_blank" rel="nofollow noopener noreferrer">Typelevel page on Kleisli</a>
+ (it shows the (&gt;=&gt;) law in two short paragraphs) and jump back.</p>
+<blockquote>
+<p>Promise: by the end of this post you’ll take any <code>A =&gt; F[B]</code> and make it compose predictably, testably, and safely-across Cats Effect or ZIO-using Kleisli.</p>
+</blockquote>
+<p>This is the missing trick in day‑to‑day data engineering: turn effectful functions into first‑class, chainable stages the compiler can reason about. Step: give me an <code>A</code>, I work inside box <code>F</code>, and I hand you back a <code>B</code>. That arrow is <code>A =&gt; F[B]</code>, and Kleisli is the wrapper that lets those arrows click together.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<ul>
+<li>Effectful edges are everywhere in pipelines: IO, retries, metrics, tracing.</li>
+<li>Plain functions <code>A =&gt; B</code> compose. Effectful ones <code>A =&gt; F[B]</code> do not-unless you lift them into the right abstraction.</li>
+<li>We want composition that is:
+<ul>
+<li>type‑safe (compiler checks wiring),</li>
+<li>effect‑polymorphic (CE or ZIO with the same user code),</li>
+<li>test‑friendly (swap F or run in memory),
+️- observable (trace each stage),</li>
+<li>clear to read and reason about.</li>
+</ul>
+</li>
+</ul>
+<p>Kleisli gives you exactly this: a value representing an effectful function, with operators that compose like normal functions.</p>
+<hr>
+<h2 id="what-well-build-no-prior-cats-knowledge-assumed">What we&rsquo;ll build (no prior cats knowledge assumed)</h2>
+<ol>
+<li>A mental model for Kleisli in one screenful.</li>
+<li>How a production‑style builder wires stages with Kleisli.</li>
+<li>A small, runnable pipeline sketch.</li>
+<li>Practical patterns: tracing, retries, testing, and when not to use it.</li>
+</ol>
+<p>Prereqs: basic Scala. I’ll explain Cats/Kleisli as we go. We’ll use Cats Effect’s <code>IO</code> for examples (Scala 2.13/3). If you prefer ZIO, the ideas transfer-replace <code>IO</code> with your effect.</p>
+<p>If you want a structured video course later, Rock the JVM has excellent material on Cats and Cats Effect you can take at your own pace.</p>
+<p>References:</p>
+<ul>
+<li>Cats - Kleisli docs (short and precise): <a href="https://typelevel.org/cats/datatypes/kleisli.html"  target="_blank" rel="nofollow noopener noreferrer">https://typelevel.org/cats/datatypes/kleisli.html</a>
+</li>
+<li>Rock the JVM - Cats course: <a href="https://rockthejvm.com/courses/cats/"  target="_blank" rel="nofollow noopener noreferrer">https://rockthejvm.com/courses/cats/</a>
+</li>
+<li>Rock the JVM - Cats Effect course: <a href="https://rockthejvm.com/courses/cats-effect/"  target="_blank" rel="nofollow noopener noreferrer">https://rockthejvm.com/courses/cats-effect/</a>
+</li>
+</ul>
+<hr>
+<h2 id="part-1---kleisli-the-mental-model">Part 1 - Kleisli: the mental model</h2>
+<div class="admonition info">
+  <div class="admonition-title">Quick start</div>
+  <div class="admonition-content">
+    Kleisli wraps <code>A =&gt; F[B]</code> so effectful functions compose like regular ones. If your pipeline has IO at the edges, you need Kleisli. Use <code>andThen</code> to chain stages left-to-right.
+  </div>
+</div>
+<p><code>A =&gt; B</code> composes. <code>A =&gt; F[B]</code> doesn&rsquo;t (the types don&rsquo;t line up). Pipelines live at those effectful edges: <code>read: Unit =&gt; F[In]</code>, <code>transform: In =&gt; F[Out]</code>, <code>write: Out =&gt; F[Unit]</code>.</p>
+<p>Two pieces to keep in mind:</p>
+<ul>
+<li><code>F[_]</code> just means &ldquo;some effect type&rdquo; (e.g., <code>IO</code>, <code>Future</code>, <code>Task</code>). Read it as: &ldquo;a computation that may do I/O and eventually produce a <code>B</code>&rdquo;.</li>
+<li><code>Kleisli[F, A, B]</code> is a tiny wrapper around a function <code>A =&gt; F[B]</code>. With this wrapper, we get <code>andThen</code>, <code>map</code>, <code>flatMap</code>, etc. so effectful functions compose like normal ones.</li>
+</ul>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Core idea in one line
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Kleisli[F, A, B] wraps: A =&gt; F[B]
+</span></span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.effect.</span><span class="o">{</span><span class="nc">IO</span><span class="o">,</span> <span class="nc">Resource</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Types we’ll use in the examples
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">In</span><span class="o">(</span><span class="n">raw</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Out</span><span class="o">(</span><span class="n">clean</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Lift ordinary functions into Kleislis
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">read</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">In</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="k">_</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Resource</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">fromAutoCloseable</span><span class="o">(</span><span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="n">scala</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="nc">Source</span><span class="o">.</span><span class="n">fromFile</span><span class="o">(</span><span class="s">&#34;/tmp/in.csv&#34;</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">use</span><span class="o">(</span><span class="n">src</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="n">src</span><span class="o">.</span><span class="n">getLines</span><span class="o">().</span><span class="n">next</span><span class="o">()).</span><span class="n">map</span><span class="o">(</span><span class="nc">In</span><span class="o">.</span><span class="n">apply</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">transform</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span>   <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="nc">Out</span><span class="o">(</span><span class="n">i</span><span class="o">.</span><span class="n">raw</span><span class="o">.</span><span class="n">trim</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">write</span><span class="k">:</span>     <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Out</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">o</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;write: </span><span class="si">${</span><span class="n">o</span><span class="o">.</span><span class="n">clean</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Compose like regular functions
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">pipeline</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">read</span> <span class="n">andThen</span> <span class="n">transform</span> <span class="n">andThen</span> <span class="n">write</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>You now have one value (<code>pipeline</code>) you can run, test, time, trace, and reuse-no ad‑hoc glue scattered across methods.</p>
+<h4 id="what-the-f_--">What the <code>F[_]</code> ? 😉</h4>
+<p>The same pipeline should run on different runtimes (Cats Effect <code>IO</code>, ZIO <code>Task</code>, etc.). <code>F[_]</code> is just &ldquo;some effect&rdquo;. Keep functions generic and request only the capabilities you need (map/flatMap, timing, concurrency) via typeclasses, then choose the runtime at the boundary. Deep dive coming soon: <a href="/effect-polymorphism" >/effect-polymorphism</a>
+.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Generic: works for any effect F with a Monad
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">normalizeF</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">cats.Monad</span><span class="o">]</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Kleisli</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="n">cats</span><span class="o">.</span><span class="nc">Monad</span><span class="o">[</span><span class="kt">F</span><span class="o">].</span><span class="n">pure</span><span class="o">(</span><span class="nc">Out</span><span class="o">(</span><span class="n">i</span><span class="o">.</span><span class="n">raw</span><span class="o">.</span><span class="n">trim</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Choose a runtime
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">normalizeIO</span>  <span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">cats.effect.IO</span>,  <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span> <span class="k">=</span> <span class="n">normalizeF</span><span class="o">[</span><span class="kt">cats.effect.IO</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ZIO (requires zio-interop-cats)
+</span></span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">zio.Task</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">zio.interop.catz.given</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">normalizeZIO</span> <span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">Task</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span> <span class="k">=</span> <span class="n">normalizeF</span><span class="o">[</span><span class="kt">Task</span><span class="o">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div><pre class="mermaid">flowchart LR
+  NF[&#34;normalizeF[F]: Kleisli[F, In, Out]&#34;] --&gt; IOv[&#34;normalizeF[IO]: Kleisli[IO, In, Out]&#34;]
+  NF --&gt; ZIOv[&#34;normalizeF[Task]: Kleisli[Task, In, Out]&#34;]
+</pre><pre class="mermaid">sequenceDiagram
+  participant Dev as &#34;Developer&#34;
+  participant Comp as &#34;Compiler&#34;
+  participant Lib as &#34;Generic code: normalizeF[F]&#34;
+  participant IO as &#34;Runtime: IO&#34;
+  participant Task as &#34;Runtime: Task&#34;
+  Dev-&gt;&gt;Comp: compile
+  Comp-&gt;&gt;Lib: typecheck F[_] constraints
+  alt choose IO
+    Comp-&gt;&gt;IO: instantiate normalizeF[IO]
+    Dev-&gt;&gt;IO: run Kleisli with IO
+  else choose Task
+    Comp-&gt;&gt;Task: instantiate normalizeF[Task]
+    Dev-&gt;&gt;Task: run Kleisli with Task
+  end
+</pre><hr>
+<h2 id="part-2---build-a-small-pipeline-endtoend">Part 2 - Build a small pipeline end‑to‑end</h2>
+<p>Let’s wire a realistic round‑trip: read → validate → transform → write. No framework, just Kleisli and Cats Effect.</p>
+<pre class="mermaid">flowchart LR
+  A[&#34;Source: Unit =&gt; IO[Raw]&#34;] --&gt; B[&#34;Parse+Validate: Raw =&gt; IO[User]&#34;]
+  B --&gt; C[&#34;Transform: User =&gt; IO[User]&#34;]
+  C --&gt; D[&#34;Sink: User =&gt; IO[Unit]&#34;]
+</pre><div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// build.sbt:
+</span></span></span><span class="line"><span class="cl"><span class="c1">// libraryDependencies += &#34;org.typelevel&#34; %% &#34;cats-core&#34;   % &#34;2.10.0&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// libraryDependencies += &#34;org.typelevel&#34; %% &#34;cats-effect&#34; % &#34;3.5.4&#34;
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.effect.</span><span class="o">{</span><span class="nc">IO</span><span class="o">,</span> <span class="nc">IOApp</span><span class="o">,</span> <span class="nc">Resource</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.syntax.all._</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">scala.io.Source</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Raw</span><span class="o">(</span><span class="n">line</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">User</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">,</span> <span class="n">email</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 1) Source: Unit =&gt; IO[Raw]
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">readRaw</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">Raw</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="k">_</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Resource</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">fromAutoCloseable</span><span class="o">(</span><span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="nc">Source</span><span class="o">.</span><span class="n">fromFile</span><span class="o">(</span><span class="s">&#34;/tmp/users.csv&#34;</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">use</span><span class="o">(</span><span class="n">src</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="n">src</span><span class="o">.</span><span class="n">getLines</span><span class="o">().</span><span class="n">next</span><span class="o">()).</span><span class="n">map</span><span class="o">(</span><span class="nc">Raw</span><span class="o">.</span><span class="n">apply</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 2) Parse + validate: Raw =&gt; IO[User]
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">toUser</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Raw</span>, <span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="n">r</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">r</span><span class="o">.</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="o">(</span><span class="sc">&#39;,&#39;</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nc">Array</span><span class="o">(</span><span class="n">idStr</span><span class="o">,</span> <span class="n">email</span><span class="o">)</span> <span class="k">if</span> <span class="n">idStr</span><span class="o">.</span><span class="n">forall</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">isDigit</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="n">email</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="sc">&#39;@&#39;</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="nc">User</span><span class="o">(</span><span class="n">idStr</span><span class="o">.</span><span class="n">toLong</span><span class="o">,</span> <span class="n">email</span><span class="o">.</span><span class="n">trim</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">raiseError</span><span class="o">(</span><span class="k">new</span> <span class="nc">IllegalArgumentException</span><span class="o">(</span><span class="s">s&#34;bad row: </span><span class="si">${</span><span class="n">r</span><span class="o">.</span><span class="n">line</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 3) Transform: User =&gt; IO[User]
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">normalize</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">User</span>, <span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">u</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">email</span> <span class="k">=</span> <span class="n">u</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">trim</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 4) Sink: User =&gt; IO[Unit]
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">writeUser</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">User</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">u</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;storing: </span><span class="si">$u</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Compose the pipeline
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">pipeline</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">readRaw</span> <span class="n">andThen</span> <span class="n">toUser</span> <span class="n">andThen</span> <span class="n">normalize</span> <span class="n">andThen</span> <span class="n">writeUser</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">IOApp</span><span class="o">.</span><span class="nc">Simple</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">run</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">run</span><span class="o">(())</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Prefer a shorter operator? Cats (and Scalaz years before it) exposes the classic <strong>&ldquo;fish&rdquo;</strong> <code>&gt;=&gt;</code> as syntax sugar for <code>andThen</code>, plus <code>&gt;&gt;&gt;</code>/<code>&lt;&lt;&lt;</code> via import <code>cats.syntax.compose._</code>. Same composition, different paint-use whatever keeps the flow readable.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.syntax.compose._</span> <span class="c1">// enables &gt;=&gt;, &gt;&gt;&gt;, &lt;&lt;&lt;
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">pipelineFish</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">readRaw</span> <span class="o">&gt;=&gt;</span> <span class="n">toUser</span> <span class="o">&gt;=&gt;</span> <span class="n">normalize</span> <span class="o">&gt;=&gt;</span> <span class="n">writeUser</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What&rsquo;s happening here?</p>
+<ul>
+<li>Each stage is a tiny, named value with a single responsibility.</li>
+<li>The type tells you exactly what goes in and what comes out.</li>
+<li>Errors are typed at the edges (here we used exceptions for brevity; you can prefer <code>Either</code>/<code>Validated</code>).</li>
+<li>Composing <code>andThen</code> keeps the flow obvious.</li>
+</ul>
+<p>Tip: if you want multiple failures collected (e.g., data quality), use <code>ValidatedNel</code> inside the stage and only fail the pipeline at the final decision point.</p>
+<hr>
+<h2 id="part-25---a-mini-builder-typesafe-and-small">Part 2.5 - A mini builder (type‑safe and small)</h2>
+<p>Let’s &ldquo;lift‑and‑shape&rdquo; a production pattern into a small, self‑contained builder that composes a typed Kleisli as you add stages.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// File: com/example/pipeline/Builder.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">com.example.pipeline</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.</span><span class="o">{</span><span class="nc">Applicative</span><span class="o">,</span> <span class="nc">Monad</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 1) Contracts and policies (sketch)
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">SchemaPolicy</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">SchemaPolicy</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Exact</span> <span class="k">extends</span> <span class="nc">SchemaPolicy</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">Exact</span> <span class="k">extends</span> <span class="nc">Exact</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">trait</span> <span class="nc">SchemaConforms</span><span class="o">[</span><span class="kt">C</span>, <span class="kt">R</span>, <span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">SchemaPolicy</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 2) Metadata we carry alongside the composed pipeline
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">PipelineMeta</span><span class="o">(</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">stages</span><span class="k">:</span> <span class="kt">Vector</span><span class="o">[</span><span class="kt">String</span><span class="o">],</span> <span class="n">transforms</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 3) The builder keeps a composed, fully-typed Kleisli[F, In, Out]
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">Monad</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">](</span>
+</span></span><span class="line"><span class="cl">  <span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">],</span>
+</span></span><span class="line"><span class="cl">  <span class="n">meta</span><span class="k">:</span> <span class="kt">PipelineMeta</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">addSource</span><span class="o">[</span><span class="kt">C</span>, <span class="kt">R</span>, <span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">SchemaPolicy</span><span class="o">](</span>
+</span></span><span class="line"><span class="cl">    <span class="n">srcName</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="o">)(</span><span class="n">read</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">C</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">evIn</span><span class="k">:</span> <span class="kt">In</span> <span class="o">=</span><span class="k">:</span><span class="o">=</span> <span class="nc">Unit</span><span class="o">,</span> <span class="n">evOut</span><span class="k">:</span> <span class="kt">Out</span> <span class="o">=</span><span class="k">:</span><span class="o">=</span> <span class="nc">Unit</span><span class="o">,</span> <span class="n">ev</span><span class="k">:</span> <span class="kt">SchemaConforms</span><span class="o">[</span><span class="kt">C</span>, <span class="kt">R</span>, <span class="kt">P</span><span class="o">])</span><span class="k">:</span> <span class="kt">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Unit</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">next</span> <span class="k">=</span> <span class="n">k</span><span class="o">.</span><span class="n">andThen</span><span class="o">(</span><span class="nc">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Out</span>, <span class="kt">C</span><span class="o">](</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="n">read</span><span class="o">(())))</span> <span class="c1">// Out is Unit here by constraint
+</span></span></span><span class="line"><span class="cl">    <span class="nc">PipelineBuilder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">next</span><span class="o">,</span> <span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">stages</span> <span class="k">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">stages</span> <span class="k">:</span><span class="kt">+</span> <span class="kt">s</span><span class="err">&#34;</span><span class="kt">source-$srcName</span><span class="err">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">addTransform</span><span class="o">[</span><span class="kt">C</span><span class="o">](</span><span class="n">stepName</span><span class="k">:</span> <span class="kt">String</span><span class="o">)(</span><span class="n">f</span><span class="k">:</span> <span class="kt">Out</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">C</span><span class="o">])</span><span class="k">:</span> <span class="kt">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">next</span> <span class="k">=</span> <span class="n">k</span><span class="o">.</span><span class="n">andThen</span><span class="o">(</span><span class="nc">Kleisli</span><span class="o">(</span><span class="n">f</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">PipelineBuilder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">next</span><span class="o">,</span> <span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">stages</span> <span class="k">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">stages</span> <span class="k">:</span><span class="kt">+</span> <span class="kt">s</span><span class="err">&#34;</span><span class="kt">xform-$stepName</span><span class="err">&#34;</span><span class="o">,</span> <span class="n">transforms</span> <span class="k">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">transforms</span> <span class="o">+</span> <span class="mi">1</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">noTransform</span><span class="o">(</span><span class="k">implicit</span> <span class="n">A</span><span class="k">:</span> <span class="kt">Applicative</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span> <span class="kt">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span> <span class="k">=</span> <span class="n">addTransform</span><span class="o">(</span><span class="s">&#34;identity&#34;</span><span class="o">)(</span><span class="n">o</span> <span class="k">=&gt;</span> <span class="n">A</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">o</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">addSink</span><span class="o">[</span><span class="kt">R</span>, <span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">SchemaPolicy</span><span class="o">](</span><span class="n">sinkName</span><span class="k">:</span> <span class="kt">String</span><span class="o">)(</span><span class="n">write</span><span class="k">:</span> <span class="kt">Out</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">ev</span><span class="k">:</span> <span class="kt">SchemaConforms</span><span class="o">[</span><span class="kt">Out</span>, <span class="kt">R</span>, <span class="kt">P</span><span class="o">])</span><span class="k">:</span> <span class="kt">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">next</span> <span class="k">=</span> <span class="n">k</span><span class="o">.</span><span class="n">andThen</span><span class="o">(</span><span class="nc">Kleisli</span><span class="o">(</span><span class="n">write</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">PipelineBuilder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">next</span><span class="o">,</span> <span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">stages</span> <span class="k">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">stages</span> <span class="k">:</span><span class="kt">+</span> <span class="kt">s</span><span class="err">&#34;</span><span class="kt">sink-$sinkName</span><span class="err">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">build</span><span class="o">(</span><span class="k">implicit</span> <span class="n">ev</span><span class="k">:</span> <span class="kt">Out</span> <span class="o">=</span><span class="k">:</span><span class="o">=</span> <span class="nc">Unit</span><span class="o">)</span><span class="k">:</span> <span class="o">(</span><span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Unit</span><span class="o">],</span> <span class="nc">PipelineMeta</span><span class="o">)</span> <span class="k">=</span> <span class="o">(</span><span class="n">k</span><span class="o">,</span> <span class="n">meta</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">PipelineBuilder</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">apply</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">Monad</span><span class="o">](</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">PipelineBuilder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">PipelineBuilder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="nc">Kleisli</span><span class="o">.</span><span class="n">ask</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Unit</span><span class="o">],</span> <span class="nc">PipelineMeta</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="nc">Vector</span><span class="o">.</span><span class="n">empty</span><span class="o">,</span> <span class="mi">0</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What this gives you</p>
+<ul>
+<li>Typed endpoints with <code>SchemaConforms</code> evidence at the boundaries.</li>
+<li>A builder that only exposes <code>build</code> when the output type is <code>Unit</code> (after the sink) via an <code>Out =:= Unit</code> constraint.</li>
+<li>A composed <code>Kleisli[F, In, Unit]</code> the whole time - no <code>Any</code>, no unsafe casts in your domain code.</li>
+</ul>
+<p>Try it quickly</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.effect.</span><span class="o">{</span><span class="nc">IO</span><span class="o">,</span> <span class="nc">IOApp</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">com.example.pipeline._</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">User</span><span class="o">(</span><span class="n">id</span><span class="k">:</span> <span class="kt">Long</span><span class="o">,</span> <span class="n">email</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Provide evidence to allow the pipeline (in real life, derive or macro it)
+</span></span></span><span class="line"><span class="cl"><span class="n">given</span> <span class="nc">SchemaConforms</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">User</span>, <span class="kt">SchemaPolicy.Exact</span><span class="o">]</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">SchemaConforms</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">User</span>, <span class="kt">SchemaPolicy.Exact</span><span class="o">]</span> <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Demo</span> <span class="k">extends</span> <span class="nc">IOApp</span><span class="o">.</span><span class="nc">Simple</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="o">(</span><span class="n">pipe</span><span class="o">,</span> <span class="n">meta</span><span class="o">)</span> <span class="k">=</span> <span class="nc">PipelineBuilder</span><span class="o">[</span><span class="kt">IO</span><span class="o">](</span><span class="s">&#34;users&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">addSource</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">User</span>, <span class="kt">SchemaPolicy.Exact</span><span class="o">](</span><span class="s">&#34;file&#34;</span><span class="o">)(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="nc">User</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="s">&#34;A@B.com&#34;</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">addTransform</span><span class="o">(</span><span class="s">&#34;normalize&#34;</span><span class="o">)(</span><span class="n">u</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">email</span> <span class="k">=</span> <span class="n">u</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">.</span><span class="n">trim</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">addSink</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">SchemaPolicy.Exact</span><span class="o">](</span><span class="s">&#34;stdout&#34;</span><span class="o">)(</span><span class="n">u</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;out: </span><span class="si">$u</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">build</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">run</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="n">meta</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">pipe</span><span class="o">.</span><span class="n">run</span><span class="o">(())</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Compile‑fail demo (comment out the <code>given</code> evidence above) and the source/sink calls that require it will not typecheck..</p>
+<hr>
+<h2 id="part-3---add-observability-and-retries-without-changing-business-logic">Part 3 - Add observability and retries without changing business logic</h2>
+<div class="admonition success">
+  <div class="admonition-title">Separation of concerns</div>
+  <div class="admonition-content">
+    Wrap stages with decorators for logging, tracing, retries. Keep business logic pure. Add cross-cutting concerns from the outside without touching domain code.
+  </div>
+</div>
+<p>You can wrap a <code>Kleisli</code> to add logging/tracing/retries in one place.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.effect.IO</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">withRetry</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">](</span><span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">],</span> <span class="n">max</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Kleisli</span> <span class="o">{</span> <span class="n">a</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">loop</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">      <span class="n">k</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">a</span><span class="o">).</span><span class="n">handleErrorWith</span> <span class="o">{</span> <span class="n">e</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="n">max</span><span class="o">)</span> <span class="nc">IO</span><span class="o">.</span><span class="n">raiseError</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">else</span> <span class="nc">IO</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="mf">200.</span><span class="n">millis</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">loop</span><span class="o">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">loop</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">traced</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">B</span><span class="o">](</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)(</span><span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Kleisli</span><span class="o">(</span><span class="n">a</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;start </span><span class="si">$name</span><span class="s">&#34;</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">k</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">a</span><span class="o">).</span><span class="n">guarantee</span><span class="o">(</span><span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;end   </span><span class="si">$name</span><span class="s">&#34;</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">robust</span> <span class="k">=</span> <span class="n">withRetry</span><span class="o">(</span><span class="n">traced</span><span class="o">(</span><span class="s">&#34;normalize&#34;</span><span class="o">)(</span><span class="n">normalize</span><span class="o">),</span> <span class="n">max</span> <span class="k">=</span> <span class="mi">3</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">resilientPipeline</span> <span class="k">=</span> <span class="n">readRaw</span> <span class="n">andThen</span> <span class="n">toUser</span> <span class="n">andThen</span> <span class="n">robust</span> <span class="n">andThen</span> <span class="n">writeUser</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Because everything is just values, you can layer concerns without touching the business code.</p>
+<hr>
+<h2 id="part-4---practical-patterns-with-kleisli">Part 4 - Practical patterns with Kleisli</h2>
+<ul>
+<li>Tracing per stage: wrap with a small decorator (as above). In prod, swap <code>println</code> with your logger or tracing span.</li>
+<li>Typed failures vs aggregated validations: use <code>Either</code>/<code>EitherT</code> for fail‑fast steps and <code>ValidatedNel</code> to collect multiple issues before a sink.</li>
+<li>Retry/backoff at edges: compose a <code>withRetry</code> wrapper around the few stages that hit flaky systems.</li>
+<li>Testing: run stages as plain functions with test inputs; for <code>IO</code>, prefer <code>cats-effect</code> testing utilities (e.g., <code>TestControl</code>) instead of <code>unsafeRunSync</code>.</li>
+<li>Observability: since stages are values, you can add metrics once and reuse the wrapped stage wherever needed.</li>
+</ul>
+<p>Small before/after to internalize &ldquo;effects at edges&rdquo;:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// ❌ Anti-pattern: effect inside a transform leaks concerns
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">transformBad</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">User</span>, <span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="n">u</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">IO</span><span class="o">.</span><span class="n">println</span><span class="o">(</span><span class="s">s&#34;email before: </span><span class="si">${</span><span class="n">u</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s">&#34;</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">email</span> <span class="k">=</span> <span class="n">u</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// ✅ Better: keep transform pure; add logs via a wrapper
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">transformPure</span><span class="k">:</span> <span class="kt">User</span> <span class="o">=&gt;</span> <span class="nc">User</span> <span class="k">=</span> <span class="n">u</span> <span class="k">=&gt;</span> <span class="n">u</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">email</span> <span class="k">=</span> <span class="n">u</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">toLowerCase</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">transformGood</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">User</span>, <span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">u</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">transformPure</span><span class="o">(</span><span class="n">u</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">observed</span>       <span class="k">=</span> <span class="n">instrument</span><span class="o">(</span><span class="s">&#34;normalize&#34;</span><span class="o">,</span> <span class="n">transformGood</span><span class="o">)(</span><span class="n">yourEmitter</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="how-other-teams-already-do-this">How other teams already do this</h2>
+<p>Look at the way the Cats docs teach <code>Reader</code> (aka <code>Kleisli</code>) as a pipeline of small <code>Job</code>s: they model each topic of work as a Kleisli stage and wire the stages with <code>traverse</code>, exactly the way we want to stitch Spark transforms.</p>
+<p>Community answers echo the same advice: if you already have <code>A =&gt; F[B]</code> slices in prod, wrap them in <code>Kleisli</code> once and use <code>andThen</code> instead of hand-rolled glue.</p>
+<p>Flink’s own documentation describes a pipeline as a chain of operators flowing from source to sink. Map each operator to a Kleisli, and you get a mental model that works for both the Table API and your Scala glue code—one stage per arrow, all composed left to right.</p>
+<hr>
+<h2 id="a-quick-note-on-why-not-just-pick-one-effect">A quick note on why not just pick one effect</h2>
+<p>Most teams standardise on one runtime-Cats Effect <code>IO</code>, ZIO <code>Task</code>, whatever ships with the platform-and that’s fine. The point of Kleisli isn’t to flip runtimes every sprint. It’s to tame everything that sits in <code>F</code>: audit logging, notifications, lineage, retries, metrics. Those are the things that make pipelines noisy. When each stage is an <code>A =&gt; F[B]</code>, you can wrap that arrow once with <code>withAudit</code>, <code>withNotifications</code>, <code>withRetries</code>, and the business code stays untouched. Composition stays readable because the glue is a value, not scattered side effects.</p>
+<h2 id="part-5---when-not-to-reach-for-kleisli">Part 5 - When not to reach for Kleisli</h2>
+<div class="admonition warning">
+  <div class="admonition-title">Don&#39;t over-abstract</div>
+  <div class="admonition-content">
+    Use Kleisli at IO boundaries: sources, sinks, service calls. Keep pure transforms as simple <code>A =&gt; B</code> functions. Don&rsquo;t wrap everything just because you can.
+  </div>
+</div>
+<ul>
+<li>Inside a single pure transform: just write <code>A =&gt; B</code>.</li>
+<li>When your steps aren&rsquo;t effectful: function composition is simpler.</li>
+<li>When the abstraction leaks too many types: prefer small helpers and introduce Kleisli only at module boundaries.</li>
+</ul>
+<p><strong>Rule of thumb:</strong> use Kleisli where IO begins and ends-sources, sinks, boundaries, service calls, and stage glue. Keep inner transforms as plain <code>A =&gt; B</code>.</p>
+<hr>
+<h2 id="appendix---kleisli-cheat-sheet">Appendix - Kleisli cheat sheet</h2>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.syntax.all._</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Lift a plain effectful function
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">lift</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">f</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Compose
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="n">k1</span> <span class="n">andThen</span> <span class="n">k2</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Map, flatMap
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">k2</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="n">k1</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">b</span> <span class="k">=&gt;</span> <span class="n">toC</span><span class="o">(</span><span class="n">b</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">k3</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="n">k1</span><span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">b</span> <span class="k">=&gt;</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">a</span> <span class="k">=&gt;</span> <span class="n">next</span><span class="o">(</span><span class="n">a</span><span class="o">,</span> <span class="n">b</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Add context (tracing/metrics) without changing types
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">traced</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">](</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)(</span><span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">])(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">inSpan</span><span class="k">:</span> <span class="o">(</span><span class="kt">String</span><span class="o">,</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">])</span> <span class="k">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">(</span><span class="n">a</span> <span class="k">=&gt;</span> <span class="n">inSpan</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">k</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">a</span><span class="o">)))</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="references">References</h2>
+<ul>
+<li>Typelevel Cats - Kleisli and composition: <a href="https://typelevel.org/cats/datatypes/kleisli.html"  target="_blank" rel="nofollow noopener noreferrer">https://typelevel.org/cats/datatypes/kleisli.html</a>
+</li>
+<li>Typelevel Cats - Traverse docs on building pipelines: <a href="https://typelevel.org/cats/typeclasses/traverse.html"  target="_blank" rel="nofollow noopener noreferrer">https://typelevel.org/cats/typeclasses/traverse.html</a>
+</li>
+<li>Rock the JVM - Scala with Cats course: <a href="https://rockthejvm.com/courses/cats/"  target="_blank" rel="nofollow noopener noreferrer">https://rockthejvm.com/courses/cats/</a>
+</li>
+<li>Rock the JVM - Cats Effect course: <a href="https://rockthejvm.com/courses/cats-effect/"  target="_blank" rel="nofollow noopener noreferrer">https://rockthejvm.com/courses/cats-effect/</a>
+</li>
+<li>&ldquo;Kleisli composition&rdquo; explainer (theory and (&gt;=&gt;) laws): <a href="https://xenon.stanford.edu/~hwatheod/monads.html"  target="_blank" rel="nofollow noopener noreferrer">https://xenon.stanford.edu/~hwatheod/monads.html</a>
+</li>
+<li>Stack Overflow - When to reach for Kleisli in production pipelines: <a href="https://stackoverflow.com/questions/2828588/how-to-compose-functions-that-return-monads"  target="_blank" rel="nofollow noopener noreferrer">https://stackoverflow.com/questions/2828588/how-to-compose-functions-that-return-monads</a>
+</li>
+<li>Apache Flink docs - How operator chains define a pipeline: <a href="https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/concepts/programming-model/"  target="_blank" rel="nofollow noopener noreferrer">https://nightlies.apache.org/flink/flink-docs-release-1.18/docs/concepts/programming-model/</a>
+</li>
+<li>Background post on compile‑time contracts: <a href="/compile-time-data-contracts" >/compile-time-data-contracts</a>
+</li>
+<li>FlowForge docs (production builder wiring tracing/lineage with Kleisli): <a href="https://github.com/vim89/flowforge/blob/main/docs/start-here.md"  target="_blank" rel="nofollow noopener noreferrer">https://github.com/vim89/flowforge/blob/main/docs/start-here.md</a>
+</li>
+</ul>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li>Kleisli turns <code>A =&gt; F[B]</code> back into a composable building block.</li>
+<li>A Kleisli is a named step; steps click together like an assembly line.</li>
+<li>Avoid nested <code>flatMap</code>s - read pipelines left → right with <code>andThen</code>.</li>
+<li>Use Kleisli at IO boundaries; keep transforms pure and tiny.</li>
+</ul>
+<hr>
+<h2 id="bonus---typealigned-composition">Bonus - Type‑aligned composition</h2>
+<p>Sometimes you want to accumulate stages of different shapes (<code>Kleisli[F, A, B]</code>, then <code>Kleisli[F, B, C]</code>, etc.) and end up with one pipeline. The most type‑safe approach is to compose into a single <code>Kleisli[F, In, Out]</code> value as you add stages (exactly what our mini‑builder does) - not a list of erased functions.</p>
+<p>If you need an intermediate collection, use a type‑aligned sequence where each element’s output matches the next element’s input. In code, prefer composing immediately:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">pipeline</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">readRaw</span> <span class="n">andThen</span> <span class="n">toUser</span> <span class="n">andThen</span> <span class="n">normalize</span> <span class="n">andThen</span> <span class="n">writeUser</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>No <code>Any</code>, no casts - just type‑checked composition.</p>
+<h3 id="minimal-typestate-builder-with-typed-endpoints">Minimal typestate builder with typed endpoints</h3>
+<p>Below is a compact sketch that borrows a proven layout: typed sources/sinks guarded by compile‑time contract evidence and a transform in the middle.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.Kleisli</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.Applicative</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Contract policy model
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">SchemaPolicy</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">SchemaPolicy</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Exact</span> <span class="k">extends</span> <span class="nc">SchemaPolicy</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">Exact</span> <span class="k">extends</span> <span class="nc">Exact</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Evidence that producer C conforms to contract R under policy P
+</span></span></span><span class="line"><span class="cl"><span class="c1">// (Provide your own instances or use compile-time macros; see the linked contracts post.)
+</span></span></span><span class="line"><span class="cl"><span class="k">trait</span> <span class="nc">SchemaConforms</span><span class="o">[</span><span class="kt">C</span>, <span class="kt">R</span>, <span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">SchemaPolicy</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Phantom states
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">St</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">St</span> <span class="o">{</span> <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Empty</span> <span class="k">extends</span> <span class="nc">St</span><span class="o">;</span> <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">WithContract</span> <span class="k">extends</span> <span class="nc">St</span><span class="o">;</span> <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">WithTransform</span> <span class="k">extends</span> <span class="nc">St</span><span class="o">;</span> <span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Complete</span> <span class="k">extends</span> <span class="nc">St</span> <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Data endpoints
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Source</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Sink</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">id</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// A tiny builder that composes Kleislis underneath
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Builder</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">Monad</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">](</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">])</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">addTransform</span><span class="o">[</span><span class="kt">C</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">Out</span> <span class="o">=&gt;</span> <span class="n">F</span><span class="o">[</span><span class="kt">C</span><span class="o">])</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">C</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Builder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">k</span><span class="o">.</span><span class="n">andThen</span><span class="o">(</span><span class="nc">Kleisli</span><span class="o">(</span><span class="n">f</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">build</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">In</span>, <span class="kt">Out</span><span class="o">]</span> <span class="k">=</span> <span class="n">k</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Builder</span> <span class="o">{</span> <span class="k">def</span> <span class="n">apply</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">Monad</span><span class="o">](</span><span class="n">name</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Builder</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Unit</span>, <span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Builder</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="nc">Kleisli</span><span class="o">.</span><span class="n">ask</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">Unit</span><span class="o">])</span> <span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This is purposely compact to fit a post. The ideas mirror what you’d do in production: use Kleisli for composition, use phantom types to force a correct sequence, and gate typed endpoints with <code>SchemaConforms</code> evidence so schema drift is a compile‑time error.</p>
+<pre class="mermaid">classDiagram
+  class Builder~F,In,Out~ {
+    - k: Kleisli~F,In,Out~
+    + addTransform()
+    + build(): Kleisli~F,In,Out~
+  }
+  class Kleisli~F,A,B~
+  Builder --&gt; Kleisli
+</pre><hr>
+<h2 id="part-6---instrumentation-hooks-that-dont-leak-into-business-code">Part 6 - Instrumentation hooks that don’t leak into business code</h2>
+<p>Per‑stage logs/metrics/lineage shouldn’t be sprinkled into every function. Add them from the outside by wrapping stages with a small decorator that emits Start/Complete/Fail events and timing. Keep it optional so the same pipeline runs with or without it.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// A generic event emitter (wire to your logging/metrics/lineage system)
+</span></span></span><span class="line"><span class="cl"><span class="k">trait</span> <span class="nc">Emitter</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">start</span><span class="o">(</span><span class="n">stage</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">success</span><span class="o">(</span><span class="n">stage</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">tookMs</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">failure</span><span class="o">(</span><span class="n">stage</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">err</span><span class="k">:</span> <span class="kt">Throwable</span><span class="o">)</span><span class="k">:</span> <span class="kt">F</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">instrument</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span><span class="kt">:</span> <span class="kt">cats.MonadThrow</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">](</span><span class="n">stage</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">k</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">])(</span><span class="n">emit</span><span class="k">:</span> <span class="kt">Emitter</span><span class="o">[</span><span class="kt">F</span><span class="o">])</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Kleisli</span> <span class="o">{</span> <span class="n">a</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">now</span> <span class="k">=</span> <span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">emit</span><span class="o">.</span><span class="n">start</span><span class="o">(</span><span class="n">stage</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">k</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">a</span><span class="o">).</span><span class="n">attempt</span><span class="o">.</span><span class="n">flatMap</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">b</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">val</span> <span class="n">ms</span> <span class="k">=</span> <span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span> <span class="o">-</span> <span class="n">now</span><span class="o">)</span> <span class="o">/</span> <span class="mi">1000000L</span>
+</span></span><span class="line"><span class="cl">        <span class="n">emit</span><span class="o">.</span><span class="n">success</span><span class="o">(</span><span class="n">stage</span><span class="o">,</span> <span class="n">ms</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">cats</span><span class="o">.</span><span class="nc">Monad</span><span class="o">[</span><span class="kt">F</span><span class="o">].</span><span class="n">pure</span><span class="o">(</span><span class="n">b</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>  <span class="k">=&gt;</span> <span class="n">emit</span><span class="o">.</span><span class="n">failure</span><span class="o">(</span><span class="n">stage</span><span class="o">,</span> <span class="n">e</span><span class="o">)</span> <span class="o">*&gt;</span> <span class="n">cats</span><span class="o">.</span><span class="nc">MonadThrow</span><span class="o">[</span><span class="kt">F</span><span class="o">].</span><span class="n">raiseError</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Use it where you need it:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">observedNormalize</span> <span class="k">=</span> <span class="n">instrument</span><span class="o">(</span><span class="s">&#34;normalize&#34;</span><span class="o">,</span> <span class="n">normalize</span><span class="o">)(</span><span class="n">yourEmitter</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">observedPipeline</span>  <span class="k">=</span> <span class="n">readRaw</span> <span class="n">andThen</span> <span class="n">toUser</span> <span class="n">andThen</span> <span class="n">observedNormalize</span> <span class="n">andThen</span> <span class="n">writeUser</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Result: per‑stage observability with no code changes in your transforms.</p>
+<pre class="mermaid">sequenceDiagram
+  actor Dev
+  participant Pipe as Pipeline
+  participant Emit as Emitter
+  participant Stage as &#34;Stage.execute&#34;
+  Dev-&gt;&gt;Pipe: run()
+  Pipe-&gt;&gt;Emit: start(stage)
+  Pipe-&gt;&gt;Stage: Kleisli.run(a)
+  alt success
+    Stage--&gt;&gt;Pipe: result
+    Pipe-&gt;&gt;Emit: success(stage, tookMs)
+  else failure
+    Stage--&gt;&gt;Pipe: error
+    Pipe-&gt;&gt;Emit: failure(stage, err)
+  end
+</pre><hr>
+<h2 id="part-7---typed-endpoints-very-briefly">Part 7 - Typed endpoints (very briefly)</h2>
+<p>If you model sources/sinks with typed contracts, the &ldquo;are we compatible?&rdquo; question can be answered at compile time, and the failure shows up before deploy. That topic is bigger than this post; see the dedicated article for a deep dive and examples: <a href="/compile-time-data-contracts" >/compile-time-data-contracts</a>
+.</p>
+<hr>
+<h2 id="part-8---error-model-idempotency-and-exactlyonce-behavior-at-the-edges">Part 8 - Error model, idempotency, and exactly‑once behavior at the edges</h2>
+<div class="admonition tip">
+  <div class="admonition-title">Production-ready pipelines</div>
+  <div class="admonition-content">
+    Use Either/Validated for domain errors, not exceptions. Make sinks idempotent with upserts or hash-based deduplication. Retries should be safe by default.
+  </div>
+</div>
+<p>Pipelines fail in the real world; we want actionable errors and safe retries. Use a small error ADT for domain failures; prefer <code>Either</code>/<code>Validated</code> in business logic, and reserve exceptions for hard boundaries. Make sinks idempotent (upsert on a key, or keep a ledger of hashes) so retries don&rsquo;t duplicate work.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">PipelineError</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">PipelineError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">Parse</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">PipelineError</span>
+</span></span><span class="line"><span class="cl">  <span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">External</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">cause</span><span class="k">:</span> <span class="kt">Throwable</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">PipelineError</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.data.EitherT</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">type</span> <span class="kt">Stage</span><span class="o">[</span><span class="kt">F</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span><span class="o">[</span><span class="kt">EitherT</span><span class="o">[</span><span class="kt">F</span>, <span class="kt">PipelineError</span>, <span class="kt">*</span><span class="o">]</span>, <span class="kt">A</span>, <span class="kt">B</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Example: parse with good errors, not exceptions
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">parse</span><span class="k">:</span> <span class="kt">Stage</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Raw</span>, <span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="n">r</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">EitherT</span><span class="o">(</span><span class="nc">IO</span><span class="o">.</span><span class="n">pure</span><span class="o">(</span><span class="n">parseRow</span><span class="o">(</span><span class="n">r</span><span class="o">).</span><span class="n">toRight</span><span class="o">(</span><span class="nc">PipelineError</span><span class="o">.</span><span class="nc">Parse</span><span class="o">(</span><span class="s">s&#34;bad row: </span><span class="si">${</span><span class="n">r</span><span class="o">.</span><span class="n">line</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Idempotent sink (conceptual): insert if absent else compare‑and‑update
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">idempotentWrite</span><span class="o">(</span><span class="n">u</span><span class="k">:</span> <span class="kt">User</span><span class="o">)</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// 1) Upsert on (id) with a unique constraint
+</span></span></span><span class="line"><span class="cl">  <span class="c1">// 2) Or maintain a sink ledger: (id, hash) and skip duplicates
+</span></span></span><span class="line"><span class="cl">  <span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This keeps failures explicit and retries safe.</p>
+<hr>
+<h2 id="part-9---parallelism-where-it-actually-helps">Part 9 - Parallelism where it actually helps</h2>
+<p>Some steps fan out naturally (read partitions, transform per partition) and then rejoin. Parallelize over input collections rather than inside a single small stage.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.syntax.all._</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">processBatch</span><span class="o">(</span><span class="n">batch</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Raw</span><span class="o">])</span><span class="k">:</span> <span class="kt">IO</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="o">.</span><span class="n">parTraverse_</span><span class="o">(</span><span class="n">r</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">readRaw</span> <span class="n">andThen</span> <span class="n">toUser</span> <span class="n">andThen</span> <span class="n">normalize</span> <span class="n">andThen</span> <span class="n">writeUser</span><span class="o">).</span><span class="n">run</span><span class="o">(()))</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Be selective: parallelism is great for independent items; it’s noise for single‑record transforms.</p>
+<hr>
+<h2 id="part-10---resource-safety-files-dbs-clients">Part 10 - Resource safety (files, DBs, clients)</h2>
+<p>Leaking file handles or DB sessions will ruin your day. Use <code>Resource</code> (Cats Effect) to acquire/use/release safely; wrap it in Kleisli.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">cats.effect.</span><span class="o">{</span><span class="nc">IO</span><span class="o">,</span> <span class="nc">Resource</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">file</span><span class="o">(</span><span class="n">path</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Resource</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">java.io.BufferedReader</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Resource</span><span class="o">.</span><span class="n">fromAutoCloseable</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="nc">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="nc">FileReader</span><span class="o">(</span><span class="n">path</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">readFirst</span><span class="k">:</span> <span class="kt">Kleisli</span><span class="o">[</span><span class="kt">IO</span>, <span class="kt">Unit</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Kleisli</span> <span class="o">{</span> <span class="k">_</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">file</span><span class="o">(</span><span class="s">&#34;/tmp/in.csv&#34;</span><span class="o">).</span><span class="n">use</span><span class="o">(</span><span class="n">br</span> <span class="k">=&gt;</span> <span class="nc">IO</span><span class="o">.</span><span class="n">blocking</span><span class="o">(</span><span class="n">br</span><span class="o">.</span><span class="n">readLine</span><span class="o">()))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>You get correctness by construction: even on errors, resources close.</p>
+<hr>
+<h2 id="appendix-b---sbt-skeleton-to-copypaste">Appendix B - sbt skeleton to copy‑paste</h2>
+<p>A runnable starter accelerates learning.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// build.sbt
+</span></span></span><span class="line"><span class="cl"><span class="nc">ThisBuild</span> <span class="o">/</span> <span class="n">scalaVersion</span> <span class="k">:</span><span class="o">=</span> <span class="s">&#34;2.13.14&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;org.typelevel&#34;</span> <span class="o">%%</span> <span class="s">&#34;cats-core&#34;</span>        <span class="o">%</span> <span class="s">&#34;2.10.0&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;org.typelevel&#34;</span> <span class="o">%%</span> <span class="s">&#34;cats-effect&#34;</span>      <span class="o">%</span> <span class="s">&#34;3.5.4&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;org.scalatest&#34;</span> <span class="o">%%</span> <span class="s">&#34;scalatest&#34;</span>        <span class="o">%</span> <span class="s">&#34;3.2.19&#34;</span> <span class="o">%</span> <span class="nc">Test</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// If you want to instantiate generic F[_] code with ZIO:
+</span></span></span><span class="line"><span class="cl">  <span class="s">&#34;dev.zio&#34;</span>       <span class="o">%%</span> <span class="s">&#34;zio-interop-cats&#34;</span> <span class="o">%</span> <span class="s">&#34;23.1.0.5&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// src/main/scala/Main.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="n">cats</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nc">IOApp</span><span class="o">.</span><span class="nc">Simple</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">run</span> <span class="k">=</span> <span class="nc">Demo</span><span class="o">.</span><span class="n">run</span> <span class="c1">// from the examples above
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// src/test/scala/ContractsSpec.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">org.scalatest.wordspec.AnyWordSpec</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">org.scalatest.matchers.should.Matchers</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">ContractsSpec</span> <span class="k">extends</span> <span class="nc">AnyWordSpec</span> <span class="k">with</span> <span class="nc">Matchers</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;compile-fail&#34;</span> <span class="n">should</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;reject mismatched schemas under Exact&#34;</span> <span class="n">in</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">assertTypeError</span><span class="o">(</span><span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">        trait SchemaConforms[C, R, P]
+</span></span></span><span class="line"><span class="cl"><span class="s">        sealed trait SchemaPolicy; object SchemaPolicy { sealed trait Exact extends SchemaPolicy }
+</span></span></span><span class="line"><span class="cl"><span class="s">        case class A(id: Long); case class B(id: Long, email: String)
+</span></span></span><span class="line"><span class="cl"><span class="s">        summon[SchemaConforms[A, B, SchemaPolicy.Exact]]
+</span></span></span><span class="line"><span class="cl"><span class="s">      &#34;&#34;&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="takehome-checklist">Take‑home checklist</h2>
+<ul>
+<li>Contracts first: write types for producer/consumer and pick a policy.</li>
+<li>Typed edges: require schema evidence at your source/sink boundaries.</li>
+<li>Kleisli everywhere at edges: treat stages as <code>A =&gt; F[B]</code> values you can compose.</li>
+<li>Keep transforms pure: IO at the boundaries only; make sinks idempotent.</li>
+<li>Observability from the outside: wrap stages with timing and events; avoid logging inside transforms.</li>
+<li>Fast feedback: add at least one compile‑fail test to prove the policy gate.</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/2025-10-kleisli-data-engineering.png" type="image/png"/></item><item><title>Kotlin for data pipelines: Why I ditched Scala for backend data architecture</title><link>https://vitthalmirji.com/2025/05/kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/05/kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture/</guid><pubDate>Wed, 21 May 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>kotlin</category><category>data-engineering</category><category>data-pipelines</category><category>backend-architecture</category><category>apache-spark</category><category>apache-flink</category><category>coroutines</category><category>lakehouse</category><category>observability</category><category>llm-integration</category><description>Deep-dive guide to building data-centric backends with Kotlin. Learn pipeline patterns with coroutines, Spark/Flink integration, LLM enrichment, lakehouse patterns (Iceberg/Delta), and observability with OpenTelemetry. Includes real code.</description><content:encoded><![CDATA[<p>You know that moment when you&rsquo;re debugging a Scala data pipeline at 2 AM and realize 80% of the code is type gymnastics and implicit hell?</p>
+<p>I spent years building data pipelines in Scala. Type-safe, functional, elegant - but also verbose, complex, and frankly exhausting. Then I tried Kotlin for a backend data pipeline.</p>
+<p><strong>The difference? Shocking.</strong></p>
+<ul>
+<li>Coroutines for async flow → no callback hell</li>
+<li>Data classes + <code>kotlinx.serialization</code> → zero boilerplate</li>
+<li>Spark integration → same power, 50% less code</li>
+<li>Null-safety out of the box → no more <code>Option[Option[T]]</code> madness</li>
+</ul>
+<p>This post shows you how to build production-grade data-centric backends with Kotlin. You&rsquo;ll see:</p>
+<ul>
+<li>Pipeline patterns with composable stages</li>
+<li>Spark and Flink integration (with performance comparisons)</li>
+<li>LLM enrichment stages for AI-powered data</li>
+<li>Lakehouse patterns (Iceberg, Delta Lake)</li>
+<li>Observability with Prometheus and OpenTelemetry</li>
+</ul>
+<p>Real code, real architectures, real production lessons.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the data engineering reality in 2025:</p>
+<p><strong>Traditional approach (Scala/Java):</strong></p>
+<ul>
+<li>Heavy type systems → steep learning curve</li>
+<li>Boilerplate everywhere → slow development</li>
+<li>Futures/monads → complex async code</li>
+<li>Spark verbosity → 10 lines for simple transformations</li>
+</ul>
+<p><strong>The Kotlin advantage:</strong></p>
+<ul>
+<li>Concise syntax → 50% less code</li>
+<li>Coroutines → async without complexity</li>
+<li>Null-safety → catch errors at compile time</li>
+<li>JVM compatibility → use existing Spark/Flink/Kafka libraries</li>
+</ul>
+<p><strong>Why you should care:</strong></p>
+<ul>
+<li>Faster development (less boilerplate)</li>
+<li>Easier onboarding (simpler syntax)</li>
+<li>Better async (coroutines &gt; futures)</li>
+<li>Production-ready (JVM stability + modern features)</li>
+</ul>
+<p>This post is for data engineers who are tired of fighting their language and want something that just works.</p>
+<hr>
+<h2 id="part-1---pipeline-patterns-composable-stages-with-coroutines">Part 1 - Pipeline patterns: composable stages with coroutines</h2>
+<p>A classic <em>pipeline-of-transformations</em> lets us compose reusable stages:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">input</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">stages</span><span class="p">:</span> <span class="n">List</span><span class="p">&lt;</span><span class="k">suspend</span> <span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">&gt;):</span> <span class="k">suspend</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span> <span class="p">=</span>
+</span></span><span class="line"><span class="cl">  <span class="k">suspend</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">stages</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="n">input</span><span class="p">)</span> <span class="p">{</span> <span class="n">acc</span><span class="p">,</span> <span class="n">fn</span> <span class="o">-&gt;</span> <span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">cleanText</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">s</span><span class="p">.</span><span class="n">trim</span><span class="p">().</span><span class="n">lowercase</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">sanitize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">s</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="n">Regex</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\\</span><span class="s2">s+&#34;</span><span class="p">),</span> <span class="s2">&#34;-&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">pipelineExample</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">input</span> <span class="p">=</span> <span class="s2">&#34; Hello   WORLD! &#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">result</span> <span class="p">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">listOf</span><span class="p">(</span><span class="o">::</span><span class="n">cleanText</span><span class="p">,</span> <span class="o">::</span><span class="n">sanitize</span><span class="p">))()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="c1">// output: &#34;hello-world!&#34;
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="part-2---data-classes--spark-integration-zero-boilerplate">Part 2 - Data classes + Spark integration (zero boilerplate)</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="nd">@Serializable</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="k">val</span> <span class="py">id</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span> <span class="k">val</span> <span class="py">ts</span><span class="p">:</span> <span class="n">Instant</span><span class="p">,</span> <span class="k">val</span> <span class="py">payload</span><span class="p">:</span> <span class="n">Map</span><span class="p">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Any</span><span class="p">?&gt;)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">transformEvents</span><span class="p">():</span> <span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ev</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">payload</span> <span class="p">=</span> <span class="n">ev</span><span class="p">.</span><span class="n">payload</span> <span class="p">+</span> <span class="p">(</span><span class="s2">&#34;processedAt&#34;</span> <span class="n">to</span> <span class="nc">Instant</span><span class="p">.</span><span class="n">now</span><span class="p">()))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin data classes + map closures = Spark pipelines without boilerplate. You could also easily integrate custom UDFs, JSON payloads via kotlinx.serialization, and more.</p>
+<h2 id="part-3---architecture-overview-kafka--sparkflink--lakehouse">Part 3 - Architecture overview: Kafka → Spark/Flink → Lakehouse</h2>
+<pre class="mermaid">flowchart LR
+  subgraph Ingestion
+    API --&gt;|HTTP POST| Kafka
+    Files --&gt;|batch upload| Kafka
+  end
+  Kafka --&gt; SparkProcessor
+  Kafka --&gt; FlinkProcessor
+  SparkProcessor --&gt; DeltaLake
+  FlinkProcessor --&gt; Iceberg
+  DeltaLake --&gt; QueryService
+  Iceberg --&gt; QueryService
+  QueryService --&gt; ClientApp
+</pre><p>Using both Spark and Flink in a Kappa‑style unified engine helps choose between batch or true-stream runtime at the same code-level.</p>
+<h2 id="part-4---spark-vs-flink-choosing-the-right-tool">Part 4 - Spark vs Flink: choosing the right tool</h2>
+<p>Kotlin shines here thanks to interoperability and expressive code.</p>
+<ul>
+<li><strong>Spark</strong> – micro-batch, lazy transforms, rich SQL support</li>
+<li><strong>Flink</strong> – event-time, stateful streams, low-latency</li>
+</ul>
+<p><strong>Performance comparison:</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>Feature / Design Choice</th>
+          <th>Apache Spark</th>
+          <th>Apache Flink</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Processing Model</strong></td>
+          <td>Micro-batch</td>
+          <td>True streaming (record-by-record)</td>
+      </tr>
+      <tr>
+          <td><strong>Latency</strong></td>
+          <td>Higher (~100s ms – seconds)</td>
+          <td>Low latency (ms level)</td>
+      </tr>
+      <tr>
+          <td><strong>Throughput</strong></td>
+          <td>High (great for batch)</td>
+          <td>Very high (great for stream processing)</td>
+      </tr>
+      <tr>
+          <td><strong>Backpressure Handling</strong></td>
+          <td>Limited / manual</td>
+          <td>Built-in native backpressure mechanism</td>
+      </tr>
+      <tr>
+          <td><strong>State Management</strong></td>
+          <td>Basic with checkpointing</td>
+          <td>First-class, consistent, fault-tolerant</td>
+      </tr>
+      <tr>
+          <td><strong>Event Time Processing</strong></td>
+          <td>Limited (structured streaming workaround)</td>
+          <td>Native support</td>
+      </tr>
+      <tr>
+          <td><strong>Windowing</strong></td>
+          <td>Available, but less flexible</td>
+          <td>Very flexible and expressive</td>
+      </tr>
+      <tr>
+          <td><strong>Use Case Fit</strong></td>
+          <td>Batch &amp; semi-streaming (ETL, ML pipelines)</td>
+          <td>Real-time analytics, event processing</td>
+      </tr>
+      <tr>
+          <td><strong>Language Support</strong></td>
+          <td>Scala, Java, Python, R</td>
+          <td>Java, Scala, Python</td>
+      </tr>
+      <tr>
+          <td><strong>Ease of Integration</strong></td>
+          <td>Well-supported in GCP / Databricks</td>
+          <td>Strong for Kafka, Stateful Apps</td>
+      </tr>
+      <tr>
+          <td><strong>Deployment Complexity</strong></td>
+          <td>Moderate (e.g. on Dataproc)</td>
+          <td>Higher; needs tuned Flink clusters</td>
+      </tr>
+      <tr>
+          <td><strong>Community &amp; Ecosystem</strong></td>
+          <td>Mature and broad</td>
+          <td>Growing rapidly in streaming domain</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="part-5---llm-enrichment-adding-ai-to-your-data-pipeline">Part 5 - LLM enrichment: adding AI to your data pipeline</h2>
+<p>Imagine injecting an LLM-based enrichment inside a Spark job:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">enrichWithLLM</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">String</span> <span class="p">=</span> <span class="n">coroutineScope</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">response</span> <span class="p">=</span> <span class="n">llmClient</span><span class="p">.</span><span class="n">completions</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">Prompt</span><span class="p">(</span><span class="s2">&#34;Extract entities from: </span><span class="si">$text</span><span class="s2">&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="n">response</span><span class="p">.</span><span class="n">choices</span><span class="p">.</span><span class="n">first</span><span class="p">().</span><span class="n">text</span><span class="p">.</span><span class="n">trim</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">enrichEvents</span><span class="p">():</span> <span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="n">mapPartitions</span> <span class="p">{</span> <span class="n">partition</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">runBlocking</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">partition</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ev</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">payload</span> <span class="p">=</span> <span class="n">ev</span><span class="p">.</span><span class="n">payload</span> <span class="p">+</span> <span class="p">(</span><span class="s2">&#34;entities&#34;</span> <span class="n">to</span> <span class="n">enrichWithLLM</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&#34;text&#34;</span><span class="p">]</span> <span class="k">as</span> <span class="n">String</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}.</span><span class="n">iterator</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>coroutineScope + mapPartitions avoids per-event I/O overload</li>
+<li>can also be packaged into a Ktor service if isolation is desired</li>
+</ul>
+<h2 id="part-6---end-to-end-flow-from-api-to-lake">Part 6 - End-to-end flow: from API to lake</h2>
+<pre class="mermaid">sequenceDiagram
+  participant API
+  participant Kafka
+  participant Spark
+  participant Enricher
+  participant Lake
+  participant Client
+
+  API-&gt;&gt;Kafka: Publish raw Event
+  Kafka-&gt;&gt;Spark: Read + transform
+  Spark-&gt;&gt;Enricher: async LLM enrich
+  Enricher--&gt;&gt;Spark: return enriched payload
+  Spark-&gt;&gt;Lake: write to Delta
+  Client-&gt;&gt;Lake: query via Presto/Trino
+</pre><h2 id="part-7---observability-metrics-with-prometheus-and-opentelemetry">Part 7 - Observability: metrics with Prometheus and OpenTelemetry</h2>
+<p>Capture stage timings using Kotlin DSL:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">timed</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">):</span> <span class="n">T</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">start</span> <span class="p">=</span> <span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="p">=</span> <span class="n">block</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">finally</span> <span class="p">=</span> <span class="n">prometheus</span><span class="p">.</span><span class="n">histogram</span><span class="p">(</span><span class="s2">&#34;stage_duration_seconds&#34;</span><span class="p">,</span> <span class="n">stage</span><span class="p">).</span><span class="n">observe</span><span class="p">((</span><span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span> <span class="p">-</span> <span class="n">start</span><span class="p">)</span> <span class="p">/</span> <span class="mf">1e9</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">timedTransform</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">timed</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* your logic */</span><span class="p">;</span> <span class="n">ev</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Include tracing with OpenTelemetry and JMX exporters for JVM-level insight.</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">timed</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">):</span> <span class="n">T</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">start</span> <span class="p">=</span> <span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">block</span><span class="p">().</span><span class="n">also</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">prometheus</span><span class="p">.</span><span class="n">histogram</span><span class="p">(</span><span class="s2">&#34;stage_seconds&#34;</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span> <span class="p">-</span> <span class="n">start</span><span class="p">)</span> <span class="p">/</span> <span class="mf">1e9</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span> <span class="n">timedTransform</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">timed</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="n">ev</span> <span class="p">}</span><span class="c1">//placeholder
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="part-8---lakehouse-patterns-iceberg-and-delta-lake">Part 8 - Lakehouse patterns: Iceberg and Delta Lake</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">val</span> <span class="py">table</span> <span class="p">=</span> <span class="nc">IcebergTable</span><span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="s2">&#34;events&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">table</span><span class="p">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">eventsDs</span><span class="p">)</span> <span class="c1">// merge by id + timestamp // SCD handling built-in</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin handles types, Avro/Parquet writes, and makes schema evolution expressive.</p>
+<h2 id="part-9---config-driven-pipelines-metadata-over-code">Part 9 - Config-driven pipelines: metadata over code</h2>
+<p>Pipeline stages should be pluggable:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">pipeline</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">clean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">enrich</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span>{<span class="w"> </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;openai-entity-v1&#34;</span><span class="w"> </span>}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">serialize</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">load</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">pipeline-llm</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">clean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">llmEnrich</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">gpt-3.5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">store</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l">iceberg</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin maps config to stage pipeline via DI (Koin, Dagger, Guice), making your data flow metadata-driven, not rigid.</p>
+<p>Turn this into:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">interface</span> <span class="nc">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Clean</span><span class="p">():</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">LlmEnrich</span><span class="p">(</span><span class="k">val</span> <span class="py">model</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Store</span><span class="p">(</span><span class="k">val</span> <span class="py">target</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">buildPipeline</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span> <span class="n">List</span><span class="p">&lt;</span><span class="k">suspend</span> <span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="n">TODO</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Use Koin/Dagger or reflection to bind stages—metadata-driven architecture FTW.</p>
+<h2 id="part-10---building-the-api-ktor--kafka-ingestion">Part 10 - Building the API: Ktor + Kafka ingestion</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">module</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">routing</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">post</span><span class="p">(</span><span class="s2">&#34;/ingest&#34;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">val</span> <span class="py">ev</span> <span class="p">=</span> <span class="n">call</span><span class="p">.</span><span class="n">receive</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;()</span>
+</span></span><span class="line"><span class="cl">      <span class="n">producer</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">ProducerRecord</span><span class="p">(</span><span class="s2">&#34;events&#34;</span><span class="p">,</span> <span class="n">ev</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">toString</span><span class="p">(),</span> <span class="nc">Json</span><span class="p">.</span><span class="n">encodeToString</span><span class="p">(</span><span class="n">ev</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">      <span class="n">call</span><span class="p">.</span><span class="n">respond</span><span class="p">(</span><span class="nc">HttpStatusCode</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Add Ktor metrics, request logging, backpressure handling, and let downstream processes do the heavy lifting.</p>
+<h3></h3>
+<h2 id="part-11---putting-it-all-together-complete-architecture">Part 11 - Putting it all together: complete architecture</h2>
+<pre class="mermaid">flowchart LR
+  Client --&gt; KtorAPI --&gt; Kafka --&gt; Spark/Flink --&gt; Lakehouse --&gt; QueryEngine --&gt; BI/CliApp
+  subgraph &#34;Observability&#34;
+    Spark/Flink --&gt; Prometheus
+    KtorAPI --&gt; OpenTelemetry
+  end
+</pre><hr>
+<h2 id="best-practices-and-lessons-learned">Best practices and lessons learned</h2>
+<p><strong>What works:</strong></p>
+<ul>
+<li>Use Kotlin DSLs for pipeline and config management</li>
+<li>Combine Spark + Flink for unified streaming/batch</li>
+<li>Inject LLM stages for AI-enriched data</li>
+<li>Abstract data sinks with lakehouse patterns (Iceberg/Delta)</li>
+<li>Centralize monitoring with Prometheus + OpenTelemetry</li>
+</ul>
+<p><strong>Advanced tips:</strong></p>
+<ul>
+<li>Use ArchUnit or Structurizr for architecture validation</li>
+<li>Add CI/CD pipeline generation DSL</li>
+<li>Auto-generate integration tests</li>
+<li>Implement backpressure handling in Kafka consumers</li>
+<li>Monitor JVM metrics with JMX exporters</li>
+</ul>
+<p><strong>Common pitfalls:</strong></p>
+<ul>
+<li>Don&rsquo;t block coroutines with blocking I/O</li>
+<li>Avoid per-event LLM calls (use mapPartitions batching)</li>
+<li>Don&rsquo;t skip observability (you&rsquo;ll regret it in production)</li>
+<li>Remember to handle schema evolution in lakehouse tables</li>
+</ul>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>Kotlin isn&rsquo;t just cleaner than Scala - it&rsquo;s fundamentally more productive for data engineering.</p>
+<p>After years of Scala&rsquo;s implicit hell and type gymnastics, Kotlin feels like a breath of fresh air. Coroutines eliminate callback complexity. Data classes remove boilerplate. Null-safety catches bugs at compile time.</p>
+<p>And you still get the full JVM ecosystem - Spark, Flink, Kafka, everything just works.</p>
+<p>If you&rsquo;re tired of fighting your language, give Kotlin a shot. Your future self will thank you.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> Scala data pipelines are verbose, complex, and exhausting (type gymnastics + implicit hell)</li>
+<li><strong>The solution:</strong> Kotlin = 50% less code, coroutines for async, data classes for zero boilerplate, null-safety built-in</li>
+<li><strong>Pipeline pattern:</strong> Composable stages with suspend functions, fold-based transformation chains</li>
+<li><strong>Spark integration:</strong> Data classes map directly to Datasets, kotlinx.serialization handles JSON/Avro</li>
+<li><strong>Flink vs Spark:</strong> Spark = micro-batch/high throughput, Flink = true streaming/low latency - Kotlin works with both</li>
+<li><strong>LLM enrichment:</strong> Use coroutineScope + mapPartitions to batch LLM calls, avoid per-event overhead</li>
+<li><strong>Architecture:</strong> Ktor API → Kafka → Spark/Flink → Lakehouse (Iceberg/Delta) → Query engine</li>
+<li><strong>Lakehouse patterns:</strong> Iceberg/Delta for ACID, schema evolution, time travel queries</li>
+<li><strong>Config-driven:</strong> YAML-defined pipeline stages, DI (Koin/Dagger) for metadata-driven architecture</li>
+<li><strong>Observability:</strong> Prometheus metrics, OpenTelemetry tracing, JMX exporters for JVM insight</li>
+<li><strong>Production lessons:</strong> Never block coroutines, batch LLM calls, centralize monitoring, handle backpressure</li>
+<li><strong>Bottom line:</strong> Kotlin beats Scala for data engineering - same JVM power, 10x better developer experience</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-05-kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture.png" type="image/png"/></item></channel></rss>

@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/mlops/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 05 Sep 2026 14:53:14 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/mlops/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>How I cut delivery errors by 82%: DPAT, gated CRQ, and data contracts in prod</title><link>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod/</guid><pubDate>Sun, 15 Jun 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>data-engineering</category><category>data-quality</category><category>ci-cd</category><category>data-contracts</category><category>spark</category><category>yaml</category><category>automation</category><category>production</category><category>mlops</category><description>Production-tested strategy to cut pipeline failures from 12% to 2% using YAML-based data quality checks (DPAT), CI/CD gates, and strict data contracts. Includes before/after metrics and architecture for self-healing pipelines in prod.</description><content:encoded><![CDATA[<p>You know that 3 AM page: &ldquo;The executive dashboard is empty. What happened?&rdquo;</p>
+<p>Your data pipeline failed. Again. Manual rollback time. Stakeholder emails. Root cause analysis. 3 hours of your life gone.</p>
+<p>For months, I lived this cycle:</p>
+<ul>
+<li><strong>12% delivery error rate</strong> (1 in 8 releases broke)</li>
+<li><strong>5 pipeline failures per week</strong></li>
+<li><strong>3 hours</strong> to fix each incident</li>
+<li><strong>Manual rollbacks</strong> every time</li>
+</ul>
+<p>Then I built DPAT (Declarative Pipeline Assurance Tool), gated our CI/CD, and enforced data contracts.</p>
+<p><strong>The result:</strong></p>
+<ul>
+<li>Errors dropped <strong>12% → 2%</strong> (82% reduction)</li>
+<li>Fixes went <strong>3 hours → 30 minutes</strong></li>
+<li>Failures: <strong>5/week → 0-1/week</strong></li>
+</ul>
+<p>This post shows you the complete implementation - YAML data quality checks, CI/CD gates, and data contract enforcement.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the data pipeline reality:</p>
+<p><strong>Before (the chaos):</strong></p>
+<ul>
+<li>Ship fast, break things</li>
+<li>No quality gates</li>
+<li>Manual testing (when you remember)</li>
+<li>Discover issues in production</li>
+<li>3 AM firefights</li>
+</ul>
+<p><strong>The cost:</strong></p>
+<ul>
+<li>12% of releases fail</li>
+<li>3 hours per fix (minimum)</li>
+<li>Lost stakeholder trust</li>
+<li>Your sanity</li>
+</ul>
+<p><strong>What I needed:</strong></p>
+<ul>
+<li>Automated quality gates</li>
+<li>Fast failure detection</li>
+<li>Automatic rollback</li>
+<li>Clear ownership</li>
+<li>Less stress</li>
+</ul>
+<p>This is the system that solved it.</p>
+<hr>
+<h2 id="part-1---dpat-declarative-data-quality-checks-in-yaml">Part 1 - DPAT: declarative data quality checks in YAML</h2>
+<p>Define YAML checks like this:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">checks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;order_date_not_null&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l">order_date</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">not_null</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;daily_volume_range&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">row_count</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">expected_range</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">1_000_000, 1_100_000 ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">error</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then wired that into our Spark ETL:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">results</span> <span class="k">=</span> <span class="nc">DPAT</span><span class="o">.</span><span class="n">runChecks</span><span class="o">(</span><span class="n">df</span><span class="o">,</span> <span class="s">&#34;orders&#34;</span><span class="o">,</span> <span class="n">date</span> <span class="k">=</span> <span class="n">runDate</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">assert</span><span class="o">(</span><span class="n">results</span><span class="o">.</span><span class="n">isSuccess</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="part-2---gated-crq-quality-gates-in-cicd">Part 2 - Gated CRQ: quality gates in CI/CD</h2>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Run DPAT checks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">sbt &#34;runDPAT --date ${{ env.RUN_DATE }}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Gated CRQ</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.runDPAT.outcome == &#39;failure&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">exit 1</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Failed checks stop the build and prevent broken data releases.</p>
+<hr>
+<h2 id="part-3---data-contracts-clear-ownership-and-schema-enforcement">Part 3 - Data contracts: clear ownership and schema enforcement</h2>
+<p>We published data schema/contracts like:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Contract Name</th>
+          <th>Fields</th>
+          <th>Owner</th>
+          <th>Version</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>orders</td>
+          <td>12</td>
+          <td>DataOps Team</td>
+          <td>v1.3</td>
+      </tr>
+      <tr>
+          <td>customer_data</td>
+          <td>8</td>
+          <td>Analytics</td>
+          <td>v2.1</td>
+      </tr>
+  </tbody>
+</table>
+<p>Since enforcing those schemas, compatibility bugs dropped by <strong>45%</strong>.</p>
+<hr>
+<h2 id="the-results-before-vs-after">The results: before vs after</h2>
+<table>
+  <thead>
+      <tr>
+          <th>Metric</th>
+          <th>Before</th>
+          <th>After</th>
+          <th>Improvement</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Pipeline failures per week</td>
+          <td>5</td>
+          <td>0–1</td>
+          <td>80-100%</td>
+      </tr>
+      <tr>
+          <td>Daily error resolution time</td>
+          <td>3 hours</td>
+          <td>30 min</td>
+          <td>83%</td>
+      </tr>
+      <tr>
+          <td>Delivery error rate</td>
+          <td>12%</td>
+          <td>2%</td>
+          <td>82%</td>
+      </tr>
+  </tbody>
+</table>
+<p>That&rsquo;s how we cut delivery errors by 82%.</p>
+<hr>
+<h2 id="architecture-how-it-all-fits-together">Architecture: how it all fits together</h2>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">[Source System] → [Spark ETL Job] → DPAT Checks → Data Contract Validator → Data Lake
+</span></span><span class="line"><span class="cl">                            │
+</span></span><span class="line"><span class="cl">                            ↓ (on fail)
+</span></span><span class="line"><span class="cl">                  [CI/CD Rollback &amp; Alerts]</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The flow:</strong></p>
+<ol>
+<li>Spark ETL processes data</li>
+<li>DPAT runs quality checks (nulls, volumes, ranges)</li>
+<li>Data contracts validate schemas</li>
+<li>On success → write to Data Lake</li>
+<li>On failure → rollback + alert</li>
+</ol>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>Building quality gates transformed our data platform.</p>
+<p><strong>Before:</strong></p>
+<ul>
+<li>12% failure rate</li>
+<li>3-hour firefights</li>
+<li>Manual rollbacks</li>
+<li>Lost trust</li>
+</ul>
+<p><strong>After:</strong></p>
+<ul>
+<li>2% failure rate</li>
+<li>30-minute fixes</li>
+<li>Automated everything</li>
+<li>Confidence restored</li>
+</ul>
+<p>The key? <strong>Shift left</strong> - catch issues before production, not after.</p>
+<hr>
+<h2 id="how-to-apply-this">How to apply this</h2>
+<p>If you&rsquo;re facing similar issues:</p>
+<ol>
+<li><strong>Build declarative checks</strong> - YAML-based quality rules</li>
+<li><strong>Gate your CI/CD</strong> - Failed checks = blocked deployment</li>
+<li><strong>Enforce data contracts</strong> - Clear ownership and schemas</li>
+<li><strong>Automate rollbacks</strong> - Don&rsquo;t rely on manual intervention</li>
+</ol>
+<p>Start small - one pipeline, one set of checks. Then expand.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> 12% delivery error rate, 5 failures/week, 3 hours per fix, manual rollbacks, 3 AM pages</li>
+<li><strong>The solution:</strong> DPAT (YAML quality checks) + Gated CRQ (CI/CD gates) + Data contracts (schema enforcement)</li>
+<li><strong>DPAT:</strong> Declare data quality rules in YAML (not_null, row_count ranges, custom validations)</li>
+<li><strong>Implementation:</strong> Spark ETL runs DPAT checks, asserts success before writing to Data Lake</li>
+<li><strong>Gated CRQ:</strong> CI/CD pipeline fails if DPAT checks fail, prevents broken releases</li>
+<li><strong>Data contracts:</strong> Published schemas with clear ownership, version control, compatibility validation</li>
+<li><strong>Architecture:</strong> Source → Spark → DPAT → Contract Validator → Lake (with rollback on failure)</li>
+<li><strong>Results:</strong> 12% → 2% error rate (82% drop), 5 → 0-1 failures/week, 3hr → 30min resolution time</li>
+<li><strong>Impact:</strong> Compatibility bugs dropped 45%, better confidence, automated enforcement, fewer firefights</li>
+<li><strong>Key lesson:</strong> Shift left - catch issues in CI/CD, not production</li>
+<li><strong>How to start:</strong> Build declarative checks, gate deployments, enforce contracts, automate rollbacks</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-06-how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod.png" type="image/png"/></item><item><title>Cloud-native AI workflows: BigQuery ML + Vertex AI (skip the CSV exports) now</title><link>https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml--vertex-ai-skip-the-csv-exports-now/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/05/cloud-native-ai-workflows-bigquery-ml--vertex-ai-skip-the-csv-exports-now/</guid><pubDate>Sat, 17 May 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>bigquery-ml</category><category>vertex-ai</category><category>mlops</category><category>real-time-inference</category><category>feature-store</category><category>model-monitoring</category><category>data-engineering</category><category>machine-learning</category><category>gcp</category><category>sql</category><description>Guide to building AI pipelines with BigQuery ML and Vertex AI. Learn SQL-first modeling, real-time endpoints, automated retraining, and drift monitoring. Includes diagrams and code that cut time-to-model from 6 weeks to 2 hours fast.</description><content:encoded><![CDATA[<p>You know that moment when your ML model is 3 months stale because retraining means:</p>
+<ol>
+<li>Export 500GB to CSV</li>
+<li>Spin up a Spark cluster</li>
+<li>Debug pandas memory errors</li>
+<li>Train for 12 hours</li>
+<li>Deploy manually</li>
+<li>Hope nothing breaks</li>
+</ol>
+<p>I spent years fighting this workflow. Export data, wrangle CSVs, fight cluster configs, deploy manually. Every iteration: weeks.</p>
+<p>Then I tried BigQuery ML + Vertex AI.</p>
+<p><strong>The difference? Ridiculous.</strong></p>
+<ul>
+<li>Train <strong>in-place</strong> with SQL (no data export)</li>
+<li>Deploy real-time endpoints in minutes (not hours)</li>
+<li>Automate retraining with pipelines</li>
+<li>Monitor drift out of the box</li>
+</ul>
+<p>Our time-to-model went from <strong>6 weeks to 2 hours</strong>. Infrastructure costs dropped 60%.</p>
+<p>This post shows you the complete architecture - from SQL feature engineering to production monitoring.</p>
+<p>Real code, real architecture, real production lessons.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the ML reality in 2025:</p>
+<p><strong>Traditional approach (export to CSV):</strong></p>
+<ul>
+<li>Export data → cluster setup → train → deploy</li>
+<li>Weeks per iteration</li>
+<li>Data duplication everywhere</li>
+<li>Manual deployment hell</li>
+<li>No monitoring</li>
+</ul>
+<p><strong>BigQuery ML + Vertex AI:</strong></p>
+<ul>
+<li>Train where data lives (no export)</li>
+<li>SQL-first modeling (XGBoost, ARIMA, AutoML)</li>
+<li>Real-time endpoints in minutes</li>
+<li>Automated pipelines</li>
+<li>Built-in monitoring</li>
+</ul>
+<p><strong>Why you should care:</strong></p>
+<ul>
+<li>10x faster iteration (hours vs weeks)</li>
+<li>60% lower infra costs (serverless)</li>
+<li>Stakeholders train models with SQL</li>
+<li>Production ML without PhD in DevOps</li>
+</ul>
+<p>This is for ML engineers tired of fighting infrastructure.</p>
+<hr>
+<h2 id="part-1---architecture-overview-the-complete-picture">Part 1 - Architecture overview: the complete picture</h2>
+<p>Here’s the full picture:</p>
+<pre class="mermaid">graph TD
+A[BigQuery raw tables] --&gt; B[Feature engineering via SQL]
+B --&gt; C[BigQuery ML model training]
+C --&gt; D[Vertex AI Model Registry]
+D --&gt; E[Deployed endpoint for real-time inference]
+D --&gt; F[Vertex AI Batch Prediction]
+C --&gt; G[Vertex AI Pipeline orchestration]
+E --&gt; H[API client/app]
+G --&gt; I[Cloud Monitoring + Drift Detection]
+</pre><p>This is 2025: don’t ETL into CSV. Train <strong>in-place</strong>. That’s right—your models live where your data lives.</p>
+<hr>
+<h2 id="part-2---sql-first-feature-engineering-no-pandas-needed">Part 2 - SQL-first feature engineering (no pandas needed)</h2>
+<p>We avoid data duplication by building features using SQL:</p>
+<div class="highlight highlight-sql" data-lang="sql"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ml_features</span><span class="p">.</span><span class="n">product_monthly</span><span class="w"> </span><span class="k">AS</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">product_id</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">EXTRACT</span><span class="p">(</span><span class="k">YEAR</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">order_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">year</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">EXTRACT</span><span class="p">(</span><span class="k">MONTH</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">order_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">month</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">orders</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">SUM</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_qty</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">AVG</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_price</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">unique_customers</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">EXTRACT</span><span class="p">(</span><span class="n">DATE_DIFF</span><span class="p">(</span><span class="k">CURRENT_DATE</span><span class="p">(),</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="n">order_date</span><span class="p">),</span><span class="w"> </span><span class="k">DAY</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">recency_days</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>no python, no pandas</li>
+<li>eatable, version-controlled</li>
+<li>incremental rebuilds by partition</li>
+</ul>
+<h2 id="part-3---model-training-with-bigquery-ml-xgboost-in-sql">Part 3 - Model training with BigQuery ML (XGBoost in SQL)</h2>
+<p>BigQuery ML supports:</p>
+<ul>
+<li>linear/logistic regression</li>
+<li>XGBoost</li>
+<li>autoML (deep neural nets)</li>
+<li>time series (ARIMA_PLUS)</li>
+<li>feature engineering with SQL</li>
+</ul>
+<p>Example – train product demand model with XGB:</p>
+<div class="highlight highlight-sql" data-lang="sql"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="n">MODEL</span><span class="w"> </span><span class="n">project</span><span class="p">.</span><span class="n">dataset</span><span class="p">.</span><span class="n">product_demand_xgb</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">OPTIONS</span><span class="p">(</span><span class="n">model_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;BOOSTED_TREE_REGRESSOR&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">input_label_cols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;total_qty&#39;</span><span class="p">])</span><span class="w"> </span><span class="k">AS</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">SELECT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">total_qty</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">avg_price</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">unique_customers</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">recency_days</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">SAFE_CAST</span><span class="p">(</span><span class="k">month</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">STRING</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">month_str</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">FROM</span><span class="w"> </span><span class="n">ml_features</span><span class="p">.</span><span class="n">product_monthly</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">WHERE</span><span class="w"> </span><span class="k">year</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2024</span><span class="p">;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Training is serverless-just SQL. No cluster config, no python, just elastic compute under the hood.</p>
+<h2 id="part-4---registering-and-deploying-models-to-vertex-ai">Part 4 - Registering and deploying models to Vertex AI</h2>
+<p>BigQuery ML can export models to Vertex AI registry with one statement:</p>
+<div class="highlight highlight-sql" data-lang="sql"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="n">EXPORT</span><span class="w"> </span><span class="n">MODEL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">project</span><span class="p">.</span><span class="n">dataset</span><span class="p">.</span><span class="n">product_demand_xgb</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">OPTIONS</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s1">&#39;gs://my-model-bucket/xgb_export&#39;</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then deploy via gcloud or Python:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">gcloud ai models upload <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --region<span class="o">=</span>us-central1 <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --display-name<span class="o">=</span>product-demand-xgb <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --artifact-uri<span class="o">=</span>gs://my-model-bucket/xgb_export
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">gcloud ai endpoints create --region<span class="o">=</span>us-central1 <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --display-name<span class="o">=</span>prod-demand-endpoint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">gcloud ai endpoints deploy-model <span class="se">\
+</span></span></span><span class="line"><span class="cl">  ENDPOINT_ID --model<span class="o">=</span>MODEL_ID --traffic-split<span class="o">=</span><span class="nv">0</span><span class="o">=</span><span class="m">100</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>You now have a real-time HTTP endpoint.</p>
+<h2 id="part-5---real-time-inference-api">Part 5 - Real-time inference API</h2>
+<p>Say you need live predictions from an order microservice:</p>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">aiplatform</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">endpoint</span> <span class="o">=</span> <span class="n">aiplatform</span><span class="o">.</span><span class="n">Endpoint</span><span class="p">(</span><span class="n">endpoint_name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">response</span> <span class="o">=</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">instances</span><span class="o">=</span><span class="p">[</span>
+</span></span><span class="line"><span class="cl">   <span class="p">{</span><span class="s2">&#34;avg_price&#34;</span><span class="p">:</span><span class="mi">125</span><span class="p">,</span><span class="s2">&#34;unique_customers&#34;</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span><span class="s2">&#34;recency_days&#34;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="s2">&#34;month_str&#34;</span><span class="p">:</span><span class="s2">&#34;7&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">])</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Works in &lt;200 ms, perfectly scalable.</p>
+<h2 id="part-6---automated-retraining-pipelines">Part 6 - Automated retraining pipelines</h2>
+<p>Build scheduled pipelines using Vertex AI Pipelines + Kubeflow SDK:</p>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">kfp.v2</span> <span class="kn">import</span> <span class="n">dsl</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">google_cloud_pipeline_components</span> <span class="kn">import</span> <span class="n">bqml</span><span class="p">,</span> <span class="n">aiplatform</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nd">@dsl.pipeline</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">project</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">  <span class="n">features</span> <span class="o">=</span> <span class="n">bqml</span><span class="o">.</span><span class="n">Train</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">model</span> <span class="o">=</span> <span class="n">bqml</span><span class="o">.</span><span class="n">Evaluate</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">export</span> <span class="o">=</span> <span class="n">bqml</span><span class="o">.</span><span class="n">ExtractEvaluation</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">managed_model</span> <span class="o">=</span> <span class="n">aiplatform</span><span class="o">.</span><span class="n">BigQueryToVertexAIModel</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="n">project</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">aiplatform</span><span class="o">.</span><span class="n">EndpointCreateDeployOp</span><span class="p">(</span><span class="o">...</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This triggers training, evaluation, deployment automatically. Drag-and-drop production.</p>
+<h2 id="part-7---feature-store-integration">Part 7 - Feature store integration</h2>
+<p>Vertex AI Feature Store auto-syncs BigQuery features:</p>
+<ul>
+<li>tables simply turn into feature sets</li>
+<li>online, low-latency access</li>
+<li>feature lineage and drift tracking out of the box</li>
+</ul>
+<p>Great for consistent real-time inference and monitoring.</p>
+<h2 id="part-8---monitoring-and-drift-detection">Part 8 - Monitoring and drift detection</h2>
+<p>Vertex AI offers:</p>
+<ul>
+<li>model registry with version history + approval gating</li>
+<li>model monitoring on features, skew, and prediction drift</li>
+<li>alerting on drift thresholds</li>
+</ul>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">gcloud ai models update MODEL_ID --enable-feature-monitoring</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Logs land in Cloud Monitoring / AI Platform metrics.</p>
+<h2 id="part-9---continuous-retraining-automation">Part 9 - Continuous retraining automation</h2>
+<p>Use BigQuery event subscription + Cloud Function:</p>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">on_bqml_job</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;state&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;DONE&#39;</span> <span class="ow">and</span> <span class="s1">&#39;product_demand_xgb&#39;</span> <span class="ow">in</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;jobName&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pipelines</span><span class="o">.</span><span class="n">create_run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Automated retraining whenever performance dips or new data arrives.</p>
+<h2 id="pro-tips-and-gotchas">Pro tips and gotchas</h2>
+<ul>
+<li>Use ARIMA_PLUS for time-series forecasting inside BQML</li>
+<li>Keep your monthly partitions clean – bqml is picky</li>
+<li>Watch bqml quotas (1 TB/time)</li>
+<li>GPU training is optional—unless you’ve got heavy ANN models</li>
+</ul>
+<p>⸻</p>
+<h2 id="business-impact">Business impact</h2>
+<ul>
+<li>time-to-model went from 4–6 weeks to 2 hours</li>
+<li>infra cost dropped 60% vs self-managed clusters</li>
+<li>stakeholders loved self-serve SQL model training</li>
+</ul>
+<p>⸻</p>
+<h2 id="future-directions">Future directions</h2>
+<ul>
+<li>move to generative AI via REMOTE_MODEL in BigQuery ML</li>
+<li>scale pipelines with Agentspace automation (Next 2025)</li>
+<li>integrate LLM embeddings into Vertex similarity search</li>
+</ul>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>BigQuery ML + Vertex AI isn&rsquo;t just faster - it fundamentally changes how you do ML.</p>
+<p>No more:</p>
+<ul>
+<li>Exporting 500GB CSVs</li>
+<li>Fighting cluster configs</li>
+<li>Manual deployments</li>
+<li>Stale models</li>
+</ul>
+<p>Just:</p>
+<ul>
+<li>Train with SQL</li>
+<li>Deploy in minutes</li>
+<li>Automate everything</li>
+<li>Monitor automatically</li>
+</ul>
+<p>Our time-to-model went from 6 weeks to 2 hours. Infrastructure costs dropped 60%. And stakeholders can train models themselves with SQL.</p>
+<p>If you&rsquo;re tired of fighting ML infrastructure, give this a shot. Your future self will thank you.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> Traditional ML = export CSV, spin up cluster, train for hours, deploy manually, repeat (weeks per iteration)</li>
+<li><strong>The solution:</strong> BigQuery ML + Vertex AI = train in-place with SQL, deploy endpoints in minutes, automate everything</li>
+<li><strong>Architecture:</strong> BigQuery tables → SQL feature engineering → BQML training → Vertex AI registry → real-time endpoints</li>
+<li><strong>SQL-first modeling:</strong> XGBoost, ARIMA, AutoML, all in SQL - no pandas, no cluster config</li>
+<li><strong>Real-time inference:</strong> Deploy HTTP endpoints in minutes, &lt;200ms latency, auto-scaling</li>
+<li><strong>Automated pipelines:</strong> Kubeflow + Vertex AI Pipelines for training/evaluation/deployment automation</li>
+<li><strong>Feature store:</strong> Auto-sync BigQuery tables, low-latency access, lineage tracking</li>
+<li><strong>Monitoring:</strong> Built-in drift detection, feature skew alerts, version history, approval gating</li>
+<li><strong>Continuous retraining:</strong> Cloud Functions + BigQuery events trigger automatic retraining</li>
+<li><strong>Business impact:</strong> 4-6 weeks → 2 hours time-to-model, 60% lower costs, stakeholder self-service</li>
+<li><strong>Pro tips:</strong> Use ARIMA_PLUS for time series, watch quotas, partitions matter, GPU optional</li>
+<li><strong>Future:</strong> REMOTE_MODEL for generative AI, Agentspace automation, LLM embeddings integration</li>
+<li><strong>Bottom line:</strong> Stop exporting CSVs and start training where data lives - serverless, automated, production-ready</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-05-cloud-native-ai-workflows-bigquery-ml--vertex-ai-skip-the-csv-exports-now.png" type="image/png"/></item></channel></rss>
