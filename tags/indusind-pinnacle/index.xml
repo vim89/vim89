@@ -1,0 +1,2943 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/indusind-pinnacle/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/indusind-pinnacle/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Credit card management: rules and discipline that actually work in India today</title><link>https://vitthalmirji.com/2025/12/credit-card-management-rules-and-discipline-that-actually-work-in-india-today/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/12/credit-card-management-rules-and-discipline-that-actually-work-in-india-today/</guid><pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>credit-cards</category><category>credit-card-portfolio</category><category>cashback</category><category>reward-points</category><category>lounge-access</category><category>forex</category><category>priority-pass</category><category>smartbuy</category><category>upi</category><category>salary-account</category><category>banking</category><category>hdfc</category><category>axis</category><category>indusind</category><category>sbi</category><category>icici</category><category>hsbc</category><category>standard-chartered</category><category>federal-bank</category><category>bob</category><category>amex</category><category>sbi-cashback</category><category>amazon-pay-icici</category><category>axis-atlas</category><category>axis-select</category><category>axis-flipkart</category><category>hdfc-regalia-gold</category><category>hdfc-diners-club-black-metal</category><category>indusind-pinnacle</category><category>indusind-legend</category><category>idfc-first-wealth</category><category>hdfc-swiggy</category><category>scapia</category><category>hsbc-live-plus</category><category>hsbc-travelone</category><category>icici-sapphiro</category><category>sc-super-value-titanium</category><category>sc-smart</category><category>amex-mrcc</category><category>amex-platinum-travel</category><category>bob-eterna</category><category>sbi-phonepe-select-black</category><description>India-focused credit card portfolio with spend routing, caps, forex, lounges, SmartBuy, UPI, and salary perks. Includes grids, cheat sheets, and a practical mapping from spend category to card so rewards beat fees without overthinking.</description><content:encoded><![CDATA[<h1 id="credit-card-portfolio-management---with-rules-discipline-that-actually-work">Credit card portfolio management - with rules, discipline that actually work.</h1>
+<blockquote>
+  <p>keh diya na? Bas! keh diya! heinn! 😎</p>
+
+</blockquote><h2 id="why-this-exists-and-why-its-not-for-flexing">Why this exists (and why it’s not for flexing)</h2>
+<p class="lead">I carry many cards (credit, debit, prepaid, forex and other kinds) because each one does one job better than the rest -
+Like we say in programming, a function should have one clear purpose and do it well <code>OR</code> Build small: write one function
+that does one thing, then compose.
+The goal is not to collect plastic - it&rsquo;s to route spends so the rewards beat the fees, without making life painful.
+Bindaas, but not careless.</p>
+
+
+<h2 id="how-to-use-this-without-overthinking">How to use this without overthinking</h2>
+<p>Start with the card summary and the spend -&gt; card mapping, then keep the cheat sheet handy for day-to-day swipes. The
+card-wise playbook is for the &ldquo;milk audit&rdquo; pass when I want to tighten or prune. Bhidu, confusion ho to pehle grid,
+phir details. Locha ho to cheat sheet right here.
+Thoda jugaad chalega, par rule pe.</p>
+<table>
+	<thead>
+			<tr>
+					<th>If you want</th>
+					<th>Read this</th>
+					<th>Why</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>The big picture</td>
+					<td>Card summary</td>
+					<td>Fees, roles, and what each card is good at</td>
+			</tr>
+			<tr>
+					<td>Daily routing</td>
+					<td>Spend -&gt; card mapping</td>
+					<td>Fast, low-thinking decisions</td>
+			</tr>
+			<tr>
+					<td>Quick swipes</td>
+					<td>Cheat sheet</td>
+					<td>One glance, no spreadsheet</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="whats-inside-and-what-changes-often">What’s inside (and what changes often)</h2>
+<div class="admonition warning">
+  <div class="admonition-title">Warning</div>
+  <div class="admonition-content">
+    Issuer T&amp;Cs and reward rules change often. Verify on official issuer pages before applying or planning large spends.
+Last verified: 2026-03-04 00:00:00 +0000 UTC.
+  </div>
+</div>
+<div class="admonition note">
+  <div class="admonition-title">Note</div>
+  <div class="admonition-content">
+    This is my personal portfolio and routing logic. It is not financial advice. Treat it as a worked example and verify
+everything against issuer T&amp;Cs.
+  </div>
+</div>
+<h2 id="tldr-jisko-seedha-cut-to-cut-chahiye-local-train-pakadne-se-pehle">TL;DR (jisko seedha cut-to-cut chahiye, local train pakadne se pehle)</h2>
+<ul>
+<li>Pick a <strong>primary card per bucket</strong>, not per brand.</li>
+<li>Track <strong>caps + MCC</strong> like you track expenses. They decide 80% of outcomes.</li>
+<li>For frequent EU/SG travel with small tickets: <strong>low/zero forex beats points</strong> most days.</li>
+<li>Simple starter setup:
+<ul>
+<li><strong>2-card</strong>: SBI Cashback + PhonePe SBI Select Black</li>
+<li><strong>3-card</strong>: add HSBC Live+</li>
+<li><strong>4-card (milestone engine)</strong>: add <strong>Amex Platinum Travel</strong> for large INR spends when I want to hit yearly
+milestones, while keeping overseas day-to-day on <strong>Wise/Scapia</strong> (low/zero forex).</li>
+</ul>
+</li>
+<li>Use the grids below for the exact routing.</li>
+</ul>
+<h2 id="my-spend-profile-at-a-glance">My spend profile at a glance</h2>
+<p>I am not listing exact numbers here. This is the <strong>shape</strong> of my spend, so the routing logic makes sense.
+Scene simple hai - fix the big buckets, the rest falls in place. Apun ka math seedha hai. No tension, bhidu, mast reh.</p>
+<p>
+<figure >
+    
+        <img src="images/cards-5.jpeg"
+            alt="My current card stack. Yes, it looks like a stationery shop, but each one has a job."
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    My current card stack. Yes, it looks like a stationery shop, but each one has a job.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-4.png"
+            alt="AMEX Army"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    AMEX Army
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-3.jpeg"
+            alt="Both IndusInds"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Both IndusInds
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-2.jpeg"
+            alt="Priority passes, RWC50 and WISE"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Priority passes, RWC50 and WISE
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+</p>
+<h3 id="monthly-spends-approx">Monthly spends (approx)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Category</th>
+					<th>What it usually includes</th>
+					<th>Notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Utilities</td>
+					<td>Electricity, mobile, gas, society maintenance</td>
+					<td>Repeat every month, easy to route via PhonePe</td>
+			</tr>
+			<tr>
+					<td>Groceries</td>
+					<td>Online + offline</td>
+					<td>High frequency, capped cashback matters</td>
+			</tr>
+			<tr>
+					<td>Dining + takeout</td>
+					<td>Restaurants + food delivery</td>
+					<td>High frequency, easy to over-cap</td>
+			</tr>
+			<tr>
+					<td>Fuel + toll</td>
+					<td>Petrol + FASTag</td>
+					<td>Exclusions are common</td>
+			</tr>
+			<tr>
+					<td>General shopping</td>
+					<td>Online + offline</td>
+					<td>Mix of big and small tickets</td>
+			</tr>
+			<tr>
+					<td>Movies / plays</td>
+					<td>Occasional</td>
+					<td>Mostly offer-driven</td>
+			</tr>
+			<tr>
+					<td>Broadband / WiFi</td>
+					<td>Monthly</td>
+					<td>Counts like utilities</td>
+			</tr>
+			<tr>
+					<td>Learning / education</td>
+					<td>Courses, books, often USD/EUR</td>
+					<td>FX matters more than points</td>
+			</tr>
+	</tbody>
+</table>
+<p>Har mahine ka scene mostly yahi hai.</p>
+<h3 id="top-5-monthly-categories">Top 5 monthly categories</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Rank</th>
+					<th>Category</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>1</td>
+					<td>Utilities</td>
+			</tr>
+			<tr>
+					<td>2</td>
+					<td>Groceries</td>
+			</tr>
+			<tr>
+					<td>3</td>
+					<td>Dining</td>
+			</tr>
+			<tr>
+					<td>4</td>
+					<td>Fuel</td>
+			</tr>
+			<tr>
+					<td>5</td>
+					<td>General online + offline shopping</td>
+			</tr>
+	</tbody>
+</table>
+<p>Yeh top 5 hi sabse zyada paisa khaata hai.</p>
+<h3 id="annual-or-irregular-spends">Annual or irregular spends</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Category</th>
+					<th>Pattern</th>
+					<th>Notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Travel</td>
+					<td>Domestic or international every 2-3 months</td>
+					<td>I book flights + stays myself</td>
+			</tr>
+			<tr>
+					<td>Insurance</td>
+					<td>Annual premiums</td>
+					<td>Most cards exclude rewards</td>
+			</tr>
+			<tr>
+					<td>Vehicle servicing</td>
+					<td>Occasional</td>
+					<td>MCCs can be messy</td>
+			</tr>
+			<tr>
+					<td>Broadband / WiFi</td>
+					<td>Yearly plans sometimes</td>
+					<td>Still treated like utilities</td>
+			</tr>
+			<tr>
+					<td>Learning / education</td>
+					<td>Ongoing</td>
+					<td>Many payments in USD/EUR</td>
+			</tr>
+	</tbody>
+</table>
+<p>Yearly wale kharch mein asli jhatka lagta hai.</p>
+<h3 id="international-spend-pattern">International spend pattern</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Category</th>
+					<th>Typical spend behavior</th>
+					<th>Notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Local transport</td>
+					<td>Metro, tram, buses, SNCF/TGV, etc.</td>
+					<td>Small tickets, frequent</td>
+			</tr>
+			<tr>
+					<td>Food</td>
+					<td>Basic dining</td>
+					<td>Regular, moderate tickets</td>
+			</tr>
+			<tr>
+					<td>Attractions</td>
+					<td>Tickets and experiences</td>
+					<td>Occasional</td>
+			</tr>
+			<tr>
+					<td>Souvenirs / duty-free</td>
+					<td>Low to moderate</td>
+					<td>Not a big driver</td>
+			</tr>
+	</tbody>
+</table>
+<p>Foreign trip pe apun ka spend simple, essential aur baar-baar hota hai.</p>
+<h2 id="what-i-value-most-in-plain-terms">What I value most (in plain terms)</h2>
+<table>
+	<thead>
+			<tr>
+					<th>Priority</th>
+					<th>Why it matters to me</th>
+					<th>How I judge it</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Max overall value</td>
+					<td>I want the highest real rupee return</td>
+					<td>Net cashback or value-back after fees</td>
+			</tr>
+			<tr>
+					<td>Lounge access</td>
+					<td>I travel often</td>
+					<td>Domestic + international counts, family access is a plus</td>
+			</tr>
+			<tr>
+					<td>Low forex markup</td>
+					<td>Overseas trips are frequent</td>
+					<td>Zero or low FX beats points</td>
+			</tr>
+			<tr>
+					<td>Fees that make sense</td>
+					<td>I am ok to pay if I recover it</td>
+					<td>Clear benefit over fee, not vibes</td>
+			</tr>
+	</tbody>
+</table>
+<p>Zyada gyaan nahi - seedha value, seedha ROI.</p>
+<p>And haan, lounge access is convenience, not <strong>&ldquo;free khana&rdquo;</strong> ka business model. Bhidu, airport ke bahaar pe vada pav bhi
+milta ha; kha-ke aana.</p>
+<h2 id="if-i-had-to-keep-this-simple">If I had to keep this simple</h2>
+<p>Seedha start for someone who is new and wants to avoid overthinking. Load mat le, mast reh, bhidu. Zyada over-smart mat
+ban:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Setup</th>
+					<th>Why it works</th>
+					<th>What you lose</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>2-card minimal</strong>: SBI Cashback + PhonePe SBI Select Black</td>
+					<td>Covers most online + utilities and basic offline</td>
+					<td>Dining and grocery caps hit sooner</td>
+			</tr>
+			<tr>
+					<td><strong>3-card practical</strong>: add HSBC Live+</td>
+					<td>Great for groceries and dining without hacks</td>
+					<td>One more cap to track</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="the-lounge-sandwich-economy-a-reality-check">The lounge sandwich economy (a reality check)</h2>
+<p>I once met a guy in a lounge who looked at his sandwich like it was a trophy. &ldquo;Free,&rdquo; he said. Then he casually
+mentioned
+his annual spend. You know the number. Big enough to buy the sandwich in bulk and still have change for a cab home.</p>
+<p>That is the credit-card story in one scene: we love the win, and we quietly forget the cost. Boss, &ldquo;free&rdquo; is just a
+label.
+Khaali jhakaas bolne se value nahi badhta. Aaj ka scene simple hai - value ya timepass.</p>
+<p>There are two tribes in this game:</p>
+<ol>
+<li>The mile‑chasers who say &ldquo;business class for free&rdquo; and skip the part about the mountain of spend.</li>
+<li>The cashback folks who just want money that works everywhere, right now.</li>
+</ol>
+<p>Both are smart <strong>if the spend was already real</strong>. Both are silly if the spend is invented just to hit a milestone.</p>
+<p>My rule is boring but it saves money: <strong>rewards are a byproduct, not the goal.</strong> If I’m spending extra to &ldquo;win,&rdquo; I’m
+just
+buying a fancy sandwich and calling it strategy. If I’m spending anyway, then yes, please give me the sandwich <em>and</em> the
+diet coke.</p>
+<p>Free ka kuch nahi hota, boss. Fultoo free is mostly myth.</p>
+<div class="admonition caution">
+  <div class="admonition-title">Caution</div>
+  <div class="admonition-content">
+    If a milestone makes you spend extra, that &ldquo;reward&rdquo; is just you paying yourself back with interest. Mat kar.
+  </div>
+</div>
+<h2 id="my-field-notes-from-the-creditcard-rabbit-hole">My field notes from the credit‑card rabbit hole</h2>
+<p>I went digging through online threads to double-check my own rules. The pattern is always the same: cashback folks want
+<strong>simple</strong> and <strong>sure</strong>, points folks want <strong>big</strong> and <strong>rare</strong>. Both are right when the spend is real. Both are wrong
+when the spend is made up just to chase a story.</p>
+<p>What I kept seeing, in plain English. Kaam seedha hai and the patterns repeat. Zyada gyaan nahi, sirf math, boss.</p>
+<h2 id="thread-recap-jan-2026---what-i-changed-what-i-learned">Thread recap (Jan 2026) - what I changed, what I learned</h2>
+<p>This post is the output of a long optimisation thread. These are the moves that actually mattered.</p>
+<ul>
+<li><strong>PhonePe SBI Select Black is points, not instant cashback</strong>: you will often see Reward Points first and the value
+shows cleanly because <strong>1 RP = ₹1</strong>. Do not panic if you don’t see cashback language.</li>
+<li><strong>UPI Scan and Pay is a different bucket</strong> than PhonePe app spends. UPI rewards are usually lower than PhonePe
+category rewards.</li>
+<li><strong>Caps decide real ROI</strong>: most 10% stories collapse to 1% the day you hit a cap. I now track caps the way I track
+expenses.</li>
+<li><strong>MCC weirdness is real</strong>: hospitals, insurance, government-like merchants, wallets, voucher platforms - all can code
+in surprising ways and nuke rewards.</li>
+<li><strong>GyFTR stacking is not a guaranteed 15%</strong>: voucher discount and card rewards can work together sometimes, but it is
+never a safe assumption. I now treat stacking as a bonus, not a plan.</li>
+<li><strong>Overseas daily spends</strong>: low/zero forex beats points most days. I keep Wise and Scapia as default, and only use
+points cards overseas if the net math beats FX.</li>
+<li><strong>IDFC FIRST Wealth got revised</strong>: points base and lounge rules changed (effective Jan 18, 2026 and Apr 1, 2026 per
+IDFC communication). I treat it as a strong LTF backup, but I do not build a strategy that depends on old rules.</li>
+<li><strong>IndusInd Exclusive + Pinnacle</strong>: the combo matters because the bank’s published Schedule of Benefits lists the
+relationship route - so this is not just an RM jugaad when documented properly.</li>
+</ul>
+<p>The meta-lesson: rewards are a rebate with homework. If I’m not willing to do the homework (caps, MCC, exclusions), I
+take the simplest cashback and move on.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Pattern I keep seeing</th>
+					<th>What it means</th>
+					<th>Why I care</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Co-branded limits</td>
+					<td>The 5% bucket is MCC-based, and a single item can push the whole transaction to 1%</td>
+					<td>I avoid assuming &ldquo;always 5%&rdquo;</td>
+			</tr>
+			<tr>
+					<td>Caps move</td>
+					<td>&ldquo;10% on Swiggy&rdquo; is true only inside the cap and only after the latest issuer update</td>
+					<td>I track caps, not headlines</td>
+			</tr>
+			<tr>
+					<td>Cashback timing</td>
+					<td>Cashback often shows up after statement generation</td>
+					<td>I do not count it as instant</td>
+			</tr>
+			<tr>
+					<td>Statement detail</td>
+					<td>Some issuers hide transaction-level cashback unless you ask</td>
+					<td>I verify once a quarter</td>
+			</tr>
+	</tbody>
+</table>
+<p>So I don’t treat points as &ldquo;free.&rdquo; I treat them as <strong>a rebate with homework</strong>. If I’m in the mood to do homework, I’ll
+play the points game. If not, I take cash and move on. That single rule keeps this portfolio sane.</p>
+<h2 id="1-card-summary-fees--real-jobs">1. Card summary (fees + real jobs)</h2>
+<p>Yeh mera squad hai. Har card ka kaam fixed hai, bakwaas nahi.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Card</th>
+					<th>Std. annual fee (excl. GST)</th>
+					<th>My effective fee</th>
+					<th>Core sweet spots / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>SBI Cashback</strong></td>
+					<td>₹999, waiver at ₹2L/yr  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/cashback-sbi-card.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>Pay only if not waived</td>
+					<td>5% cashback on most eligible online spends (cashback capped at ₹5,000 per statement cycle, after which online spends effectively earn 1%), 1% on eligible offline spends. No cashback on rent, fuel, wallet loads, utilities, insurance and other excluded categories per SBI T&amp;Cs. Great for high, clean online retail.</td>
+			</tr>
+			<tr>
+					<td><strong>Amazon Pay ICICI</strong></td>
+					<td>₹0 (Lifetime Free)  <a href="https://www.icici.bank.in/personal-banking/cards/credit-card/amazon-pay-credit-card" rel="noopener external" target="_blank">ICICI Bank</a>
+</td>
+					<td>LTF</td>
+					<td>5% on Amazon.in (Prime), 3% (non-Prime), 2% on Amazon Pay partner merchants, 1% on other eligible spends. New T&amp;Cs tighten exclusions (rent, tax, education, certain utilities, etc.). Forex markup cut to ~1.99% on intl spends.</td>
+			</tr>
+			<tr>
+					<td><strong>ICICI Sapphiro VISA + RuPay</strong></td>
+					<td>Sapphiro is generally a paid premium card, but this dual variant is <strong>LTF for me</strong>.  <a href="https://www.icicibank.com/personal-banking/cards/credit-card/sapphiro-credit-card" rel="noopener external" target="_blank">ICICI Bank</a>
+</td>
+					<td>₹0</td>
+					<td>Premium lifestyle + travel backup in my stack. I mainly use it for lounge/movie/perk utility and as an ICICI-network fallback. RuPay variant gives me one more UPI-on-credit lane for selective backup use, but I still keep PhonePe SBI Black as primary UPI rewards engine.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Flipkart</strong></td>
+					<td>~₹500; renewal fee waived at ₹3.5L/yr spends (standard variant; check my exact T&amp;Cs; rent/wallet spends typically excluded)  <a href="https://www.axisbank.com/retail/cards/credit-card/flipkart-axisbank-credit-card" rel="noopener external" target="_blank">Axis Bank</a>
+</td>
+					<td>Depends on waiver</td>
+					<td>Current structure is category-led: 7.5% on Myntra (capped), 5% on Flipkart/Cleartrip (capped), 4% on preferred merchants, 1% on other eligible spends. Exclusions and fee-waiver rules still apply per latest Axis T&amp;Cs. Domestic lounge access benefit has been discontinued from 20 June 2025.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Atlas</strong></td>
+					<td>₹5,000 (Silver tier)  <a href="https://www.axis.bank.in/cards/credit-card/axis-bank-atlas-credit-card" rel="noopener external" target="_blank">AxisBank</a>
+</td>
+					<td>Pay only if I’m using miles seriously</td>
+					<td>Earns Edge Miles: higher earn on airline/hotel/travel; lounge + milestone heavy. <strong>From Apr 2024</strong>: spends on gold/jewellery, rent, wallet loads, government institutions, insurance, fuel and utilities do not earn EDGE Miles and are excluded from milestone and tier calculations. Great if I actively redeem miles on partners, else overkill.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Select</strong></td>
+					<td>As per Axis schedule; <strong>LTF for me</strong> via Burgundy Salary relationship  <a href="https://www.axisbank.com/retail/cards/credit-card/axis-bank-select-credit-card/features-benefits" rel="noopener external" target="_blank">Axis Bank</a>
+</td>
+					<td>₹0 for me</td>
+					<td>Premium lounge and milestone card. Priority Pass membership for international lounges; domestic lounge access 2 per quarter on ₹50,000 spend in last 3 months. Priority Pass renewal on ₹3L annual spend. 5,000 EDGE points on ₹3L annual spend; annual fee waiver at ₹8L. Earn 10 EDGE points per ₹200 on eligible spends (exclusions apply).  <a href="https://www.axisbank.com/retail/cards/credit-card/axis-bank-select-credit-card/features-benefits" rel="noopener external" target="_blank">Axis Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC Regalia Gold</strong></td>
+					<td>₹2,500, but <strong>LTF for me</strong></td>
+					<td>₹0</td>
+					<td>Solid all-rounder. 4 RP/₹150 on most retail spends (utilities, insurance and school fees included as per current T&amp;Cs), with higher rewards via SmartBuy for flights/hotels. Lounge access plus Priority Pass: up to 6 complimentary lounge visits per calendar year outside India; Priority Pass in India is chargeable. Apply after 4 retail transactions. <a href="https://www.hdfcbank.com/personal/pay/cards/credit-cards/regalia-gold-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+ <a href="https://www.hdfcbank.com/personal/resources/learning-centre/pay/how-to-use-regalia-gold-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC Diners Club Black Metal</strong></td>
+					<td>₹10,000 + taxes; renewal fee waived at ₹8L spend in 12 months  <a href="https://www.hdfc.bank.in/credit-cards/diners-club-black-metal-edition-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+					<td>Pay only if I’m using the premium stack</td>
+					<td>Premium travel + lounge engine. Unlimited lounge access to 1,300+ lounges in India and abroad for primary + add-on. 10,000 bonus reward points on ₹4L spend per calendar quarter; 10X rewards via SmartBuy; 2X rewards on weekend dining; 2% on foreign currency spends (issuer charge). SmartBuy redemption up to 1:1.  <a href="https://www.hdfc.bank.in/credit-cards/diners-club-black-metal-edition-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>SC Super Value Titanium</strong></td>
+					<td>₹750  <a href="https://www.sc.com/in/credit-cards/super-value-titanium/" rel="noopener external" target="_blank">Standard Chartered</a>
+</td>
+					<td>If I keep it, it must earn</td>
+					<td>5% cashback on <strong>fuel</strong>, and on <strong>utility</strong> / <strong>phone bills</strong> when paid via Standard Chartered BillPay, each with low per-month caps. 1 RP/₹150 on the rest. Great <em>only</em> if I deliberately use it for those capped categories.</td>
+			</tr>
+			<tr>
+					<td><strong>SC Smart</strong></td>
+					<td>₹499; fee waiver with modest annual spends (≈₹1L-₹1.2L)  <a href="https://www.sc.com/in/credit-cards/smart-credit-card/" rel="noopener external" target="_blank">Standard Chartered</a>
+</td>
+					<td>Check if already LTF/waived</td>
+					<td>2% cashback on online spends (up to a cap), 1% on others. Honestly outclassed now by SBI Cashback/PhonePe/HSBC Live+ unless I need it for relationship/limit.</td>
+			</tr>
+			<tr>
+					<td><strong>Amex MRCC (Membership Rewards)</strong></td>
+					<td>₹1,000 1st yr; ₹4,500 subsequent (often waived/discounted on spend)</td>
+					<td>Depends on retention offers</td>
+					<td>MR engine card: 1K+1K monthly points on &ldquo;4 x ₹1,500&rdquo; style spends, MR bundles. Best for optimized, repeated small spends where others are weak + Amex offers. Not for utilities/fuel/wallets.</td>
+			</tr>
+			<tr>
+					<td><strong>Amex Platinum Travel</strong></td>
+					<td>₹5,000 + taxes (annual)  <a href="https://www.americanexpress.com/in/credit-cards/platinum-travel-credit-card/" rel="noopener external" target="_blank">Amex Platinum Travel</a>
+</td>
+					<td>Pay if milestones beat fee</td>
+					<td>Milestone-driven MR card for India spends. <strong>As of February 13, 2026</strong>, the official card page shows ₹1.9L and ₹4L milestone structure, so I plan around those two targets and re-check issuer terms before large spends. Complimentary domestic lounge visits and Priority Pass membership fee waiver (visit fees depend on Priority Pass rules). <strong>Forex markup is 3.50%</strong>, so I do <strong>not</strong> use this for routine EU spends - this is an INR milestone card, not a forex hero.  <a href="https://www.americanexpress.com/content/dam/amex/in/legal-disclosures/Platinum_Travel_General_Tnc1.pdf" rel="noopener external" target="_blank">Amex Terms</a>
+ <a href="https://www.americanexpress.com/in/legal/most-important-terms-conditions-agreements.html" rel="noopener external" target="_blank">Most Important Terms</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>BoB Eterna RuPay</strong></td>
+					<td>Std. ₹2,499, but <strong>LTF for me</strong>  <a href="https://www.bobcard.co.in/credit-card-types/eterna" rel="noopener external" target="_blank">BOB Financial</a>
+</td>
+					<td>₹0</td>
+					<td>15 RP/₹100 on dining, travel and international spends (issuer’s published categories), 2% forex markup. Base earn is commonly reported as 3 RP/₹100 (verify in issuer T&amp;Cs). If I assume 1 RP ≈ ₹0.25 (assumed value at ₹0.25 per point), that implies ~3.75% value-back on those categories, but the actual value depends on redemption choices and issuer reward catalogue. Certain transactions like fuel surcharge waiver transactions, insurance payments and a few special MCCs may not earn accelerated rewards per BoB T&amp;Cs. Some online utility and wallet transactions may still earn at the higher 15 RP/₹100 rate when processed as regular online shopping, but this is not guaranteed, so treat the 3.75% rate as primarily for clear online shopping, travel, dining and international spends. Very nice for eligible online/dining/travel, especially as it’s LTF for me.  <a href="https://www.bobcard.co.in/credit-card-types/eterna" rel="noopener external" target="_blank">BoB Card</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>Federal Scapia (Zero Forex)</strong></td>
+					<td>₹0 (LTF)  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>₹0</td>
+					<td>Issuer advertises rewards on eligible online/offline spends; 1 reward = 1 Scapia Coin and <strong>5 coins = ₹1</strong>, so the <em>effective value</em> depends on earn rate and redemption. <strong>0% forex markup</strong>; reward eligibility on international spends is subject to T&amp;Cs. Airport privileges (lounge/dining/shop/spa) unlock after <strong>₹10k monthly spend (Visa) / ₹15k (RuPay)</strong>. Exclusions include rent, education, fuel, govt spends, wallet loads, gift cards and certain business spends as per latest T&amp;Cs.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>HSBC Live+</strong></td>
+					<td>₹999; waiver at ₹2L/yr  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+					<td>Fee should be easy to waive for me</td>
+					<td><strong>10% cashback</strong> on dining, groceries &amp; food delivery (Swiggy/Zomato etc.) up to ₹1,000/statement; <strong>1.5%</strong> on other <strong>retail</strong>. No cashback on fuel, wallets, rent, education, govt, insurance, tolls, etc. 4 domestic lounges/year.</td>
+			</tr>
+			<tr>
+					<td><strong>HSBC TravelOne</strong></td>
+					<td>₹4,999; annual fee waiver at ₹8L spends  <a href="https://www.hsbc.co.in/credit-cards/products/travel-one/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+					<td>Pay if miles + lounge value beats fee</td>
+					<td>Travel transfer card. Base and accelerated reward structure is designed for travel/forex categories, with points transferable to multiple airline/hotel partners. Good when I am intentionally building miles (Avios, Flying Blue, KrisFlyer, etc.), not for random low-value redemptions. Lounge access + travel-focused perks justify this only if I redeem smartly and actually travel.</td>
+			</tr>
+			<tr>
+					<td><strong>IndusInd Pinnacle</strong></td>
+					<td>As per IndusInd schedule of charges (LTF for me with Exclusive account + ₹50k spend in first 90 days)  <a href="https://www.indusind.bank.in/in/en/personal/cards/credit-card/pinnacle-world-credit-card.html" rel="noopener external" target="_blank">IndusInd Bank</a>
+</td>
+					<td>LTF for me (after 90-day spend)</td>
+					<td>Premium travel and lifestyle engine. Earn 2.5 RP/₹100 on e-commerce, 1.5 RP/₹100 on e-com travel/airline, and 1 RP/₹100 on POS/standing instructions. Golf: 1 game + 1 lesson per month. Priority Pass: 1 complimentary international lounge visit per calendar quarter (effective 13 March 2025). BOGO movies. Fuel transactions do not earn reward points. Note: 0% forex is on Exclusive debit card, not on Pinnacle credit card. <a href="https://www.indusind.bank.in/in/en/personal/cards/credit-card/pinnacle-world-credit-card.html" rel="noopener external" target="_blank">IndusInd Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>IndusInd Legend</strong></td>
+					<td>As per IndusInd schedule of charges (LTF for me with Select account)  <a href="https://www.indusind.bank.in/in/en/personal/cards/credit-card/legend-credit-card.html" rel="noopener external" target="_blank">IndusInd Bank</a>
+</td>
+					<td>LTF for me</td>
+					<td>1 RP/₹100 on weekdays, 2 RP/₹100 on weekends. 3,000 bonus RP on ₹5L+ annual spend. 1.8% discounted forex markup. Fuel surcharge waiver (per T&amp;Cs). Lounge access discontinued effective 7 March 2025.  <a href="https://www.indusind.bank.in/in/en/personal/cards/credit-card/legend-credit-card.html" rel="noopener external" target="_blank">IndusInd Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>IDFC FIRST Wealth</strong></td>
+					<td>₹0 (Lifetime Free for me; standard variant is fee-based)  <a href="https://www.idfcfirst.bank.in/credit-card/wealth" rel="noopener external" target="_blank">IDFC FIRST Bank</a>
+</td>
+					<td>₹0</td>
+					<td>LTF premium backup. ~0.75-2.5% effective rewards on most non-excluded spends (3X-6X-10X points; 1 point≈₹0.25). Forex markup ~1.5% (good as a low-forex Visa backup, but still worse than Scapia’s 0% for pure FX). Lounge access: 2 international + 2 domestic lounge/spa visits per quarter on ₹20,000 monthly spend. Avoid for utilities/insurance/govt where IDFC gives very low rewards or extra fee; treat as backup general + travel card. <a href="https://www.idfcfirstbank.com/credit-card/benefits/lounge-access" rel="noopener external" target="_blank">IDFC FIRST Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC Swiggy</strong></td>
+					<td>₹500 + GST; waiver at ₹2L/yr spends  <a href="https://www.hdfcbank.com/personal/pay/cards/credit-cards/swiggy-hdfc-bank-credit-card/fees-and-charges" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+					<td>Pay only if waiver not met</td>
+					<td>10% cashback on Swiggy (Food, Instamart, Dineout, Genie) up to ₹1,500 per billing cycle; exclusions include Swiggy Money Wallet, Swiggy Liquor, Swiggy Minis. 5% cashback on online spends (eligible MCCs) up to ₹1,500 per billing cycle. 1% cashback on other spends, excluding fuel, rent, EMI, wallet, jewellery, and government spends.  <a href="https://www.hdfcbank.com/personal/pay/cards/credit-cards/swiggy-hdfc-bank-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td><strong>SBI PhonePe Select Black RuPay</strong></td>
+					<td>₹1,499; waiver at ₹3L/yr; ₹1,500 PhonePe GV welcome  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>Net ~₹0 if I hit the waiver spend</td>
+					<td>10 RP/₹100 on <strong>PhonePe</strong> spends (bills, recharges, utilities, insurance, travel, Pincode) up to 2,000 RP/month; 5 RP/₹100 on <strong>other online</strong> up to 2,000 RP/month; 1 RP/₹100 on all other spends (incl. <strong>UPI Scan &amp; Pay</strong>), plus extra sub-cap for utilities/insurance outside PhonePe. 1 RP = ₹1 (super clean). 4 domestic lounges per year. Priority Pass: complimentary membership for first two years (visit fees, if any, depend on Priority Pass rules). <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+ <a href="https://www.phonepe.com/credit-cards/phonepe-sbi-card-select-black-credit-card/" rel="noopener external" target="_blank">PhonePe</a>
+</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="11-annual-fee-tracking-incl-gst">1.1 Annual fee tracking (incl. GST)</h3>
+<p>Use this table as a simple tracker of what I <em>actually</em> pay in annual fees (including 18% GST). Std. fee numbers are
+static; update the last two columns once a year and sum them to know my true annual cost of running this portfolio.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Card</th>
+					<th>Std. annual fee (excl. GST)</th>
+					<th>Std. annual fee (incl. 18% GST)</th>
+					<th>My usual status (LTF / waiver / payable)</th>
+					<th>Actual fee paid this year? (Y/N)</th>
+					<th>Actual amount paid this year (₹, incl. GST)</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>SBI Cashback</td>
+					<td>₹999</td>
+					<td>₹1,178.82</td>
+					<td>Pay only if ₹2L/yr spend waiver not met</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Amazon Pay ICICI</td>
+					<td>₹0</td>
+					<td>₹0</td>
+					<td>LTF</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>ICICI Sapphiro VISA + RuPay</td>
+					<td>As per ICICI schedule</td>
+					<td>As per ICICI schedule</td>
+					<td><strong>LTF for me</strong></td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Axis Flipkart</td>
+					<td>~₹500</td>
+					<td>~₹590</td>
+					<td>Usually waived at ₹3.5L/yr spends (check my variant/T&amp;C; rent/wallet excluded)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Axis Atlas (Silver)</td>
+					<td>₹5,000</td>
+					<td>₹5,900</td>
+					<td>Pay only if I’m actively using miles and benefits</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Axis Select</td>
+					<td>As per SoC</td>
+					<td>As per SoC</td>
+					<td><strong>LTF for me</strong> (Axis Burgundy Salary relationship)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>HDFC Regalia Gold</td>
+					<td>₹2,500</td>
+					<td>₹2,950</td>
+					<td><strong>LTF for me</strong></td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>HDFC Diners Club Black Metal</td>
+					<td>₹10,000</td>
+					<td>₹11,800</td>
+					<td>Pay only if I’m actively using premium travel + lounge stack</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>SC Super Value Titanium</td>
+					<td>₹750</td>
+					<td>₹885</td>
+					<td>Keep only if I’m actually using 5% fuel/utilities caps</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>SC Smart</td>
+					<td>₹499</td>
+					<td>₹588.82</td>
+					<td>Waived on modest spends; de-prioritised vs SBI CB / PhonePe / HSBC Live+</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Amex MRCC</td>
+					<td>₹1,000 / ₹4,500</td>
+					<td>₹1,180 / ₹5,310</td>
+					<td>Depends on retention offer + whether I value MR ecosystem</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Amex Platinum Travel</td>
+					<td>₹5,000</td>
+					<td>₹5,900</td>
+					<td>Pay only if I’m actually using the milestone value (₹1.9L / ₹4L targets)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>BoB Eterna RuPay</td>
+					<td>₹2,499</td>
+					<td>₹2,948.82</td>
+					<td><strong>LTF for me</strong> (no effective annual cost)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Federal Scapia</td>
+					<td>₹0</td>
+					<td>₹0</td>
+					<td>LTF</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>HSBC Live+</td>
+					<td>₹999</td>
+					<td>₹1,178.82</td>
+					<td>Usually waived at ₹2L/yr spends</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>HSBC TravelOne</td>
+					<td>₹4,999</td>
+					<td>₹5,898.82</td>
+					<td>Pay only if transfer + lounge value comfortably beats fee; waive at ₹8L/yr</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>IndusInd Pinnacle</td>
+					<td>As per SoC</td>
+					<td>As per SoC</td>
+					<td><strong>LTF for me</strong> after ₹50k in 90 days (Exclusive account combo)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>IndusInd Legend</td>
+					<td>As per SoC</td>
+					<td>As per SoC</td>
+					<td><strong>LTF for me</strong> (Select account combo)</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>IDFC FIRST Wealth</td>
+					<td>₹0</td>
+					<td>₹0</td>
+					<td><strong>LTF for me</strong></td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>HDFC Swiggy</td>
+					<td>₹500</td>
+					<td>₹590</td>
+					<td>Waived at ₹2L/yr spends</td>
+					<td></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>SBI PhonePe Select Black RuPay</td>
+					<td>₹1,499</td>
+					<td>₹1,768.82</td>
+					<td>Net ~₹0 if I hit ₹3L/yr spends and fully use PhonePe GV &amp; rewards</td>
+					<td></td>
+					<td></td>
+			</tr>
+	</tbody>
+</table>
+<blockquote>
+  <p>Tip: at the end of each financial year, fill the last column and manually total it - that number is my true &ldquo;cost of
+playing the credit card optimisation game&rdquo; for the year.</p>
+
+</blockquote><h2 id="diagram-annual-fee-keepclose-decision">Diagram: annual fee keep/close decision</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;Card review date&#34;] --&gt; B{&#34;Is annual fee paid?&#34;}
+    B --&gt;|No| C[&#34;Keep card if it still wins a spend bucket&#34;]
+    B --&gt;|Yes| D{&#34;Did yearly value beat fee?&#34;}
+    D --&gt;|Yes| E[&#34;Keep card and keep routing rules unchanged&#34;]
+    D --&gt;|No| F{&#34;Can fee waiver be hit naturally next year?&#34;}
+    F --&gt;|Yes| G[&#34;Keep card for one more cycle with strict tracking&#34;]
+    F --&gt;|No| H[&#34;Downgrade or close card&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style D fill: #fff4e1, stroke: #cc8800, color: #000
+    style F fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style E fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style G fill: #f0e1ff, stroke: #8800cc, color: #000
+    style H fill: #ffe1e1, stroke: #cc0000, color: #000
+</pre><h3 id="111-amex-platinum-travel---how-i-will-milk-it-my-playbook">1.1.1 Amex Platinum Travel - how I will milk it (my playbook)</h3>
+<p>This card is a milestone engine, not a daily driver.</p>
+<p><strong>My objective</strong></p>
+<ul>
+<li>Hit the yearly milestones as early as possible (₹1.9L, then ₹4L) using clean, eligible retail spends.</li>
+<li>Avoid wasting this card on categories where (a) rewards are blocked, or (b) I already get a higher guaranteed return
+elsewhere.</li>
+</ul>
+<p><strong>What I will put on Amex Platinum Travel</strong></p>
+<ul>
+<li>Big-ticket India spends that are typically low-return on my cashback cards (large offline shopping, electronics,
+travel bookings that are not better via SmartBuy, hotel stays in India).</li>
+<li>Large medical/hospital spends if the merchant is coded as a normal hospital/clinic MCC (I will verify on the first
+statement).</li>
+<li>Any spend where I specifically want to accelerate milestone progress (because the milestone value is the real reward
+here).</li>
+</ul>
+<p><strong>What I will NOT put on Amex Platinum Travel</strong></p>
+<ul>
+<li>Overseas day-to-day: forex markup is 3.50%, so Wise/Scapia win for EU daily spends.</li>
+<li>PhonePe utilities/insurance: PhonePe SBI Select Black is too clean at 10% (within caps).</li>
+<li>Fuel and other common exclusion-heavy buckets (most issuers either block rewards or make it messy).</li>
+</ul>
+<p><strong>When SmartBuy beats Amex (and I will respect that)</strong></p>
+<ul>
+<li>For flights and hotels that I can book on HDFC SmartBuy with a strong effective return, Regalia Gold (LTF) is usually
+the smarter play.</li>
+<li>I will route to Amex only when the milestone value clearly dominates, or when SmartBuy pricing is worse.</li>
+</ul>
+<p><strong>How I will track it (so I don’t fool myself)</strong></p>
+<ul>
+<li>I will maintain a running milestone counter: month-wise cumulative spend vs ₹1.9L and ₹4L.</li>
+<li>I will screenshot milestone pages and keep statement extracts when bonus points post.</li>
+<li>I will always sanity-check the first statement for MCC correctness (especially hospitals, insurance, govt-looking
+merchants).</li>
+</ul>
+<h2 id="diagram-amex-platinum-travel-milestone-lane">Diagram: Amex Platinum Travel milestone lane</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;New large INR spend&#34;] --&gt; B{&#34;Eligible retail MCC?&#34;}
+    B --&gt;|No| C[&#34;Route by normal spend grid&#34;]
+    B --&gt;|Yes| D{&#34;Already hit ₹4L target?&#34;}
+    D --&gt;|Yes| C
+    D --&gt;|No| E{&#34;SmartBuy gives better net value?&#34;}
+    E --&gt;|Yes| F[&#34;Use Regalia/DCB via SmartBuy&#34;]
+    E --&gt;|No| G[&#34;Use Amex Platinum Travel&#34;]
+    G --&gt; H[&#34;Update milestone tracker&#34;]
+    H --&gt; I{&#34;Hit ₹1.9L?&#34;}
+    I --&gt;|No| J[&#34;Continue milestone lane&#34;]
+    I --&gt;|Yes| K{&#34;Hit ₹4L?&#34;}
+    K --&gt;|No| J
+    K --&gt;|Yes| L[&#34;Stop Amex lane and return to normal routing&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style D fill: #fff4e1, stroke: #cc8800, color: #000
+    style E fill: #fff4e1, stroke: #cc8800, color: #000
+    style I fill: #fff4e1, stroke: #cc8800, color: #000
+    style K fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style F fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style G fill: #f0e1ff, stroke: #8800cc, color: #000
+    style H fill: #f0e1ff, stroke: #8800cc, color: #000
+    style J fill: #f0e1ff, stroke: #8800cc, color: #000
+    style L fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><p><strong>Hidden operational thing (do this once)</strong></p>
+<ul>
+<li>If any bonus points do not post automatically, I will contact Amex support quickly with statement proof. Some Amex
+flows explicitly mention that bonus points may need a quick call/chat to
+claim.  <a href="https://www.americanexpress.com/content/dam/amex/in/legal-disclosures/Platinum_Travel_General_Tnc1.pdf" rel="noopener external" target="_blank">Amex terms</a>
+</li>
+</ul>
+<hr>
+<h3 id="12-indusind-bank-account-perks-i-actually-use-exclusive-and-select">1.2 IndusInd bank account perks I actually use (Exclusive and Select)</h3>
+<p>These are not magic freebies. I explicitly asked my RM to link with the IndusInd Pinnacle credit card to waive-off the
+average balance and it&rsquo;s official bank&rsquo;s perk.
+See below -</p>
+<div class="admonition info">
+  <div class="admonition-title">Information</div>
+  <div class="admonition-content">
+    This is <strong>official</strong>: the Indus Exclusive Schedule of Benefits lists <strong>Indulge / Pinnacle Credit Card</strong> under the Credit
+Card relationship criteria. That makes the Pinnacle + Exclusive combo a bank‑published route.<br>
+Source: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SA-Indus-Exclusive.pdf" rel="noopener external" target="_blank">Indus Exclusive SoB (effective 1 Jan 2026)</a>
+  </div>
+</div>
+<div class="admonition success">
+  <div class="admonition-title">Success</div>
+  <div class="admonition-content">
+    This is <strong>official</strong>: the Indus Select Schedule of Benefits lists <strong>Legend Credit Card</strong> under the Relationship
+Criteria.
+That means zero‑AMB is valid <strong>as long as the Legend card is active and linked</strong>.<br>
+Source: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SELECT-30-12-2022.pdf" rel="noopener external" target="_blank">Indus Select SoB (effective 1 Jan 2026)</a>
+  </div>
+</div>
+<div class="admonition note">
+  <div class="admonition-title">Note</div>
+  <div class="admonition-content">
+    IndusInd debit card lounge access became spend-based from <strong>1 July 2025</strong> (₹5,000 in the prior quarter). Always check
+the
+latest lounge eligibility updates before assuming benefits.<br>
+<a href="https://www.indusind.bank.in/in/en/personal/cards/debit-card-lounge-list.html" rel="noopener external" target="_blank">Debit card lounge access updates</a>
+  </div>
+</div>
+<p><strong>Pinnacle + Exclusive (combo logic, in plain English)</strong><br>
+Why I keep it:</p>
+<ul>
+<li><strong>Official SoB lists Pinnacle</strong> as a Credit Card eligibility path for Exclusive.</li>
+<li><strong>0% forex</strong> is on the Signature Exclusive / World Exclusive debit card, not on Pinnacle credit card.</li>
+<li>This combo gives me a premium savings account <strong>without parking big balances</strong>, plus a real 0% forex debit fallback.<br>
+Sources: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SA-Indus-Exclusive.pdf" rel="noopener external" target="_blank">Indus Exclusive SoB</a>
+,
+<a href="https://www.indusind.bank.in/in/en/personal/cards/debit-card/signature-exclusive-visa-debit-card.html" rel="noopener external" target="_blank">Signature Exclusive debit card</a>
+</li>
+</ul>
+<p><strong>Legend + Select (combo logic, in plain English)</strong><br>
+Why I keep it:</p>
+<ul>
+<li>Select eligibility is balance‑based by default, <strong>or</strong> via relationship criteria.</li>
+<li><strong>Official SoB confirms</strong>: Legend Credit Card counts as relationship criteria for Indus Select. That means zero‑AMB is
+valid while the Legend card is active and linked.</li>
+<li><strong>In my case</strong>, it is <strong>not salary‑based</strong>. My Select account is zero‑AMB because it is linked to my Legend card.<br>
+Source: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SELECT-30-12-2022.pdf" rel="noopener external" target="_blank">Indus Select SoB (effective 1 Jan 2026)</a>
+</li>
+</ul>
+<p><strong>IndusInd Exclusive (Savings Account)</strong><br>
+Key benefits I use or care about:</p>
+<ul>
+<li>Dedicated relationship manager.</li>
+<li>Signature Exclusive debit card perks: 0% cross-currency markup, BookMyShow BOGO offers, and lounge access 1 visit per
+quarter with ₹5,000 spend in the previous quarter. Spend rule is waived for the first two quarters.</li>
+<li>Cashback offers on shopping via the Signature Exclusive debit card.</li>
+<li>Small or medium locker: free for year 1, 50% off for year 2.</li>
+<li>Dining and grocery discounts at partners like Zomato and Bigbasket (check live offers).</li>
+<li>Insurance cover worth ₹35.5L and loan processing fee discounts.<br>
+Sources: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SA-Indus-Exclusive.pdf" rel="noopener external" target="_blank">Indus Exclusive SoB</a>
+,
+<a href="https://www.indusind.bank.in/in/en/personal/cards/debit-card-lounge-list.html" rel="noopener external" target="_blank">Debit card lounge access updates</a>
+</li>
+</ul>
+<p><strong>IndusInd Select (Savings Account)</strong><br>
+Key benefits I use or care about:</p>
+<ul>
+<li>Signature Select debit card: 6X rewards on shopping and 1% discounted cross-currency markup.</li>
+<li>BookMyShow BOGO: up to 2 tickets per quarter, ₹500 per ticket.</li>
+<li>Lounge access 1 visit per quarter with ₹5,000 spend in the previous quarter. Spend rule is waived for the first two
+quarters.</li>
+<li>Discounts on partners like Swiggy and Bigbasket (check live offers).</li>
+<li>Locker discount: 50% off year 1, 35% off year 2 onwards.</li>
+<li>Insurance cover worth ₹35.5L and loan processing fee discounts.</li>
+<li>Up to 4 group family accounts with zero balance requirement and 1 year free demat account.<br>
+Note: My Select account is zero‑AMB because the bank linked my Legend card. This is officially listed in the Select
+SoB under relationship criteria.<br>
+Sources: <a href="https://www.indusind.com/content/dam/indusind-corporate/schedule-of-charges/savings-account/SOB-SELECT-30-12-2022.pdf" rel="noopener external" target="_blank">Indus Select SoB</a>
+,
+<a href="https://www.indusind.bank.in/in/en/personal/cards/debit-card-lounge-list.html" rel="noopener external" target="_blank">Debit card lounge access updates</a>
+</li>
+</ul>
+<h3 id="13-salary-account-perks-i-actually-use-axis-burgundy-salary--hdfc-preferred">1.3 Salary account perks I actually use (Axis Burgundy Salary + HDFC Preferred)</h3>
+<p>I rotate salary credits between Axis and HDFC to keep both relationships warm. Yeh thoda jugaad hai, but it keeps the
+premium perks alive without extra drama.
+Bhidu, salary ka jugaad se hi premium perks flow hote hai.</p>
+<p><strong>Axis Burgundy Salary Account (Axis Bank)</strong><br>
+What I use from it:</p>
+<ul>
+<li>Complimentary Burgundy debit card with higher limits: ₹3L daily cash withdrawal and ₹6L purchase limit.</li>
+<li>Debit card perks: partner restaurant discounts, complimentary movie tickets, airport lounge access, free ATM
+withdrawals, and insurance covers.</li>
+<li>Family banking program: extend Burgundy benefits to 5 family members; up to 60% off locker fees with extra 10% under
+the program.</li>
+<li>Dedicated RM access and value-added services.<br>
+Source: <a href="https://www.axis.bank.in/accounts/salary-account/burgundy-salary-account" rel="noopener external" target="_blank">Axis Burgundy Salary Account</a>
+</li>
+</ul>
+<p><strong>HDFC Salary Account + Preferred Banking (HDFC Bank)</strong><br>
+What I use from it:</p>
+<ul>
+<li>Zero-balance salary account with cashback on cards, complimentary insurance cover, special loan pricing, PayZapp
+cashback, and Salary Plus overdraft.</li>
+<li>Preferred Banking: dedicated RM, preferential pricing, free Preferred EasyShop Platinum debit card, 50% locker waiver,
+free DDs up to ₹1L/day, and up to 8 paise better forex rate.</li>
+<li>Eligibility for salaried customers includes monthly net salary credit of ₹2L+ into HDFC Corporate Salary Account.</li>
+<li>Preferred EasyShop Platinum debit card: cashback points (1 point/₹100 telecom/utilities; 1 point/₹200
+groceries/restaurants/
+apparel/entertainment) with ₹750/month cap, lounge access 2 per quarter (₹5,000 spend in prior quarter), and daily
+limits
+(₹5L shopping, ₹1L ATM).<br>
+Note: Credit card bill payments on this debit card do <strong>not</strong> earn cashback points.<br>
+Sources: <a href="https://www.hdfc.bank.in/salary-account/benefits" rel="noopener external" target="_blank">HDFC Salary Account benefits</a>
+,
+<a href="https://www.hdfcbank.com/personal/save/high-networth-banking/premier-banking/preferred" rel="noopener external" target="_blank">HDFC Preferred Banking</a>
+,
+<a href="https://www.hdfcbank.com/personal/pay/cards/debit-cards/easyshop-preferred-platinum-debit-card" rel="noopener external" target="_blank">HDFC EasyShop Preferred Platinum Debit Card</a>
+</li>
+</ul>
+<h3 id="14-debit-and-travel-tools-i-keep-in-the-stack-wise-and-hdfc-easyshop-rewards">1.4 Debit and travel tools I keep in the stack (Wise and HDFC EasyShop Rewards)</h3>
+<p><strong>Wise account + Wise travel card (debit)</strong><br>
+What I use it for:</p>
+<ul>
+<li>Hold money in multiple currencies and spend at mid-market rate with low conversion fees.</li>
+<li>Spend abroad in 40+ currencies with no extra foreign transaction fee from Wise.</li>
+<li>ATM cash withdrawal: free up to USD 200 per month, then USD 1.4 + 3.25% over the free limit.<br>
+Sources: <a href="https://wise.com/in/pricing/card-fees?sourceAmount=1000&amp;sourceCcy=INR" rel="noopener external" target="_blank">Wise card fees</a>
+
+and <a href="https://wise.com/in/pricing/hold-fees?sourceAmount=1000&amp;sourceCcy=INR" rel="noopener external" target="_blank">Wise pricing</a>
+</li>
+</ul>
+<p><strong>HDFC EasyShop Rewards debit card</strong><br>
+What it is good for:</p>
+<ul>
+<li>Cashback points on common categories:
+<ul>
+<li>5 points per ₹100 on tax payments.</li>
+<li>1 point per ₹100 on telecom, utilities, groceries/supermarkets, restaurants, apparel, and entertainment.</li>
+<li>Monthly cap: 750 points.</li>
+<li>Minimum 100 points needed for redemption and points expire after 12 months.</li>
+</ul>
+</li>
+<li>2 complimentary domestic lounge visits per quarter.</li>
+<li>PayZapp and SmartBuy offers often give up to 5% cashback, capped at 750 points per month.</li>
+<li>My personal use case: I use it for credit card bill payments <strong>only when</strong> a live PayZapp or SmartBuy offer gives 5%
+cashback. I have seen caps like ₹2,000 on some offers, but I always verify the current offer and cap before paying.<br>
+Sources: <a href="https://www.hdfcbank.com/personal/pay/cards/debit-cards/easyshop-debit-card" rel="noopener external" target="_blank">HDFC EasyShop debit card</a>
+ and
+<a href="https://www.hdfcbank.com/personal/pay/cards/debit-cards/rewards-debit-card" rel="noopener external" target="_blank">HDFC Rewards debit card</a>
+</li>
+</ul>
+<h2 id="quick-mapping-for-my-top-categories">Quick mapping for my top categories</h2>
+<p>If you only read one table, read this. It is the 80-20 for my spend profile. Baaki bakchodi later.</p>
+<div class="admonition tip">
+  <div class="admonition-title">Tip</div>
+  <div class="admonition-content">
+    New to cards? Follow this table for one month, then tweak. First month should be boring, not heroic.
+  </div>
+</div>
+<table>
+	<thead>
+			<tr>
+					<th>Top category</th>
+					<th>Primary card</th>
+					<th>Why this card</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Utilities</td>
+					<td>PhonePe SBI Select Black</td>
+					<td>10% on PhonePe utilities, clean and repeatable</td>
+			</tr>
+			<tr>
+					<td>Groceries</td>
+					<td>HSBC Live+</td>
+					<td>10% on groceries up to cap</td>
+			</tr>
+			<tr>
+					<td>Dining</td>
+					<td>HSBC Live+</td>
+					<td>10% on dining up to cap</td>
+			</tr>
+			<tr>
+					<td>Fuel</td>
+					<td>SC Super Value Titanium</td>
+					<td>5% fuel cashback within cap</td>
+			</tr>
+			<tr>
+					<td>General shopping</td>
+					<td>SBI Cashback</td>
+					<td>5% online, simple to use</td>
+			</tr>
+	</tbody>
+</table>
+<p>Bas itna follow kiya toh kaam set, bhidu.</p>
+<h2 id="diagram-how-i-route-a-transaction-routing-decision">Diagram: how I route a transaction (routing decision)</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;New transaction&#34;] --&gt; B{&#34;Abroad?&#34;}
+    B --&gt;|Yes| FX{&#34;FX balance ready in Wise?&#34;}
+    FX --&gt;|Yes| W[&#34;Wise travel card&#34;]
+    FX --&gt;|No| S[&#34;Scapia (0% forex)&#34;]
+    B --&gt;|No| IN{&#34;UPI QR?&#34;}
+    IN --&gt;|Yes| UPI[&#34;PhonePe SBI Select Black (UPI 1%)&#34;]
+    IN --&gt;|No| CAT{&#34;Category?&#34;}
+    CAT --&gt; UTIL[&#34;Utilities via PhonePe -&gt; PhonePe SBI Select Black&#34;]
+    CAT --&gt; FOOD[&#34;Groceries/Dining -&gt; HSBC Live+ (till cap)&#34;]
+    CAT --&gt; ONLINE[&#34;Online retail -&gt; SBI Cashback (till cap)&#34;]
+    CAT --&gt; FUEL[&#34;Fuel -&gt; SC Super Value Titanium (till cap)&#34;]
+    CAT --&gt; TRAVEL[&#34;Travel in INR -&gt; HDFC SmartBuy (Regalia/DCB Metal)&#34;]
+    CAT --&gt; BIGINR[&#34;Large one-off INR spend -&gt; Amex Platinum Travel (milestone lane)&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style FX fill: #fff4e1, stroke: #cc8800, color: #000
+    style IN fill: #fff4e1, stroke: #cc8800, color: #000
+    style CAT fill: #fff4e1, stroke: #cc8800, color: #000
+    style W fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style S fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style UPI fill: #f0e1ff, stroke: #8800cc, color: #000
+    style UTIL fill: #f0e1ff, stroke: #8800cc, color: #000
+    style FOOD fill: #f0e1ff, stroke: #8800cc, color: #000
+    style ONLINE fill: #f0e1ff, stroke: #8800cc, color: #000
+    style FUEL fill: #f0e1ff, stroke: #8800cc, color: #000
+    style TRAVEL fill: #f0e1ff, stroke: #8800cc, color: #000
+    style BIGINR fill: #f0e1ff, stroke: #8800cc, color: #000
+</pre><h2 id="2-spend---card-mapping-the-dont-think-grid">2. Spend -&gt; card mapping (the &ldquo;don’t think&rdquo; grid)</h2>
+<p>Legend:</p>
+<ul>
+<li><strong>Primary</strong> = default card for that spend type</li>
+<li><strong>Backup</strong> = use when cap hit / merchant weird / offer running on that card</li>
+<li>Scapia rewards note: issuer advertises <strong>10% rewards</strong> on eligible online/offline spends; 1 reward = 1 Scapia Coin and
+<strong>5 coins = ₹1</strong>, so effective value depends on redemption and
+eligibility.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</li>
+</ul>
+<p>Bhidu, yeh grid follow kiya toh 80% kaam set.</p>
+<div class="admonition caution">
+  <div class="admonition-title">Caution</div>
+  <div class="admonition-content">
+    Two silent killers: MCC mismatches and caps. A single wrong MCC or cap hit can drop 10% to 1%. Always sanity-check the
+first statement for any new card or merchant.
+  </div>
+</div>
+<h2 id="diagram-why-rewards-randomly-drop-caps--mcc">Diagram: why rewards &ldquo;randomly&rdquo; drop (caps + MCC)</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;Expected cashback/rewards not received&#34;] --&gt; B{&#34;Cap hit?&#34;}
+    B --&gt;|Yes| B1[&#34;You are past the cap -&gt; base rewards only&#34;]
+    B --&gt;|No| C{&#34;MCC changed?&#34;}
+    C --&gt;|Yes| C1[&#34;Different category -&gt; different earn rate&#34;]
+    C --&gt;|No| D{&#34;Excluded txn type?&#34;}
+    D --&gt;|Yes| D1[&#34;Rent/insurance/govt/education/wallet etc. -&gt; 0 rewards&#34;]
+    D --&gt;|No| E{&#34;Posted after statement?&#34;}
+    E --&gt;|Yes| E1[&#34;Cashback posts later -&gt; check next statement&#34;]
+    E --&gt;|No| F[&#34;Escalate: issuer support + statement proof&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #fff4e1, stroke: #cc8800, color: #000
+    style D fill: #fff4e1, stroke: #cc8800, color: #000
+    style E fill: #fff4e1, stroke: #cc8800, color: #000
+    style B1 fill: #ffe1e1, stroke: #cc0000, color: #000
+    style C1 fill: #ffe1e1, stroke: #cc0000, color: #000
+    style D1 fill: #ffe1e1, stroke: #cc0000, color: #000
+    style E1 fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style F fill: #f0e1ff, stroke: #8800cc, color: #000
+</pre><h3 id="21-day-to-day-online-shopping-india">2.1 Day-to-day online shopping (India)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Amazon.in (everything incl. Amazon Fresh, Pantry, normal orders)</td>
+					<td><strong>Amazon Pay ICICI</strong> - 5% (Prime) / 3% (non-Prime) is unbeatable for me; LTF.  <a href="https://www.icici.bank.in/personal-banking/cards/credit-card/amazon-pay-credit-card" rel="noopener external" target="_blank">ICICI Bank</a>
+</td>
+					<td><strong>SBI Cashback</strong> (5% online) if Amazon card has tech issue; <strong>PhonePe Black</strong> only if there’s some PhonePe route/offer.</td>
+			</tr>
+			<tr>
+					<td>Flipkart</td>
+					<td><strong>Axis Flipkart</strong> - 5% on Flipkart.</td>
+					<td><strong>SBI Cashback</strong> (5% online) for categories where Flipkart card may not track or if an offer favors SBI; <strong>BoB Eterna</strong> (eligible online category; value depends on redemption) as third choice.</td>
+			</tr>
+			<tr>
+					<td>Other e-commerce (Myntra, Ajio, Croma, Nykaa, small D2C sites)</td>
+					<td><strong>SBI Cashback</strong> - 5% on most &ldquo;regular&rdquo; online spends (non-utility, non-govt, non-education, non-insurance, non-wallet, etc.).  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/cashback-sbi-card.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td><strong>PhonePe Black</strong> - 5% on non-PhonePe online spends (till 2,000 RP/month)  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+; <strong>BoB Eterna</strong> for eligible online (value depends on redemption). Avoid SBI Cashback for excluded MCCs (utilities, education, insurance, govt, wallet).</td>
+			</tr>
+			<tr>
+					<td>Online bills via Amazon Pay (electricity, etc.)</td>
+					<td><strong>PhonePe Black</strong> instead (via PhonePe) - much cleaner 10% on utilities/insurance there.</td>
+					<td>Amazon Pay ICICI has tightened exclusions for utilities/tax/education for cashback, especially outside Amazon’s own Pay partners.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="22-groceries-dining-food-delivery">2.2 Groceries, dining, food delivery</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Groceries - offline supermarkets (DMart, Reliance, Star Bazaar)</td>
+					<td><strong>HSBC Live+</strong> - 10% on groceries up to ₹10k/stmt (₹1k cap)  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+					<td>After hitting 10% cap: <strong>Scapia</strong> (eligible retail rewards if not excluded by MCC)  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+ or <strong>BoB Eterna</strong> (if txn coded as online).</td>
+			</tr>
+			<tr>
+					<td>Groceries - online (Blinkit, Zepto, Instamart etc.)</td>
+					<td><strong>HSBC Live+</strong> - 10% on grocery + food delivery partners up to cap  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+					<td>Once capped: <strong>SBI Cashback</strong> (5%) or <strong>PhonePe Black</strong> (5% online) depending on which app route I’m using.</td>
+			</tr>
+			<tr>
+					<td>Dining out (restaurants in India)</td>
+					<td><strong>HSBC Live+</strong> - 10% on dining at many MCCs; hard cap ₹1k/stmt.  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+					<td>After cap or where Live+ doesn’t code correctly: <strong>BoB Eterna</strong> for dining (online/travel/dining bucket), <strong>DCB Metal</strong> for weekend dining, or <strong>Scapia</strong> for eligible rewards on POS.</td>
+			</tr>
+			<tr>
+					<td>Swiggy / Zomato food orders</td>
+					<td><strong>HDFC Swiggy</strong> - 10% on Swiggy spends (Food, Instamart, Dineout, Genie) up to ₹1,500 per billing cycle.  <a href="https://www.hdfcbank.com/personal/pay/cards/credit-cards/swiggy-hdfc-bank-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+					<td>If capped or not tracking: <strong>HSBC Live+</strong> 10% on food delivery (subject to cap), else <strong>SBI Cashback</strong> 5% online.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="23-utilities-recharges-broadband-subscriptions">2.3 Utilities, recharges, broadband, subscriptions</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Electricity, water, piped gas, postpaid bills (through PhonePe)</td>
+					<td><strong>PhonePe SBI Black (RuPay)</strong> via PhonePe - 10% (10 RP/₹100) on eligible PhonePe utility spends up to 2,000 RP/month.  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>If I somehow blow the PhonePe cap: <strong>SC Super Value Titanium</strong> - 5% cashback on utilities and phone when paid via Standard Chartered BillPay, with small per-month caps (₹100-₹200). For direct merchant payments, assume only base rewards.  <a href="https://www.sc.com/in/credit-cards/super-value-titanium/" rel="noopener external" target="_blank">Standard Chartered</a>
+ Avoid SBI Cashback / HSBC Live+ / Amazon Pay ICICI here, they exclude utilities heavily.  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+			</tr>
+			<tr>
+					<td>Mobile recharges &amp; DTH</td>
+					<td><strong>PhonePe Black via PhonePe</strong> - again, in 10% PhonePe spend bucket.  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>Overflow: <strong>SC Super Value Titanium</strong> for phone bill 5% (small cap).</td>
+			</tr>
+			<tr>
+					<td>Broadband / Fiber / OTT subscriptions (Hotstar, Netflix, etc.)</td>
+					<td>If billed through <strong>PhonePe</strong>: PhonePe Black (10% PhonePe or 5% online depending on how it’s tagged, check once).</td>
+					<td>If outside PhonePe: first try <strong>SC Super Value Titanium</strong> / <strong>SC Smart</strong> only in StanChart BillPay flow; else treat as generic online and route to fee-waiver targets or <strong>Scapia</strong> backup.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="24-fuel-tolls-vehicle-maintenance--insurance">2.4 Fuel, tolls, vehicle maintenance &amp; insurance</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Fuel (petrol/diesel) at pumps in India</td>
+					<td><strong>SC Super Value Titanium</strong> - 5% cashback on fuel (₹2k/txn limit, ₹200/month cap).  <a href="https://www.sc.com/in/credit-cards/super-value-titanium/" rel="noopener external" target="_blank">Standard Chartered</a>
+</td>
+					<td>After cap: choose card where I care about meeting annual spend - <strong>PhonePe Black</strong> (for 1% surcharge waiver + 1% RP), or <strong>Regalia Gold</strong> for hitting milestones. Avoid SBI Cashback, Amazon Pay ICICI, Live+, Eterna, Atlas, Scapia for fuel rewards (most give only surcharge waiver or explicitly exclude).  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td>Tolls / FASTag recharges</td>
+					<td>No card really shines - most treat as excluded or just basic. Use <strong>PhonePe Black</strong> or <strong>Scapia</strong> depending on route; assume 0-1% value at best.</td>
+					<td>Use whichever card I want to push towards fee-waiver spends (HSBC Live+, PhonePe Black etc.).</td>
+			</tr>
+			<tr>
+					<td>Vehicle servicing, tyres, accessories, workshop bills</td>
+					<td><strong>Scapia</strong> - rewards on eligible offline POS retail if not in excluded MCC.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>If service center codes as &ldquo;automotive services&rdquo; ok; if it’s some semi-govt or insurance-linked POS, fallback to <strong>Regalia Gold</strong>, <strong>BoB Eterna</strong>, or <strong>IDFC FIRST Wealth</strong> for generic rewards / milestone spends.</td>
+			</tr>
+			<tr>
+					<td>Vehicle / health / term insurance premiums</td>
+					<td>If insurer is available on <strong>PhonePe</strong>, use <strong>PhonePe Black</strong> - 10% on PhonePe insurance spends within PhonePe-cap, that’s massive.  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>Outside PhonePe: Scapia’s published exclusions do not explicitly list insurance, but eligibility can vary by MCC and issuer interpretation. Treat rewards as <strong>uncertain</strong> and verify on my statements.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+ Avoid Live+, Eterna, Amazon Pay ICICI, Flipkart, Atlas, SBI Cashback which typically exclude insurance from rewards.  <a href="https://www.hsbc.co.in/credit-cards/products/live-plus/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="25-hospitals-medical-education-govt-spends">2.5 Hospitals, medical, education, govt spends</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Hospitals, labs, pharmacies (India)</td>
+					<td><strong>Scapia</strong> - rewards on eligible domestic medical spends unless coded as &ldquo;govt&rdquo;.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>For online medicine orders (PharmEasy, Tata 1mg): <strong>BoB Eterna</strong> (if online category) or <strong>SBI Cashback</strong> 5% where eligible.</td>
+			</tr>
+			<tr>
+					<td>Education fees, exam fees, ed-tech</td>
+					<td>Most cards nuke rewards here. Use <strong>any card I want to push for fee waiver</strong> (HSBC Live+, PhonePe Black, SBI Cashback) knowing rewards may be 0.</td>
+					<td>Check T&amp;C if some ed-tech is not coded as education, then SBI Cashback / PhonePe Black / Scapia may give something, but assume 0 in planning.</td>
+			</tr>
+			<tr>
+					<td>Govt portals (taxes, passport, visa fee, mParivahan, etc.)</td>
+					<td>Again, almost all cards exclude govt from rewards. Use <strong>Regalia Gold</strong> / <strong>PhonePe Black</strong> / <strong>HSBC Live+</strong> mainly to hit spend thresholds.</td>
+					<td>Don’t sweat rewards here; plan these as &ldquo;quota spends&rdquo; for annual fee waivers.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="26-upi--offline-small-tickets-india">2.6 UPI / offline small tickets (India)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>UPI Scan &amp; Pay in shops (kirana, chai, cabs, etc.)</td>
+					<td><strong>PhonePe SBI Select Black RuPay</strong> - 1% rewards on UPI Scan &amp; Pay, capped (2,000 RP/month on &ldquo;other spends&rdquo;). 1 RP = ₹1, so clean 1%.  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/phonepe-sbi-card-select-black.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>If someday Scapia RuPay starts giving decent rewards on UPI for me, that can be secondary - but right now PhonePe Black is the clear, published UPI-play.</td>
+			</tr>
+			<tr>
+					<td>Offline retail POS (non-UPI) - general shopping, clothes, random stores</td>
+					<td><strong>Scapia</strong> - rewards on eligible offline spends (non-fuel, non-govt, non-rent, non-wallet, non-education).  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td><strong>BoB Eterna</strong> for dining/travel/online-coded POS; <strong>HSBC Live+</strong> 1.5% on &ldquo;clean retail&rdquo; MCCs; or <strong>Amex MRCC</strong> if I’m optimizing 4×₹1,500 pattern for MR bonuses.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="27-travel-india--international">2.7 Travel (India &amp; international)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Domestic flights/hotels booked in INR via aggregators (MMT, Cleartrip, etc.)</td>
+					<td><strong>HDFC Regalia Gold or DCB Metal via SmartBuy</strong> - high accelerated rewards on travel (often ~3-5% equivalent depending on redemption).  <a href="https://www.hdfc.bank.in/credit-cards/diners-club-black-metal-edition-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+</td>
+					<td><strong>Axis Atlas</strong> or <strong>HSBC TravelOne</strong> if I’m building a serious miles stash; <strong>BoB Eterna</strong> for online travel (15 RP/₹100 on travel; value depends on redemption) as LTF backup; <strong>Amex Platinum Travel</strong> when I am actively targeting annual INR milestones and SmartBuy pricing is not better.  <a href="https://www.axis.bank.in/cards/credit-card/axis-bank-atlas-credit-card" rel="noopener external" target="_blank">AxisBank</a>
+ <a href="https://www.hsbc.co.in/credit-cards/products/travel-one/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+			</tr>
+			<tr>
+					<td>Railway bookings (IRCTC etc.)</td>
+					<td>If routed via <strong>PhonePe</strong>, I can get 10% PhonePe category on PhonePe Black (subject to caps).</td>
+					<td>Direct IRCTC: reward structures are messy; use <strong>Scapia</strong> or <strong>Regalia Gold</strong> depending on which milestone I’m targeting.</td>
+			</tr>
+			<tr>
+					<td>Domestic airport lounge (when I travel alone)</td>
+					<td>I have <strong>a lot</strong> of options: <strong>DCB Metal</strong>, Scapia (unlock with prior-month spend ₹10k Visa / ₹15k RuPay), Regalia Gold, BoB Eterna, HSBC Live+, PhonePe Black, <strong>IDFC FIRST Wealth</strong>, <strong>Axis Select</strong>.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>Strategy: use <strong>Scapia</strong> for its shop/dine/lounge 100% points benefit when I want non-lounge value; use others when I want to preserve Scapia’s monthly trigger flexibility.</td>
+			</tr>
+			<tr>
+					<td>Domestic lounge - family</td>
+					<td>For simply <em>getting everyone inside</em> reliably: <strong>DCB Metal</strong> + <strong>Regalia Gold</strong> + <strong>BoB Eterna</strong> + <strong>PhonePe Black</strong> + <strong>HSBC Live+</strong> + <strong>Scapia</strong> together give me a pretty fat lounge quota across networks.</td>
+					<td>For kids/parents, check add-on cards option (Regalia, Eterna, SBI) and issue add-ons if needed so each plastic can be swiped once.</td>
+			</tr>
+			<tr>
+					<td>International lounge (outside India)</td>
+					<td><strong>DCB Metal</strong> (unlimited lounges), <strong>Regalia Gold</strong> via Priority Pass (up to 6 visits per calendar year outside India), <strong>IndusInd Pinnacle</strong> (1 visit per quarter), <strong>Axis Select</strong> via Priority Pass. <a href="https://www.hdfc.bank.in/credit-cards/diners-club-black-metal-edition-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+ <a href="https://www.hdfcbank.com/personal/pay/cards/credit-cards/regalia-gold-credit-card" rel="noopener external" target="_blank">HDFC Bank</a>
+ <a href="https://www.indusind.bank.in/in/en/personal/cards/credit-card/pinnacle-world-credit-card.html" rel="noopener external" target="_blank">IndusInd Bank</a>
+ <a href="https://www.axisbank.com/retail/cards/credit-card/axis-bank-select-credit-card/features-benefits" rel="noopener external" target="_blank">Axis Bank</a>
+</td>
+					<td><strong>IDFC FIRST Wealth</strong> gives 2 international lounge/spa visits per quarter on ₹20,000 monthly spend. Access mode can vary by bank program or PP issued in the kit. Priority Pass in India is chargeable and visit fees may apply based on PP rules. <a href="https://www.idfcfirstbank.com/credit-card/benefits/lounge-access" rel="noopener external" target="_blank">IDFC FIRST Bank</a>
+</td>
+			</tr>
+			<tr>
+					<td>International flights/hotels booked in INR</td>
+					<td>Same as domestic: <strong>Regalia Gold or DCB Metal via SmartBuy</strong> first, then <strong>Atlas / HSBC TravelOne / Eterna</strong> depending on miles vs cashback mood.</td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>International flights/hotels booked in foreign currency (USD/EUR)</td>
+					<td><strong>Wise travel card</strong> if I already hold the currency; else <strong>Scapia</strong> (0% forex) for simple FX spends. <a href="https://wise.com/in/pricing/card-fees?sourceAmount=1000&amp;sourceCcy=INR" rel="noopener external" target="_blank">Wise</a>
+ <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>If I want <em>some</em> rewards and am ok paying a bit of forex: <strong>HSBC TravelOne</strong> (travel transfer lane), <strong>Amazon Pay ICICI</strong> with 1.99% markup + possible 1% cb on non-excluded spends, or <strong>IDFC FIRST Wealth</strong> at ~1.5% markup for limit/relationship/milestone reasons.  <a href="https://www.hsbc.co.in/credit-cards/products/travel-one/" rel="noopener external" target="_blank">HSBC</a>
+</td>
+			</tr>
+			<tr>
+					<td>AirBnB / Booking.com / Hostelworld charges in EUR/USD</td>
+					<td><strong>Scapia</strong> - treat as generic intl POS/online, enjoy 0% forex; rewards subject to eligibility.</td>
+					<td>If charged in INR (DCC turned on) but at sane rate, then treat as domestic online: <strong>SBI Cashback</strong> or <strong>BoB Eterna</strong> depending on merchant coding.</td>
+			</tr>
+			<tr>
+					<td>Everyday overseas spends (EU / Singapore etc.: metro, tram, SNCF/TGV, food, groceries)</td>
+					<td><strong>Wise travel card</strong> if balance is ready; else <strong>Scapia</strong> for 0% forex on small daily spends. <a href="https://wise.com/in/pricing/card-fees?sourceAmount=1000&amp;sourceCcy=INR" rel="noopener external" target="_blank">Wise</a>
+ <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>Keep <strong>Amazon Pay ICICI</strong> as backup (1.99% markup) or <strong>IDFC FIRST Wealth</strong> (~1.5% markup) in case Wise or Scapia fails.</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="diagram-forex-routing-with-dcc-guardrail">Diagram: forex routing with DCC guardrail</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;Foreign currency transaction&#34;] --&gt; B{&#34;Merchant asks to pay in INR?&#34;}
+    B --&gt;|Yes| C[&#34;Decline DCC and choose local currency&#34;]
+    B --&gt;|No| D[&#34;Keep local currency&#34;]
+    C --&gt; E{&#34;Wise balance ready?&#34;}
+    D --&gt; E
+    E --&gt;|Yes| F[&#34;Pay with Wise travel card&#34;]
+    E --&gt;|No| G{&#34;Scapia accepted?&#34;}
+    G --&gt;|Yes| H[&#34;Pay with Scapia (0% forex)&#34;]
+    G --&gt;|No| I[&#34;Use low-forex backup card (IDFC/Amazon/Legend)&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style E fill: #fff4e1, stroke: #cc8800, color: #000
+    style G fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #ffe1e1, stroke: #cc0000, color: #000
+    style D fill: #f0e1ff, stroke: #8800cc, color: #000
+    style F fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style H fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style I fill: #f0e1ff, stroke: #8800cc, color: #000
+</pre><h3 id="28-learning-software-online-courses-often-usdeur">2.8 Learning, software, online courses (often USD/EUR)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Spend type</th>
+					<th>Primary card</th>
+					<th>Backup / notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Software subscriptions &amp; online courses billed in <strong>INR</strong> (ByteByteGo via Paddle in INR, Udemy India, etc.)</td>
+					<td>Treat as normal online: <strong>SBI Cashback</strong> 5% if not in excluded MCC, else <strong>PhonePe Black</strong> 5% online.  <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/cashback-sbi-card.page" rel="noopener external" target="_blank">SBI Card</a>
+</td>
+					<td>If coded as education where rewards die, fall back to <strong>Scapia</strong> (eligible rewards only) or simply use a card where I need spend for fee waiver.</td>
+			</tr>
+			<tr>
+					<td>Software / courses billed directly in <strong>USD/EUR</strong></td>
+					<td><strong>Wise travel card</strong> if I already hold the currency; else <strong>Scapia</strong> for 0% forex. <a href="https://wise.com/in/pricing/card-fees?sourceAmount=1000&amp;sourceCcy=INR" rel="noopener external" target="_blank">Wise</a>
+ <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</td>
+					<td>If I see a decent INR-converted price (no markup horror), I can also pay in INR using <strong>SBI Cashback</strong> / <strong>BoB Eterna</strong> as normal online.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="29-miscellaneous--where-nothing-obvious-fits">2.9 Miscellaneous / where nothing obvious fits</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Scenario</th>
+					<th>Card to prefer</th>
+					<th>Notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Credit card bill payments</td>
+					<td><strong>HDFC EasyShop Rewards debit card</strong></td>
+					<td>I use this only when a live PayZapp or SmartBuy offer gives 5% cashback. Always check the current offer and cap before paying. <a href="https://www.hdfcbank.com/personal/pay/cards/debit-cards/easyshop-debit-card" rel="noopener external" target="_blank">HDFC EasyShop debit card</a>
+</td>
+			</tr>
+			<tr>
+					<td>Very small offline tickets (chai, snacks, kirana)</td>
+					<td><strong>PhonePe Black RuPay via UPI</strong> (1% back)</td>
+					<td>Simple, clean, and builds PhonePe RP bucket.</td>
+			</tr>
+			<tr>
+					<td>Weird MCC / unsure if category excluded</td>
+					<td><strong>Scapia</strong></td>
+					<td>Rewards only where eligible, 0% forex if intl; worst case I just get no rewards but also no crazy surcharge.</td>
+			</tr>
+			<tr>
+					<td>I’m trying to meet specific <em>annual fee waiver</em></td>
+					<td>Push that card intentionally on non-excluded spends: <strong>HSBC Live+ (₹2L)</strong>, <strong>SBI Cashback (₹2L)</strong>, <strong>PhonePe Black (₹3L)</strong>.</td>
+					<td>For these, route generic, non-utility non-govt spends there until waiver is secured each year.</td>
+			</tr>
+	</tbody>
+</table>
+<hr>
+<h2 id="3-mental-model-the-30-second-version">3. Mental model (the 30-second version)</h2>
+<p>One simple rule:</p>
+<ul>
+<li>Use one primary card per spend bucket.</li>
+<li>Track cap, MCC, and exclusion before assuming rewards.</li>
+<li>Keep one clear forex path: <strong>Wise first</strong>, <strong>Scapia second</strong>, <strong>low-forex credit card backup</strong>.</li>
+<li>Keep Amex Platinum Travel as a separate INR milestone lane, not as a daily spend card.</li>
+</ul>
+<h2 id="redundant-cards-the-noise-tax">Redundant cards (the noise tax)</h2>
+<p>Here’s the part nobody wants to admit: half the cards people hold are redundant. They add noise, not value.</p>
+<p>How redundancy happens:</p>
+<ul>
+<li>Two cards claim &ldquo;5% online&rdquo; but one has exclusions/caps that make it pointless for your spend.</li>
+<li>You keep an old &ldquo;backup&rdquo; card that never wins any bucket anymore.</li>
+<li>You add one more co-branded card for a shiny offer, then forget to route spends correctly.</li>
+</ul>
+<p>Examples from my world (brutal and practical):</p>
+<ul>
+<li>
+<p><strong>Generic online cashback overlap (noise by default)</strong><br>
+If <strong>SBI Cashback</strong> is already your primary online engine, most &ldquo;2% online&rdquo; cards become noise unless they have a
+real,
+repeatable niche for your spend (a partner offer you actually use, or a fee waiver you actually hit).</p>
+</li>
+<li>
+<p><strong>SBI Cashback vs Axis Cashback (online spends)</strong><br>
+If you already use <strong>SBI Cashback</strong> as your default online card (5% online, capped per statement cycle), then adding
+<strong>Axis Cashback</strong> often becomes noise unless your online spends are high enough to justify its tiered slabs and you
+can
+actually use them cleanly.
+See: <a href="https://www.sbicard.com/en/personal/credit-cards/rewards/cashback-sbi-card.page" rel="noopener external" target="_blank">SBI Cashback</a>
+
+and <a href="https://www.axisbank.com/retail/cards/credit-card/cashback-credit-card" rel="noopener external" target="_blank">Axis Cashback</a>
+.<br>
+Axis Cashback, on paper: online cashback tiers (2% up to ₹5,000, 5% for ₹5,001-₹40,000, 7% above ₹40,000) with an
+overall monthly cashback cap of ₹4,000.
+See: <a href="https://www.axisbank.com/retail/cards/credit-card/cashback-credit-card" rel="noopener external" target="_blank">Axis Cashback</a>
+.<br>
+The blunt take:</p>
+<ul>
+<li>If your online spends are &ldquo;normal&rdquo; and you want simple: <strong>SBI Cashback wins</strong> because it’s boring and consistent.</li>
+<li>If your online spends are heavy enough to push into the 7% slab, and you are ok tracking the cap and slabs:
+<strong>Axis Cashback can be worth it</strong>, but it’s still capped at ₹4,000 per month.</li>
+</ul>
+</li>
+<li>
+<p><strong>Utilities overlap</strong><br>
+Axis Cashback gives 0.5% cashback on utilities and bill payments, capped at ₹100 per statement month. See:
+<a href="https://www.axisbank.com/retail/cards/credit-card/cashback-credit-card" rel="noopener external" target="_blank">Axis Cashback</a>
+.<br>
+In my routing, utilities are a <strong>high-frequency bucket</strong> where 0.5% is basically noise compared to a 10% bucket when
+it
+exists (PhonePe route). So I don’t treat Axis Cashback as a utilities card.</p>
+</li>
+<li>
+<p><strong>Food and grocery overlap</strong><br>
+If you already use <strong>HSBC Live+</strong> as your groceries + dining engine (till cap), then a second &ldquo;food&rdquo; card is justified
+only if it is truly narrower but stronger for a specific app flow (example: Swiggy-only routing).</p>
+</li>
+<li>
+<p><strong>Travel heavy cards overlap</strong><br>
+If you already route INR travel via <strong>HDFC SmartBuy</strong> (Regalia or DCB Metal), then adding one more &ldquo;travel-ish&rdquo; card
+only
+makes sense if you actually redeem points/miles well. Else it’s just another cap to track.</p>
+</li>
+<li>
+<p><strong>Lounge overlap</strong><br>
+If you have <strong>DCB Metal</strong> plus a couple of backups, adding more &ldquo;2 lounges per quarter&rdquo; cards is usually pure clutter.
+Bhidu, lounge ke liye card collection mat karo.
+Log itne desperate ho jaate hai na &ldquo;free&rdquo; khane ke liye, ki dekhke second-hand embarrassment hota hai.
+Scene yeh hai: 17L spend, phir ek fultoo sandwich, diet coke, aur AC chair ko trophy bana ke story.
+Bhai, yeh &ldquo;luxury&rdquo; nahi, timepass ka premium subscription hai.
+Cut to cut baat: agar lounge ke liye extra spend karna pad raha hai, toh tu reward nahi kama raha, tu khud ko chindi
+discount pe bech raha hai.</p>
+</li>
+</ul>
+<p>Rule I follow:</p>
+<ul>
+<li>A card must have <strong>1-3 clear jobs</strong> in my life.</li>
+<li>If it doesn’t win a bucket or unlock a relationship benefit I truly use, I either downgrade it, park it, or close it.</li>
+</ul>
+<h2 id="diagram-the-monthly-routine-so-i-dont-lose-sleep">Diagram: the monthly routine (so I don’t lose sleep)</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;Day 1-3 of month&#34;] --&gt; B[&#34;Set default cards in apps (Amazon, PhonePe, Swiggy)&#34;]
+    B --&gt; C[&#34;Route spends with the grid&#34;]
+    C --&gt; D{&#34;Did any cap hit?&#34;}
+    D --&gt;|No| C
+    D --&gt;|Yes| E[&#34;Switch to backup card for that bucket&#34;]
+    E --&gt; C
+    C --&gt; F[&#34;Statement generated&#34;]
+    F --&gt; G[&#34;Sanity-check: cashback posted? MCC surprises?&#34;]
+    G --&gt; H[&#34;Update fee waiver tracker if needed&#34;]
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #f0e1ff, stroke: #8800cc, color: #000
+    style D fill: #fff4e1, stroke: #cc8800, color: #000
+    style E fill: #f0e1ff, stroke: #8800cc, color: #000
+    style F fill: #e1f5ff, stroke: #0066cc, color: #000
+    style G fill: #fff4e1, stroke: #cc8800, color: #000
+    style H fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><h2 id="diagram-portfolio-layers-what-depends-on-what">Diagram: portfolio layers (what depends on what)</h2>
+<pre class="mermaid">flowchart TB
+    subgraph Banking[&#34;Banking relationships&#34;]
+        AXIS[&#34;Axis Burgundy Salary account&#34;] --&gt; AXCC[&#34;Axis Select (LTF relationship)&#34;]
+        HDFC[&#34;HDFC Salary + Preferred&#34;] --&gt; HDFCCC[&#34;HDFC Regalia Gold / DCB Metal relationship&#34;]
+        IND[&#34;IndusInd Exclusive / Select&#34;] --&gt; INDCC[&#34;Pinnacle + Exclusive, Legend + Select&#34;]
+    end
+
+    subgraph Routing[&#34;Spend routing engines&#34;]
+        UTIL[&#34;Utilities via PhonePe&#34;] --&gt; PBP[&#34;PhonePe SBI Select Black&#34;]
+        FOOD[&#34;Groceries/Dining&#34;] --&gt; HSBC[&#34;HSBC Live+&#34;]
+        ONLINE[&#34;Online retail&#34;] --&gt; SBICB[&#34;SBI Cashback&#34;]
+        FX[&#34;Foreign spends&#34;] --&gt; WISE[&#34;Wise / Scapia&#34;]
+    end
+
+    Banking --&gt; Routing
+    style AXIS fill: #e1f5ff, stroke: #0066cc, color: #000
+    style HDFC fill: #e1f5ff, stroke: #0066cc, color: #000
+    style IND fill: #e1f5ff, stroke: #0066cc, color: #000
+    style AXCC fill: #f0e1ff, stroke: #8800cc, color: #000
+    style HDFCCC fill: #f0e1ff, stroke: #8800cc, color: #000
+    style INDCC fill: #f0e1ff, stroke: #8800cc, color: #000
+    style UTIL fill: #fff4e1, stroke: #cc8800, color: #000
+    style FOOD fill: #fff4e1, stroke: #cc8800, color: #000
+    style ONLINE fill: #fff4e1, stroke: #cc8800, color: #000
+    style FX fill: #fff4e1, stroke: #cc8800, color: #000
+    style PBP fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style HSBC fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style SBICB fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style WISE fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><ul>
+<li>
+<p><strong>Online retail backbone:</strong></p>
+<ul>
+<li>Amazon: <strong>Amazon Pay ICICI</strong></li>
+<li>Flipkart: <strong>Axis Flipkart</strong></li>
+<li>Everything else: <strong>SBI Cashback</strong> + <strong>PhonePe Black</strong> + <strong>BoB Eterna</strong> (depending on merchant &amp; caps)</li>
+</ul>
+</li>
+<li>
+<p><strong>Daily life optimizer:</strong></p>
+<ul>
+<li><strong>HSBC Live+</strong> for groceries + dining + food-delivery (10% up to ₹1k/month).</li>
+<li><strong>HDFC Swiggy</strong> specifically for Swiggy ecosystem spends (10% up to ₹1.5k/month).</li>
+</ul>
+</li>
+<li>
+<p><strong>Bills &amp; boring stuff:</strong></p>
+<ul>
+<li><strong>PhonePe SBI Black</strong> for utilities/insurance/recharges via PhonePe (10%).</li>
+<li><strong>SC Super Value Titanium</strong> as secondary for fuel + utilities when I’ve exhausted PhonePe cap.</li>
+</ul>
+</li>
+<li>
+<p><strong>Offline &amp; &ldquo;I don’t know what this MCC is&rdquo;:</strong></p>
+<ul>
+<li><strong>Federal Scapia</strong> as default rewards-on-eligible domestic and 0% forex abroad.</li>
+</ul>
+</li>
+<li>
+<p><strong>Premium backup &amp; extra lounges:</strong> <strong>IDFC FIRST Wealth</strong> is my LTF safety net - use it as a backup general card
+when other caps are hit, and as extra domestic/international/railway lounge capacity and a low-forex Visa backup when
+Scapia isn’t ideal or fails.
+Extra lounges ka matlab yeh nahi ki apun <strong>&ldquo;free buffet audit&rdquo;</strong> karne jaa rahe hai. Bas travel ko easy bana.</p>
+</li>
+<li>
+<p><strong>Lifestyle perks:</strong> <strong>IndusInd Pinnacle</strong> for Priority Pass international lounge, golf, and BOGO movies; <strong>IndusInd
+Legend</strong>
+as an LTF backup with weekend 2 RP/₹100 and 1.8% forex markup.</p>
+</li>
+<li>
+<p><strong>Travel &amp; lounges:</strong></p>
+<ul>
+<li><strong>HDFC Diners Club Black Metal + Regalia Gold + Scapia + BoB Eterna + PhonePe Black + Axis Select + HSBC Live+ + ICICI Sapphiro</strong>
+give me a ridiculous lounge arsenal for my family. DCB Metal is the heavy hitter here.
+Lounge is a pit stop, boss. Rest, charge, hydrate, niklo. Trophy banane ka scene mat bana.</li>
+<li><strong>Regalia Gold / DCB Metal / Atlas / HSBC TravelOne / Eterna</strong> for big-flight/hotel bookings in INR.</li>
+<li><strong>Wise travel card</strong> for foreign currency if balance is ready, else <strong>Scapia</strong>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Nerdy optimization slots:</strong></p>
+<ul>
+<li><strong>Amex MRCC</strong> for the 4×₹1,500 monthly pattern.</li>
+<li><strong>Amex Platinum Travel</strong> for planned large INR spends when milestone math is better than cashback.</li>
+<li><strong>HSBC TravelOne</strong> as miles-transfer lane (only when redemption value beats cashback math).</li>
+<li><strong>PhonePe Black UPI</strong> for 1% everywhere QR is accepted.</li>
+<li><strong>ICICI Sapphiro RuPay</strong> as acceptance backup in UPI/card-network edge cases.</li>
+<li><strong>HDFC EasyShop Rewards debit</strong> for credit card bill payments when a live cashback offer is running.</li>
+</ul>
+</li>
+</ul>
+<p>This setup uses <strong>every card in my current portfolio intentionally</strong> and keeps overlapping chaos under control: each
+card now has 1-3 clearly defined jobs instead of random swipes.</p>
+<hr>
+<h2 id="4-quick-cheat-sheet-when-my-brain-is-offline">4. Quick cheat sheet (when my brain is offline)</h2>
+<p>Use this when I don’t want to think - just pick from here and refine later with the big tables above.</p>
+<h3 id="41-scenario---card-super-compressed">4.1 Scenario -&gt; card (super compressed)</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Scenario</th>
+					<th>Primary card(s)</th>
+					<th>Backup / when primary is capped or not working</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Amazon.in</td>
+					<td><strong>Amazon Pay ICICI</strong></td>
+					<td><strong>SBI Cashback</strong>, <strong>PhonePe Black</strong>, <strong>BoB Eterna</strong> (if coded as online)</td>
+			</tr>
+			<tr>
+					<td>Flipkart</td>
+					<td><strong>Axis Flipkart</strong></td>
+					<td><strong>SBI Cashback</strong>, <strong>BoB Eterna</strong></td>
+			</tr>
+			<tr>
+					<td>Other online shopping (normal retail, not utilities)</td>
+					<td><strong>SBI Cashback</strong></td>
+					<td><strong>PhonePe Black</strong>, <strong>BoB Eterna</strong>, <strong>Scapia</strong></td>
+			</tr>
+			<tr>
+					<td>Groceries &amp; food delivery (Blinkit/Zepto/Swiggy/etc.)</td>
+					<td><strong>HSBC Live+</strong></td>
+					<td><strong>HDFC Swiggy</strong> (Swiggy only), <strong>SBI Cashback</strong>, <strong>PhonePe Black</strong>, <strong>Scapia</strong></td>
+			</tr>
+			<tr>
+					<td>Dining out (restaurants)</td>
+					<td><strong>HSBC Live+</strong></td>
+					<td><strong>HDFC Swiggy</strong> (Dineout), <strong>BoB Eterna</strong>, <strong>Scapia</strong>, <strong>DCB Metal</strong> (weekend dining)</td>
+			</tr>
+			<tr>
+					<td>Utilities &amp; insurance via PhonePe (bills, recharges)</td>
+					<td><strong>SBI PhonePe Black RuPay</strong> (inside PhonePe)</td>
+					<td><strong>SC Super Value Titanium</strong> for overflow caps</td>
+			</tr>
+			<tr>
+					<td>Utilities / phone bills <strong>outside PhonePe</strong></td>
+					<td><strong>SC Super Value Titanium</strong> or <strong>SC Smart</strong> only in StanChart BillPay flow</td>
+					<td>If BillPay route is not available: use fee-waiver target card; keep <strong>Scapia</strong> as clean backup</td>
+			</tr>
+			<tr>
+					<td>Broadband / WiFi</td>
+					<td>Try <strong>PhonePe Black via PhonePe</strong>; if biller broken -&gt; <strong>SC Super Value Titanium</strong> / <strong>SC Smart</strong> in BillPay flow</td>
+					<td>If BillPay route fails: <strong>Scapia</strong> or fee-waiver target card</td>
+			</tr>
+			<tr>
+					<td>Fuel at petrol pumps</td>
+					<td><strong>SC Super Value Titanium</strong> (5% till cap)</td>
+					<td><strong>PhonePe Black</strong> (for waiver / 1% back) or <strong>Regalia Gold</strong> for milestones</td>
+			</tr>
+			<tr>
+					<td>Tolls / FASTag</td>
+					<td>Any card I want to push for fee-waiver spends (HSBC Live+, PhonePe, SBI)</td>
+					<td>Don’t chase rewards here</td>
+			</tr>
+			<tr>
+					<td>Vehicle servicing / workshop bills</td>
+					<td><strong>Scapia</strong></td>
+					<td><strong>Regalia Gold</strong>, <strong>BoB Eterna</strong>, <strong>IDFC FIRST Wealth</strong></td>
+			</tr>
+			<tr>
+					<td>Insurance premiums (vehicle/health/term)</td>
+					<td><strong>PhonePe Black</strong> (if insurer on PhonePe)</td>
+					<td><strong>Scapia</strong>, else any fee-waiver target card</td>
+			</tr>
+			<tr>
+					<td>Hospitals / labs / diagnostics</td>
+					<td><strong>Scapia</strong></td>
+					<td><strong>Regalia Gold</strong>, <strong>BoB Eterna</strong> (for online medicine orders), <strong>HSBC Live+</strong></td>
+			</tr>
+			<tr>
+					<td>Government portals (taxes, passport, visa, etc.)</td>
+					<td>Any fee-waiver target card (HSBC Live+, PhonePe Black, SBI CB)</td>
+					<td>Don’t expect rewards - think of these as quota spends</td>
+			</tr>
+			<tr>
+					<td>UPI Scan &amp; Pay (QR in shops, cabs, chai, etc.)</td>
+					<td><strong>SBI PhonePe Black RuPay</strong> (1% on UPI)</td>
+					<td>Any other UPI-linked account if acceptance issues</td>
+			</tr>
+			<tr>
+					<td>UPI backup lane on ICICI rails</td>
+					<td><strong>ICICI Sapphiro RuPay</strong></td>
+					<td>Use only as acceptance fallback or targeted ICICI offer lane; for pure ROI, PhonePe Black UPI remains primary</td>
+			</tr>
+			<tr>
+					<td>Offline POS - generic / &ldquo;don’t know the MCC&rdquo;</td>
+					<td><strong>Scapia</strong></td>
+					<td><strong>HSBC Live+</strong>, <strong>BoB Eterna</strong>, <strong>IDFC FIRST Wealth</strong></td>
+			</tr>
+			<tr>
+					<td>Domestic flights/hotels booked in INR</td>
+					<td><strong>HDFC Regalia Gold via SmartBuy</strong>, <strong>DCB Metal via SmartBuy</strong></td>
+					<td><strong>Axis Atlas</strong>, <strong>BoB Eterna</strong></td>
+			</tr>
+			<tr>
+					<td>Miles-first international booking strategy (when I’m in transfer mode)</td>
+					<td><strong>HSBC TravelOne</strong>, <strong>Axis Atlas</strong></td>
+					<td>Transfer to airline/hotel partners only when redemption value is clearly above plain cashback math</td>
+			</tr>
+			<tr>
+					<td>Large one-off INR spends (electronics, hospital, annual travel chunks)</td>
+					<td><strong>Amex Platinum Travel</strong> (when milestone plan is active)</td>
+					<td>If SmartBuy gives better net value: use <strong>Regalia Gold / DCB Metal</strong> instead</td>
+			</tr>
+			<tr>
+					<td>Airport lounge access (domestic + international)</td>
+					<td><strong>DCB Metal</strong></td>
+					<td><strong>Regalia Gold</strong>, <strong>Axis Select</strong>, <strong>PhonePe Black</strong>, <strong>IndusInd Pinnacle</strong>, <strong>IDFC FIRST Wealth</strong> (use it for comfort, not &ldquo;free khana&rdquo; ke liye)</td>
+			</tr>
+			<tr>
+					<td>International flights/hotels in foreign currency</td>
+					<td><strong>Wise travel card</strong> (if balance ready), else <strong>Scapia</strong></td>
+					<td><strong>Amazon Pay ICICI</strong> (1.99% FX), <strong>IDFC FIRST Wealth</strong> (1.5% FX), <strong>IndusInd Legend</strong> (1.8% FX)</td>
+			</tr>
+			<tr>
+					<td>Everyday spends abroad (EU/SG - metro, food, etc.)</td>
+					<td><strong>Wise travel card</strong> (if balance ready), else <strong>Scapia</strong></td>
+					<td><strong>Amazon Pay ICICI</strong>, <strong>IDFC FIRST Wealth</strong></td>
+			</tr>
+			<tr>
+					<td>AirBnB / Booking / Hostelworld (charged in INR)</td>
+					<td>Treat as online: <strong>SBI Cashback</strong>, <strong>BoB Eterna</strong></td>
+					<td><strong>PhonePe Black</strong>, <strong>Regalia Gold</strong></td>
+			</tr>
+			<tr>
+					<td>AirBnB / Booking / Hostelworld (charged in FX)</td>
+					<td><strong>Scapia</strong></td>
+					<td><strong>Amazon Pay ICICI</strong>, <strong>IDFC FIRST Wealth</strong></td>
+			</tr>
+			<tr>
+					<td>Software &amp; online courses in INR (non-education MCC)</td>
+					<td><strong>SBI Cashback</strong></td>
+					<td><strong>PhonePe Black</strong>, <strong>BoB Eterna</strong>, <strong>Scapia</strong></td>
+			</tr>
+			<tr>
+					<td>Software &amp; online courses in USD/EUR</td>
+					<td><strong>Wise travel card</strong> (if balance ready), else <strong>Scapia</strong></td>
+					<td>INR option at good rate -&gt; treat as normal online (SBI CB / BoB Eterna)</td>
+			</tr>
+			<tr>
+					<td>Credit card bill payments</td>
+					<td><strong>HDFC EasyShop Rewards debit card</strong></td>
+					<td>Use only if a live PayZapp or SmartBuy offer gives cashback</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="42-card---one-line-job-description">4.2 Card -&gt; one-line job description</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Card</th>
+					<th>&ldquo;Job&rdquo; in my life</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>SBI Cashback</td>
+					<td>High-yield generic online retail (non-utility, non-govt, non-education).</td>
+			</tr>
+			<tr>
+					<td>Amazon Pay ICICI</td>
+					<td>All things Amazon + backup low-forex Visa for small FX transactions.</td>
+			</tr>
+			<tr>
+					<td>ICICI Sapphiro VISA + RuPay</td>
+					<td>Premium ICICI lifestyle/lounges/perks utility + RuPay acceptance backup lane.</td>
+			</tr>
+			<tr>
+					<td>Axis Flipkart</td>
+					<td>All things Flipkart and some partner promos.</td>
+			</tr>
+			<tr>
+					<td>Axis Atlas</td>
+					<td>Serious miles play for big INR travel bookings.</td>
+			</tr>
+			<tr>
+					<td>Axis Select</td>
+					<td>Premium lounge + milestones; Burgundy relationship card for travel perks.</td>
+			</tr>
+			<tr>
+					<td>HDFC Regalia Gold</td>
+					<td>Core travel card - SmartBuy, flights/hotels, lounge, big general spends.</td>
+			</tr>
+			<tr>
+					<td>HDFC DCB Metal</td>
+					<td>Premium lounge + SmartBuy travel engine + weekend dining booster.</td>
+			</tr>
+			<tr>
+					<td>SC Super Value Titanium</td>
+					<td>Fuel + some utilities at 5% - only keep if I actually use those caps.</td>
+			</tr>
+			<tr>
+					<td>SC Smart</td>
+					<td>Generic 2% online backup + SC relationship/limit builder.</td>
+			</tr>
+			<tr>
+					<td>Amex MRCC</td>
+					<td>MR engine - 4×₹1,500 pattern, Amex offers, niche optimisations.</td>
+			</tr>
+			<tr>
+					<td>Amex Platinum Travel</td>
+					<td>Planned INR milestone card for large eligible spends; not for daily swipes or forex.</td>
+			</tr>
+			<tr>
+					<td>BoB Eterna RuPay</td>
+					<td>LTF rewards on eligible online/travel/dining (value depends on redemption); backup travel &amp; online.</td>
+			</tr>
+			<tr>
+					<td>Federal Scapia</td>
+					<td>Default offline + 0% forex workhorse; rewards on eligible spends + app travel sweet spots.</td>
+			</tr>
+			<tr>
+					<td>HSBC Live+</td>
+					<td>10% groceries, dining, food delivery - my everyday life optimiser.</td>
+			</tr>
+			<tr>
+					<td>HSBC TravelOne</td>
+					<td>Miles transfer engine for flights/hotels when I am in serious redemption mode.</td>
+			</tr>
+			<tr>
+					<td>HDFC Swiggy</td>
+					<td>Swiggy‑ecosystem cashback (food, Instamart, Dineout, Genie) up to cap.</td>
+			</tr>
+			<tr>
+					<td>IndusInd Pinnacle</td>
+					<td>Premium lifestyle card: PP international lounge, golf, BOGO movies.</td>
+			</tr>
+			<tr>
+					<td>IndusInd Legend</td>
+					<td>LTF backup with weekend 2 RP/₹100 and 1.8% forex markup.</td>
+			</tr>
+			<tr>
+					<td>IDFC FIRST Wealth</td>
+					<td>LTF premium backup: extra lounges, low-forex Visa, general fallback.</td>
+			</tr>
+			<tr>
+					<td>SBI PhonePe Select Black</td>
+					<td>PhonePe-based utilities/insurance 10% + 5% online + 1% UPI.</td>
+			</tr>
+			<tr>
+					<td>Wise travel card</td>
+					<td>FX spends at mid-market rate, low conversion fee, and easy currency holds.</td>
+			</tr>
+			<tr>
+					<td>HDFC EasyShop Rewards DC</td>
+					<td>Debit card cashback points and CC bill payments when offers are live.</td>
+			</tr>
+	</tbody>
+</table>
+<p>
+<figure >
+    
+        <img src="images/cards-5.jpeg"
+            alt="My current card stack. Yes, it looks like a stationery shop, but each one has a job."
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    My current card stack. Yes, it looks like a stationery shop, but each one has a job.
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-4.png"
+            alt="AMEX Army"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    AMEX Army
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-3.jpeg"
+            alt="Both IndusInds"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Both IndusInds
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+
+<figure >
+    
+        <img src="images/cards-2.jpeg"
+            alt="Priority passes, RWC50 and WISE"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Priority passes, RWC50 and WISE
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+</p>
+<h2 id="5-card-wise-optimisation-playbook-milk-audit-for-grown-ups">5. Card-wise optimisation playbook (&ldquo;milk audit&rdquo; for grown-ups)</h2>
+<p>This section describes, card by card, how to practically &ldquo;squeeze every rupee&rdquo; from my existing portfolio. It is meant
+to complement (not repeat) the earlier summary tables and spend-mapping grid.</p>
+<h3 id="51-sbi-cashback---generic-online-workhorse">5.1 SBI Cashback - generic online workhorse</h3>
+<p><strong>Role:</strong> High-yield &ldquo;catch-all&rdquo; for <em>clean</em> online retail that is not Amazon/Flipkart/PhonePe-special and not in
+excluded categories.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Make it my <strong>default for regular online shopping</strong> on brand sites, D2C, tickets, etc., where:
+<ul>
+<li>It is clearly coded as normal online retail.</li>
+<li>The spend is not utility / govt / education / insurance / rent / wallet.</li>
+</ul>
+</li>
+<li>Use heavily during <strong>sale seasons</strong> on non-co-branded merchants.</li>
+<li>Track the <strong>monthly cashback cap</strong> and stop pushing new spends once I’m near the cap (then fall back to BoB
+Eterna / PhonePe Black).</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Utilities, insurance, rent, fuel, govt portals, wallets, education fees - assume <strong>0 rewards</strong>.</li>
+<li>Offline POS where Scapia/Live+/PhonePe give more.</li>
+</ul>
+<hr>
+<h3 id="52-sbi-phonepe-select-black-rupay---phonepe--upi-spine">5.2 SBI PhonePe Select Black RuPay - PhonePe + UPI spine</h3>
+<p><strong>Role:</strong> PhonePe ecosystem engine + primary UPI-on-credit card.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Treat it as my <strong>default card in PhonePe</strong>:
+<ul>
+<li>Electricity, water, gas, mobile, DTH, broadband, some insurance, and travel <em>inside</em> PhonePe go here first.</li>
+</ul>
+</li>
+<li>Use as <strong>primary UPI credit card</strong> for offline QR:
+<ul>
+<li>Chai, kirana, auto/cab, street food, small stores - all UPI Scan &amp; Pay.</li>
+</ul>
+</li>
+<li>Use as a <strong>secondary online 5% card</strong> when:
+<ul>
+<li>SBI Cashback excludes a merchant.</li>
+<li>I want to spread spend for fee waiver.</li>
+</ul>
+</li>
+<li>Hit the <strong>₹3L annual spend</strong> to comfortably waive the fee while maximising 10% and 5% buckets.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Wasting high-value PhonePe 10% capacity on tiny bills once the cap is nearly full.</li>
+<li>Using it where SBI Cashback / BoB Eterna clearly give more and there is no PhonePe angle.</li>
+</ul>
+<hr>
+<h3 id="53-federal-scapia---default-offline--0-forex-hammer">5.3 Federal Scapia - default offline + 0% forex hammer</h3>
+<p><strong>Role:</strong> Everyday offline POS engine in India and default foreign-currency workhorse, with rewards on eligible spends.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Make it my <strong>go-to offline swipe</strong>:
+<ul>
+<li>Malls, clothing, electronics, workshops, salons, random POS terminals - unless another card has a clear category
+bonus.</li>
+</ul>
+</li>
+<li>Use it for <strong>all small and medium foreign-currency spends</strong>:
+<ul>
+<li>Metro / bus / tram / SNCF/TGV, groceries, cafés, hostels in EUR/SGD etc.</li>
+<li>I sacrifice rewards but save 3-4% forex fees, which is effectively a big win.</li>
+</ul>
+</li>
+<li>Use <strong>Scapia travel app</strong> for flights/hotels when its higher rewards (e.g., 20% for flights/hotels, per Scapia’s
+offers) beats Regalia/Atlas/Eterna for that particular
+booking.  <a href="https://www.federalbank.co.in/scapia" rel="noopener external" target="_blank">Federal Bank</a>
+</li>
+<li>Hit monthly lounge/shop/dine/spa <strong>trigger spend</strong> once (₹10k Visa / ₹15k RuPay), then redeem the benefit for extra
+value.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Excluded categories: rent, fuel, govt payments, wallet loads, education, gift cards, business MCCs.</li>
+<li>Big INR travel bookings where SmartBuy/Atlas/Eterna maths is clearly superior.</li>
+</ul>
+<hr>
+<h3 id="54-hsbc-live---10-life-card">5.4 HSBC Live+ - 10% &ldquo;life&rdquo; card</h3>
+<p><strong>Role:</strong> Top-up card for groceries, dining and food delivery.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Every month, try to funnel <strong>~₹10k</strong> of:
+<ul>
+<li>Supermarket bills,</li>
+<li>Dining out,</li>
+<li>Swiggy/Zomato/Blinkit,
+into Live+ to extract the full <strong>₹1,000 cashback cap</strong>.</li>
+</ul>
+</li>
+<li>Once the 10% cap is reached for the statement:
+<ul>
+<li>Move subsequent groceries/dining to <strong>Scapia</strong> (eligible rewards) or other optimised cards.</li>
+</ul>
+</li>
+<li>Use Live+ as a <strong>1.5% backup</strong> only when:
+<ul>
+<li>There is no 5% or higher-reward engine applicable.</li>
+<li>I want some extra spend towards fee waiver.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Utilities, insurance, govt, education, fuel, tolls - cashback is usually 0 here.</li>
+<li>Treating 1.5% as my default for generic retail when Scapia/SBI CB/Eterna are available.</li>
+</ul>
+<hr>
+<h3 id="55-bob-eterna-rupay---ltf-rewards--fx--backup-movies">5.5 BoB Eterna RuPay - LTF rewards + FX + backup movies</h3>
+<p><strong>Role:</strong> High-yield online/dining/travel/international card and movie backup.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use as <strong>secondary online engine</strong> after SBI Cashback / PhonePe:
+<ul>
+<li>When SBI Cashback excludes or caps out, and the txn codes as online/dining/travel.</li>
+</ul>
+</li>
+<li>For <strong>international spends in FX</strong> where I deliberately want rewards:
+<ul>
+<li>Eterna’s 2% forex + rewards (15 RP/₹100 on select categories; value depends on redemption) can be attractive on
+some tickets.</li>
+</ul>
+</li>
+<li>Keep it as <strong>backup BOGO</strong>:
+<ul>
+<li>When IDFC Wealth’s District BOGO slots are consumed, use Eterna’s District benefit next.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Spending on categories that definitely do not earn accelerated rewards (fuel, insurance, some utilities) where I can
+just use Scapia/PhonePe/Regalia instead.</li>
+<li>Using it as generic 0.75% base card when 2-5% options exist.</li>
+</ul>
+<hr>
+<h3 id="56-amazon-pay-icici---amazon-default--small-fx-backup">5.6 Amazon Pay ICICI - Amazon default + small FX backup</h3>
+<p><strong>Role:</strong> Amazon / Amazon Pay specialist and low-forex backup.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>All <strong>Amazon</strong> orders (Fresh, Pantry, normal) go here by default.</li>
+<li>Use at <strong>Amazon Pay partner</strong> merchants where:
+<ul>
+<li>No better cashback card (e.g. PhonePe/HSBC/SBI CB) is clearly ahead.</li>
+</ul>
+</li>
+<li>Keep it as a <strong>secondary foreign card</strong>:
+<ul>
+<li>For small or occasional FX transactions where Scapia fails and I want lower markup than 3.5%.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Utilities, tax, education categories where recent T&amp;Cs heavily restrict cashback.</li>
+<li>General offline/online spends where other cards in my stack give clearly higher returns.</li>
+</ul>
+<hr>
+<h3 id="57-axis-flipkart---flipkart--pvr-specialist">5.7 Axis Flipkart - Flipkart / PVR specialist</h3>
+<p><strong>Role:</strong> Narrow-category card for Flipkart and a few partners.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>All <strong>Flipkart</strong> purchases live here.</li>
+<li>Use for <strong>PVR</strong> or select partner spends (Swiggy/Uber etc.) when:
+<ul>
+<li>Axis is giving the 4% rate and</li>
+<li>I’m not using a BOGO/10% engine on another card.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Treating it as a general 1.5% card - Scapia’s eligible rewards and SBI CB’s 5% are better.</li>
+<li>Excluded categories like fuel, wallets, govt, insurance.</li>
+</ul>
+<hr>
+<h3 id="58-axis-atlas---serious-miles-card-not-a-daily-beater">5.8 Axis Atlas - serious miles card, not a daily beater</h3>
+<p><strong>Role:</strong> Miles accumulation tool for INR travel, not a cashback card.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Restrict usage to <strong>airline and hotel</strong> spends where:
+<ul>
+<li>Earn rate is highest and</li>
+<li>I know I will redeem Miles at high value (premium cabins, expensive routes).</li>
+</ul>
+</li>
+<li>Use selectively for <strong>high-value INR travel bookings</strong> where Miles &gt; cashback.</li>
+<li>Keep track of <strong>tier milestones</strong> and only chase them if I’m genuinely travelling enough to benefit.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Everyday retail, utilities, insurance, govt, fuel, rent - no Miles and no tier credits here.</li>
+<li>Using Atlas for random online shopping that could sit on SBI CB / Eterna instead.</li>
+</ul>
+<hr>
+<h3 id="59-axis-select---lounge--milestones-via-burgundy">5.9 Axis Select - lounge + milestones via Burgundy</h3>
+<p><strong>Role:</strong> Premium lounge and milestone card that I keep warm because of Burgundy, not because it is my highest cashback.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use Priority Pass for international lounge access when I am travelling.</li>
+<li>Unlock domestic lounge access by meeting the spend condition (₹50k in last 3 months).</li>
+<li>Hit ₹3L annual spend only if it happens naturally - 5,000 EDGE points and Priority Pass renewal are decent, not magic.
+If you are forcing spends just to enter a lounge and eat 2 idlis in AC, bhidu, apun kaam galat direction mein jaa raha
+hai.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Treating it as a default cashback card when SBI Cashback / HSBC / PhonePe clearly win.</li>
+<li>Chasing milestones with extra spends. Bhidu, yeh card premium hai, par free nahi.</li>
+</ul>
+<p>Source: <a href="https://www.axisbank.com/retail/cards/credit-card/axis-bank-select-credit-card/features-benefits" rel="noopener external" target="_blank">Axis Select credit card benefits</a>
+</p>
+<hr>
+<h3 id="510-hdfc-regalia-gold---smartbuy--big-ticket-travel-core">5.10 HDFC Regalia Gold - SmartBuy / big-ticket travel core</h3>
+<p><strong>Role:</strong> Core HDFC travel card and SmartBuy vehicle.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Always check if a <strong>flight/hotel in INR</strong> can be routed via <strong>SmartBuy</strong> on Regalia:
+<ul>
+<li>Use it as my default for major travel bookings if it beats Scapia/Atlas/Eterna math.</li>
+</ul>
+</li>
+<li>Use for <strong>govt / education</strong> spends where:
+<ul>
+<li>Other cards often give 0 rewards,</li>
+<li>I still want some points and milestone progress.</li>
+</ul>
+</li>
+<li>Treat it as a <strong>general big-ticket backup</strong> when no strong category card applies and I want to nurture HDFC
+relationship (towards DCB/other upgrades).</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Day-to-day groceries/dining (Live+) and random offline retail (Scapia).</li>
+<li>Small online spends where SBI Cashback / Eterna / PhonePe are clearly superior.</li>
+</ul>
+<hr>
+<h3 id="511-hdfc-diners-club-black-metal---premium-lounge--smartbuy-engine">5.11 HDFC Diners Club Black Metal - premium lounge + SmartBuy engine</h3>
+<p><strong>Role:</strong> Premium travel and lounge engine when I want max comfort and strong HDFC SmartBuy returns.
+Yeh bhaari card hai - use it like a tool, not a toy.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use it as the <strong>primary lounge key</strong> - unlimited access for me and add-on.
+And please, lounge ko &ldquo;free khana recovery plan&rdquo; mat bana. It is a comfort perk, not a buffet war.</li>
+<li>Run <strong>big travel bookings</strong> via SmartBuy when 10X rewards beat other cards.</li>
+<li>Aim for <strong>₹4L/quarter</strong> only if it’s natural spend to unlock 10,000 bonus points.</li>
+<li>Use for <strong>weekend dining</strong> where 2X reward rate applies.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Using it as a daily cashback card for small spends.</li>
+<li>Chasing ₹4L/quarter if it is not organic. Bhidu, bonus ke chakkar mein spend mat badha.</li>
+</ul>
+<p>Source: <a href="https://www.hdfc.bank.in/credit-cards/diners-club-black-metal-edition-credit-card" rel="noopener external" target="_blank">HDFC Diners Club Black Metal</a>
+</p>
+<hr>
+<h3 id="512-idfc-first-wealth---ltf-premium-backup--bogo-movies">5.12 IDFC FIRST Wealth - LTF premium backup + BOGO movies</h3>
+<p><strong>Role:</strong> Premium safety net, extra lounges and primary District BOGO movie card.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use as <strong>main BOGO movie</strong> handle on District:
+<ul>
+<li>Reserve it for relatively pricey tickets to maximise free-ticket value.</li>
+</ul>
+</li>
+<li>Keep as <strong>backup lounge + low-forex Visa</strong>:
+<ul>
+<li>When other lounge quotas are exhausted or a merchant only loves Visa.</li>
+</ul>
+</li>
+<li>Use for general spends only when:
+<ul>
+<li>No strong category card fits and</li>
+<li>I want to build or maintain a deeper IDFC relationship.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Utilities/insurance/govt where rewards are weaker or extra charges apply.</li>
+<li>Treating it as my primary daily rewards card when the rest of my stack is strictly better.</li>
+</ul>
+<hr>
+<h3 id="513-standard-chartered-super-value-titanium---capped-fuelutility-scalpel">5.13 Standard Chartered Super Value Titanium - capped fuel/utility scalpel</h3>
+<p><strong>Role:</strong> Capped 5% tool for fuel and certain phone/utilities.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Plan <strong>specific fuel + one or two bill payments</strong> so that:
+<ul>
+<li>I hit the <strong>monthly 5% cashback cap</strong> neatly (no more, no less).</li>
+<li>Those spends are recurring and predictable.</li>
+</ul>
+</li>
+<li>After hitting the cap:
+<ul>
+<li>Stop using the card until next cycle.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Swiping it for random retail once the cap is hit - base earn is extremely low.</li>
+<li>Relying on it as my primary fuel card beyond the small 5% window.</li>
+</ul>
+<hr>
+<h3 id="514-standard-chartered-smart---legacy-2-online-backup">5.14 Standard Chartered Smart - legacy 2% online backup</h3>
+<p><strong>Role:</strong> Mild 2% online card and SC relationship-keeper.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use occasionally where:
+<ul>
+<li>SBI CB / PhonePe / Eterna are all excluded or underperforming, and</li>
+<li>Smart still gives 2% online.</li>
+</ul>
+</li>
+<li>Use just enough to:
+<ul>
+<li>Keep the account active and</li>
+<li>Help SC see some spend if I value the relationship.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Treating it as a main online engine - it is now outclassed by SBI Cashback, PhonePe Black, BoB Eterna and HSBC Live+.</li>
+</ul>
+<hr>
+<h3 id="515-amex-mrcc---pattern-based-mr-engine">5.15 Amex MRCC - pattern-based MR engine</h3>
+<p><strong>Role:</strong> Pattern card for MR points, not a category card.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Set up a <strong>fixed 4 × ₹1,500+ routine</strong> every month:
+<ul>
+<li>OTT subscriptions,</li>
+<li>Donations,</li>
+<li>Fixed small purchases,
+so I <em>always</em> earn the 1,000 monthly bonus MR.</li>
+</ul>
+</li>
+<li>In Mumbai, my easiest reliable trigger is a <strong>learning/training subscription</strong> from a private merchant that accepts
+<strong>Amex via PayU</strong>. If you have one &ldquo;boring but reliable&rdquo; merchant like this, MRCC becomes effortless.</li>
+<li>Stack <strong>Amex-specific offers</strong> (cashback promotions, partner deals) when they appear.</li>
+<li>Accumulate MR for <strong>high-value redemptions</strong>:
+<ul>
+<li>Airline/hotel partners,</li>
+<li>High-value catalogue redemptions,
+not low-value cash equivalents.</li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+  <div class="admonition-title">Note</div>
+  <div class="admonition-content">
+    The math below assumes you are <strong>enrolled</strong> for the monthly ₹20,000 benefit, and the spends are <strong>eligible</strong> for points.
+Also, issuers often compute base points with transaction-level rounding. Treat base points as approximate, bonuses as
+the
+real driver.
+  </div>
+</div>
+<p><strong>Net-to-net math (my monthly pattern):</strong></p>
+<p>I can comfortably do <strong>₹20,004 per month</strong> as <strong>4 × ₹5,001</strong>. That hits both MRCC monthly triggers with the same spend.</p>
+<table>
+	<thead>
+			<tr>
+					<th>What happens in the month</th>
+					<th>Condition</th>
+					<th>Points outcome (approx)</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Base earning</td>
+					<td>1 MR per ₹50 on eligible spends</td>
+					<td>₹20,004 / 50 = <strong>~400 MR</strong> <em>(approx)</em></td>
+			</tr>
+			<tr>
+					<td>Bonus 1</td>
+					<td>4 transactions of ₹1,500+ in a calendar month</td>
+					<td><strong>+1,000 MR</strong></td>
+			</tr>
+			<tr>
+					<td>Bonus 2</td>
+					<td>₹20,000+ spend in a calendar month</td>
+					<td><strong>+1,000 MR</strong></td>
+			</tr>
+			<tr>
+					<td><strong>Total</strong></td>
+					<td>With 4 × ₹5,001</td>
+					<td><strong>~2,400 MR points</strong></td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Convert points to rupees (simple):</strong></p>
+<ul>
+<li>Monthly value (₹) = <strong>2,400 × (₹ per MR point)</strong></li>
+<li>Value-back % = <strong>Monthly value / 20,004 × 100</strong></li>
+</ul>
+<p>Examples:</p>
+<ul>
+<li>If you redeem at <strong>₹0.30 per point</strong>: 2,400 × 0.30 = <strong>₹720</strong> (about <strong>3.6%</strong>)</li>
+<li>If you redeem at <strong>₹0.375 per point</strong>: 2,400 × 0.375 = <strong>₹900</strong> (about <strong>4.5%</strong>)</li>
+<li>If you redeem at <strong>₹0.50 per point</strong>: 2,400 × 0.50 = <strong>₹1,200</strong> (about <strong>6.0%</strong>)</li>
+<li>If you redeem at <strong>₹0.60 per point</strong>: 2,400 × 0.60 = <strong>₹1,440</strong> (about <strong>7.2%</strong>)</li>
+</ul>
+<p><strong>Best value for money (how I decide):</strong></p>
+<ul>
+<li>I only redeem for things I would otherwise pay cash for.</li>
+<li>I calculate: <strong>₹ per point = (₹ value of voucher or travel) / (MR points needed)</strong>.</li>
+<li>I avoid low-value redemptions. If I cannot get a decent ₹ per point, I would rather keep points or use cashback cards.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Randomly swiping Amex everywhere without hitting the 4×₹1,500 pattern.</li>
+<li>Burning MR on low-value redemptions where I effectively get far under ₹0.40-₹0.50 per point.</li>
+</ul>
+<hr>
+<h3 id="516-hdfc-swiggy---swiggy-ecosystem-cashback">5.16 HDFC Swiggy - Swiggy ecosystem cashback</h3>
+<p><strong>Role:</strong> Dedicated Swiggy cashback card for food + Instamart + Dineout + Genie.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Route <strong>all Swiggy app</strong> spends here to capture 10% cashback (subject to the ₹1,500/month cap).</li>
+<li>Use it for <strong>eligible online spends</strong> (5% bucket) only if my SBI Cashback cap is exhausted.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Swiggy Money Wallet, Swiggy Minis, and excluded categories (per HDFC T&amp;Cs).</li>
+<li>Treating it as a general 1% card when better engines are available.</li>
+</ul>
+<hr>
+<h3 id="517-indusind-pinnacle---premium-lifestyle--travel-perks">5.17 IndusInd Pinnacle - premium lifestyle + travel perks</h3>
+<p><strong>Role:</strong> Premium lifestyle card for Priority Pass international lounge, golf, and BOGO movies.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Keep it as my <strong>premium perks card</strong>: Priority Pass international lounge (1 visit/quarter, effective 13 March 2025),
+golf benefit, BOGO movies.</li>
+<li>Use for <strong>e‑commerce</strong> and <strong>e‑com travel/airline</strong> spends when I want to keep the account active and I’m not
+chasing higher cashback elsewhere.</li>
+</ul>
+<div class="admonition note">
+  <div class="admonition-title">Note</div>
+  <div class="admonition-content">
+    0% forex is on the <strong>Exclusive debit card</strong>, not on Pinnacle credit card. Use Pinnacle for perks, not for FX.
+  </div>
+</div>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Fuel transactions (no reward points).</li>
+<li>Using it as my default daily card when higher‑yield options exist.</li>
+</ul>
+<hr>
+<h3 id="518-indusind-legend---ltf-backup--weekend-rp">5.18 IndusInd Legend - LTF backup + weekend RP</h3>
+<p><strong>Role:</strong> LTF backup with weekend 2 RP/₹100 and discounted forex markup.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Use for <strong>weekend</strong> non‑excluded spends when I want to keep the card active.</li>
+<li>Keep as a <strong>backup FX card</strong> at 1.8% markup when Scapia is down or not accepted.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Treating it as a primary everyday card - my stack has stronger earners.</li>
+<li>Expecting lounge access. It is discontinued for Legend from 7 March 2025.</li>
+</ul>
+<hr>
+<h3 id="5181-icici-sapphiro-visa--rupay---premium-backup--network-redundancy">5.18.1 ICICI Sapphiro VISA + RuPay - premium backup + network redundancy</h3>
+<p><strong>Role:</strong> LTF premium utility card in my stack for lounge/perks and acceptance redundancy across VISA + RuPay rails.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Keep it warm for:
+<ul>
+<li>Lounge/perk ecosystem,</li>
+<li>Merchant acceptance fallback where my primary card has random decline.</li>
+</ul>
+</li>
+<li>Use RuPay side as a <strong>backup UPI lane</strong> only when:
+<ul>
+<li>PhonePe SBI Black is not accepted, or</li>
+<li>I am intentionally triggering an ICICI-specific offer.</li>
+</ul>
+</li>
+<li>Use as relationship-support card with ICICI where needed, without forcing it as my highest-ROI daily driver.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Treating it as default spend card when category specialists are clearly ahead.</li>
+<li>Chasing spends on this card just because it is premium-branded.</li>
+</ul>
+<hr>
+<h3 id="5182-hsbc-travelone---transfer-partner-engine-only-if-redeemed-well">5.18.2 HSBC TravelOne - transfer partner engine (only if redeemed well)</h3>
+<p><strong>Role:</strong> Airline/hotel transfer card for intentional miles strategy.</p>
+<p><strong>Best use:</strong></p>
+<ul>
+<li>Route spend here when I’m actively building transfer currency for:
+<ul>
+<li>British Airways Avios / Qatar Avios-style routes,</li>
+<li>Flying Blue,</li>
+<li>KrisFlyer and other partner programs available in HSBC’s transfer list.</li>
+</ul>
+</li>
+<li>Prefer this for travel and forex categories where TravelOne earn rates are better than plain cashback cards.</li>
+<li>Redeem only when <strong>₹ per point</strong> clearly beats my fallback cashback return.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Using TravelOne points for low-value redemptions just to &ldquo;clear balance&rdquo;.</li>
+<li>Diverting spends from high-confidence cashback buckets unless redemption math is already planned.</li>
+<li>Paying annual fee without a real redemption plan.</li>
+</ul>
+<hr>
+<h3 id="519-how-i-run-this-monthly-so-i-dont-lose-sleep">5.19 How I run this monthly (so I don’t lose sleep)</h3>
+<p>A simple way to operationalise all this:</p>
+<ol>
+<li>Each month, first <strong>max out the highest-yield buckets</strong>:
+<ul>
+<li>HSBC Live+ 10% (groceries/dining/food delivery),</li>
+<li>HDFC Swiggy 10% (Swiggy app) up to ₹1,500/month,</li>
+<li>PhonePe Black 10% on utilities/insurance/travel inside PhonePe,</li>
+<li>SC SVT 5% fuel/utilities cap.</li>
+</ul>
+</li>
+<li>Then route:
+<ul>
+<li>Clean online -&gt; SBI Cashback, then BoB Eterna / PhonePe Black,</li>
+<li>Swiggy app -&gt; HDFC Swiggy,</li>
+<li>Offline India -&gt; Scapia by default,</li>
+<li>UPI -&gt; PhonePe Black (Sapphiro RuPay as backup),</li>
+<li>Travel in INR -&gt; Regalia Gold SmartBuy / Atlas / HSBC TravelOne / Eterna,</li>
+<li>Foreign-currency -&gt; Wise first, Scapia second; use Eterna only if rewards clearly beat forex cost.</li>
+</ul>
+</li>
+<li>Keep one Amex ritual:
+<ul>
+<li>MRCC 4 × ₹1,500 pattern for monthly MR,</li>
+<li>Platinum Travel only for planned large INR spends till the active milestone target is met.</li>
+</ul>
+</li>
+<li>Use IDFC Wealth/Eterna for movies as a fixed routine.</li>
+<li>Use Regalia Gold, Atlas and IDFC Wealth strategically to:
+<ul>
+<li>Maintain strong relationships with HDFC, Axis, IDFC,</li>
+<li>Keep my profile glowing for future upgrades like HDFC Diners Club Black.</li>
+</ul>
+</li>
+<li>Keep a separate miles lane:
+<ul>
+<li>HSBC TravelOne (and Atlas when relevant) only for planned transfer redemptions, not random swipes.</li>
+</ul>
+</li>
+</ol>
+<h2 id="diagram-monthly-cap-tracking-loop">Diagram: monthly cap tracking loop</h2>
+<pre class="mermaid">flowchart TD
+    A[&#34;Start of statement cycle&#34;] --&gt; B[&#34;Set cap trackers: Live+, Swiggy, PhonePe, SBI Cashback&#34;]
+    B --&gt; C[&#34;New transaction&#34;]
+    C --&gt; D{&#34;Bucket cap still available?&#34;}
+    D --&gt;|Yes| E[&#34;Use primary card for that bucket&#34;]
+    D --&gt;|No| F[&#34;Switch to backup card from spend grid&#34;]
+    E --&gt; G[&#34;Update cap tracker&#34;]
+    F --&gt; G
+    G --&gt; H{&#34;Large planned INR spend and Amex target open?&#34;}
+    H --&gt;|Yes| I[&#34;Route eligible spend to Amex milestone lane&#34;]
+    H --&gt;|No| J[&#34;Continue normal routing&#34;]
+    I --&gt; J
+    J --&gt; K{&#34;Statement generated?&#34;}
+    K --&gt;|No| C
+    K --&gt;|Yes| L[&#34;Audit postings, MCCs, and fee-waiver progress&#34;]
+    L --&gt; A
+    style A fill: #e1f5ff, stroke: #0066cc, color: #000
+    style B fill: #fff4e1, stroke: #cc8800, color: #000
+    style C fill: #f0e1ff, stroke: #8800cc, color: #000
+    style D fill: #fff4e1, stroke: #cc8800, color: #000
+    style E fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style F fill: #ffe1e1, stroke: #cc0000, color: #000
+    style G fill: #f0e1ff, stroke: #8800cc, color: #000
+    style H fill: #fff4e1, stroke: #cc8800, color: #000
+    style I fill: #f0e1ff, stroke: #8800cc, color: #000
+    style J fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style K fill: #fff4e1, stroke: #cc8800, color: #000
+    style L fill: #e1f5ff, stroke: #0066cc, color: #000
+</pre><p>This way every card in my portfolio has a <strong>clear, narrow, intentional job</strong>, and I get to squeeze the maximum value
+without turning my brain into an MCC spreadsheet every time I step out of the house.</p>
+<hr>
+<h2 id="6-indirect-roi--redemption-map-jugaad-but-controlled">6. Indirect ROI + redemption map (jugaad, but controlled)</h2>
+<p>This is the missing layer most people skip: <strong>direct earn lane</strong> + <strong>indirect earn lane</strong> + <strong>exit lane</strong> (where points
+actually become value).</p>
+<div class="admonition warning">
+  <div class="admonition-title">Warning</div>
+  <div class="admonition-content">
+    Voucher and &ldquo;indirect spend&rdquo; tricks are volatile. MCC, exclusions, and issuer filters can flip anytime.<br>
+Rule: first do a ₹100-₹500 test transaction, verify statement behavior, then scale.
+  </div>
+</div>
+<h3 id="61-low-drama-indirect-tactics-i-actually-trust">6.1 Low-drama indirect tactics I actually trust</h3>
+<ol>
+<li><strong>Cap-shaping with vouchers</strong>: buy only what I will definitely consume in 30-60 days (Amazon Pay e-gift, grocery,
+fuel, travel brand vouchers), not six-month inventory.</li>
+<li><strong>Milestone pre-funding</strong>: when a milestone card is active (Amex Platinum Travel / Atlas / TravelOne), pre-buy
+near-term spends that are anyway guaranteed (utility, grocery, flights) via eligible rails.</li>
+<li><strong>Offer stacking, not blind stacking</strong>: instant discount + card reward + platform coupon is great, but only if net
+landed price is still best.</li>
+<li><strong>Airfare split booking</strong>: one PNR, split cards where possible to fill one cap and one milestone lane in the same
+month.</li>
+<li><strong>Statement-cycle timing</strong>: if cap resets on statement date, move planned vouchers/renewals to day 1-3 of new cycle.</li>
+<li><strong>Redemption floor rule</strong>: I don’t transfer points unless expected value beats my cashback fallback by a clear margin.</li>
+</ol>
+<h3 id="62-card-by-card-direct--indirect-map">6.2 Card-by-card direct + indirect map</h3>
+<table>
+	<thead>
+			<tr>
+					<th>Card</th>
+					<th>Direct lane (simple)</th>
+					<th>Indirect / jugaad lane (controlled)</th>
+					<th>Exit lane (airline/hotel/cash)</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>SBI Cashback</strong></td>
+					<td>Generic online 5% (inside exclusions/caps).</td>
+					<td>Buy near-term brand vouchers only when coded as eligible online and statement confirms earn.</td>
+					<td>Pure cashback -&gt; use to offset any ticket/hotel cash booking.</td>
+			</tr>
+			<tr>
+					<td><strong>Amazon Pay ICICI</strong></td>
+					<td>Amazon + Amazon Pay partners.</td>
+					<td>Amazon Pay e-gift top-ups timed for sales/monthly spends (not blind stockpiling).</td>
+					<td>Amazon Pay balance effectively subsidises flights/hotels bought in cash channels.</td>
+			</tr>
+			<tr>
+					<td><strong>ICICI Sapphiro VISA + RuPay</strong></td>
+					<td>Lounge/perks/network backup.</td>
+					<td>RuPay side as UPI acceptance fallback where primary UPI card fails.</td>
+					<td>Mostly cash-value/perk utility, not a transfer-miles engine in my stack.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Flipkart</strong></td>
+					<td>Flipkart/Cleartrip/Myntra lanes.</td>
+					<td>During sale windows, park planned spend via eligible partner vouchers if billing route stays in accelerated bucket.</td>
+					<td>Cashback/points as statement value or partner spend offset.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Atlas</strong></td>
+					<td>Travel-category spends for Edge Miles + tier logic.</td>
+					<td>Funnel large planned INR travel spends and gift-voucher-prepaid travel wallets only if they count for Miles/tier in current rules.</td>
+					<td>Transfer miles to airline/hotel partners; Avios/Flying Blue style redemptions are core use-case.</td>
+			</tr>
+			<tr>
+					<td><strong>Axis Select</strong></td>
+					<td>Lounge + milestone support.</td>
+					<td>Use only for targeted Axis partner offers and annual-threshold completion, not random spending.</td>
+					<td>EDGE points redeemed for travel/catalogue value, with lounge utility as main payoff.</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC Regalia Gold</strong></td>
+					<td>SmartBuy flights/hotels + general HDFC relationship spend.</td>
+					<td>SmartBuy/GyFTR voucher ladders for high-certainty spends when effective return beats direct swipe.</td>
+					<td>HDFC RP via SmartBuy travel redemptions or partner conversions where value is clear.</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC DCB Metal</strong></td>
+					<td>SmartBuy 10X + lounge + weekend dining.</td>
+					<td>Big-ticket travel vouchers early in cycle to hit quarterly bonus organically.</td>
+					<td>Best exit is high-value SmartBuy travel redemption; avoid low-value cash-like exits.</td>
+			</tr>
+			<tr>
+					<td><strong>SC Super Value Titanium</strong></td>
+					<td>5% fuel/utilities inside tiny caps.</td>
+					<td>Bill scheduling to exactly fill cap; no extra swipe beyond cap.</td>
+					<td>Cashback only; no miles game here.</td>
+			</tr>
+			<tr>
+					<td><strong>SC Smart</strong></td>
+					<td>Legacy 2% online backup.</td>
+					<td>Offer-led use only (merchant or bank promo), otherwise park.</td>
+					<td>Cashback/statement value only.</td>
+			</tr>
+			<tr>
+					<td><strong>Amex MRCC</strong></td>
+					<td>4×₹1,500 + ₹20k monthly pattern.</td>
+					<td>Reward Multiplier / eligible voucher routes to complete monthly triggers with predictable spends.</td>
+					<td>Transfer or redeem MR only at decent value; avoid low-value burn.</td>
+			</tr>
+			<tr>
+					<td><strong>Amex Platinum Travel</strong></td>
+					<td>₹1.9L and ₹4L INR milestone engine.</td>
+					<td>Milestone pre-funding through eligible predictable spends and travel vouchers in planned months.</td>
+					<td>MR transfer/redemption path; treat this as milestone-value card, not day-to-day cashback.</td>
+			</tr>
+			<tr>
+					<td><strong>BoB Eterna RuPay</strong></td>
+					<td>Online/travel/dining accelerated earn where eligible.</td>
+					<td>Useful overflow card after SBI cap hit; selective travel voucher lane when category coding is clean.</td>
+					<td>Reward points to catalogue/travel value; choose only high-value redemption options.</td>
+			</tr>
+			<tr>
+					<td><strong>Federal Scapia</strong></td>
+					<td>0% forex + eligible offline/online rewards.</td>
+					<td>Trigger monthly spend once for lounge/shop/dine benefits, then run abroad/day-to-day spends through this lane.</td>
+					<td>Best value is often forex savings itself; travel-app redemptions can add extra upside.</td>
+			</tr>
+			<tr>
+					<td><strong>HSBC Live+</strong></td>
+					<td>10% groceries/dining/food delivery till cap.</td>
+					<td>Statement-cycle cap shaping: pre-buy near-term grocery/food vouchers once per cycle, then stop at cap.</td>
+					<td>Cashback only; use as monthly rebate engine.</td>
+			</tr>
+			<tr>
+					<td><strong>HSBC TravelOne</strong></td>
+					<td>Travel/forex spend + transferable points.</td>
+					<td>Use as points-warehouse card in months where I have concrete partner award bookings planned.</td>
+					<td>Transfer to programs like Avios/Flying Blue/KrisFlyer-style partners; cash redemption is usually lower-value.</td>
+			</tr>
+			<tr>
+					<td><strong>HDFC Swiggy</strong></td>
+					<td>10% Swiggy ecosystem + 5% online bucket.</td>
+					<td>Swiggy-heavy months: pre-load only immediate-use orders/Instamart needs to max cap without waste.</td>
+					<td>Cashback statement credit style value.</td>
+			</tr>
+			<tr>
+					<td><strong>IndusInd Pinnacle</strong></td>
+					<td>Premium perks (PP/golf/BOGO).</td>
+					<td>Partner-offer harvesting and selective e-com travel usage when offer beats other cards.</td>
+					<td>Perk-first card; rewards secondary.</td>
+			</tr>
+			<tr>
+					<td><strong>IndusInd Legend</strong></td>
+					<td>Weekend 2 RP/₹100 + low-fee backup FX.</td>
+					<td>Keep active with small weekend planned spends only.</td>
+					<td>Backup value card; cash-equivalent reward lane.</td>
+			</tr>
+			<tr>
+					<td><strong>IDFC FIRST Wealth</strong></td>
+					<td>LTF backup + lounge + low-forex backup.</td>
+					<td>Movie BOGO scheduling and fallback spending when primary category caps are exhausted.</td>
+					<td>Points as cash-equivalent/travel support; not my primary miles-transfer card.</td>
+			</tr>
+			<tr>
+					<td><strong>SBI PhonePe Select Black RuPay</strong></td>
+					<td>10% PhonePe category + 5% online + 1% UPI.</td>
+					<td>Push utilities/insurance/travel via PhonePe rails first; use UPI micro-spends to keep steady point flow.</td>
+					<td>RP is clean (₹ value), so redemption is straightforward cash-equivalent.</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="63-avios-flying-blue-virgin-atlantic-and-friends---practical-pathing">6.3 Avios, Flying Blue, Virgin Atlantic and friends - practical pathing</h3>
+<ul>
+<li><strong>Avios path (direct):</strong>
+<ul>
+<li><strong>HSBC TravelOne</strong> and <strong>Axis Atlas</strong> are my practical direct-transfer lanes for Avios-style redemptions.</li>
+<li>If using BA/Qatar ecosystem, I can pool strategically where program rules allow (family account / combine Avios
+style flows).</li>
+</ul>
+</li>
+<li><strong>Flying Blue path (direct):</strong>
+<ul>
+<li>Use <strong>HSBC TravelOne</strong> or <strong>Axis Atlas</strong> transfer lanes when Flying Blue pricing beats cash fares.</li>
+<li>Good for one-way Europe hops and promo windows when available.</li>
+</ul>
+</li>
+<li><strong>Virgin Atlantic path (mostly indirect for this stack):</strong>
+<ul>
+<li>Typical route is via <strong>Marriott Bonvoy</strong> as transfer bridge from cards/programs that can feed Marriott.</li>
+<li>This is slower and ratio-sensitive, so I use it only for very specific high-value redemptions.</li>
+</ul>
+</li>
+<li><strong>Hotel path:</strong>
+<ul>
+<li><strong>HSBC TravelOne / Axis Atlas / Amex MR ecosystem</strong> can be routed to hotel programs (or travel partners) when
+award-night value is clearly above cash-booking fallback.</li>
+</ul>
+</li>
+<li><strong>Default fallback rule:</strong>
+<ul>
+<li>If transfer value is unclear, I stay with cashback/forex savings. Simple wins often beat speculative miles.</li>
+</ul>
+</li>
+</ul>
+<p>Sources for this section’s transfer logic and partner ecosystems:</p>
+<ul>
+<li><a href="https://www.hsbc.co.in/credit-cards/products/travel-one/" rel="noopener external" target="_blank">HSBC TravelOne (official)</a>
+</li>
+<li><a href="https://www.prnewswire.com/in/news-releases/hsbc-india-launches-travelone-credit-card-a-travel-focused-credit-card-with-premium-perks-and-unmatched-air-mile-points-conversions-in-india-302606524.html" rel="noopener external" target="_blank">HSBC TravelOne partner launch coverage</a>
+</li>
+<li><a href="https://www.axisbank.com/retail/cards/credit-card/axis-bank-atlas-credit-card" rel="noopener external" target="_blank">Axis Atlas (official)</a>
+</li>
+<li><a href="https://www.axisbank.com/docs/default-source/default-document-library/miles-transfer-program.pdf" rel="noopener external" target="_blank">Axis Miles Transfer Program (official)</a>
+</li>
+<li><a href="https://www.marriott.com/loyalty/redeem/travel/points-to-miles.mi" rel="noopener external" target="_blank">Marriott Bonvoy airline transfer partners</a>
+</li>
+<li><a href="https://www.qatarairways.com/en/Privilege-Club/our-partners/british-airways.html" rel="noopener external" target="_blank">Qatar Airways: combine Avios with BA/Iberia</a>
+</li>
+<li><a href="https://www.americanexpress.com/in/benefits/rewards-program.html" rel="noopener external" target="_blank">Amex Reward Multiplier (official)</a>
+</li>
+<li><a href="https://www.reddit.com/r/CreditCardsIndia/comments/1fhltxe/amazon_pay_gc_5_devalued/" rel="noopener external" target="_blank">Community signal: Amazon GV MCC volatility</a>
+</li>
+<li><a href="https://www.reddit.com/r/CreditCardsIndia/comments/1gb68ll/everyone_stopped_credit_card_payment_for_amazon/" rel="noopener external" target="_blank">Community signal: gift-card route changes across platforms</a>
+</li>
+<li><a href="https://www.reddit.com/r/CreditCardsIndia/comments/1jpg251/amazon_pay_shopping_voucher_charges_via_smartbuy/" rel="noopener external" target="_blank">Community signal: SmartBuy voucher fee changes</a>
+</li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>This whole thing is just spend routing.</p>
+<p>If your buckets are clear, caps are tracked, and forex is handled sanely, you win quietly every month without doing
+mental gymnastics.</p>
+<div class="admonition success">
+  <div class="admonition-title">Success</div>
+  <div class="admonition-content">
+    The goal is not &ldquo;max points&rdquo;. The goal is &ldquo;max value on the spend you were going to do anyway&rdquo;.
+  </div>
+</div>
+<h2 id="when-to-use-this-and-when-not-to">When to use this (and when not to)</h2>
+<p>Use this if:</p>
+<ul>
+<li>You have predictable monthly buckets and you want a system.</li>
+<li>You travel abroad often enough that forex markup hurts.</li>
+<li>You are ok with 10 minutes of monthly tracking to avoid daily confusion.</li>
+</ul>
+<p>Skip this if:</p>
+<ul>
+<li>You want one card for everything and you never want to think about caps.</li>
+<li>Your spend is mostly excluded categories (rent, education, taxes) where rewards are weak anyway.</li>
+<li>You are currently carrying revolving credit or paying interest. Fix that first.</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-12-credit-card-management-rules-and-discipline-that-actually-work-in-india-today.png" type="image/png"/></item></channel></rss>

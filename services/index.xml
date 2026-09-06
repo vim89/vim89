@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/services/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/services/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>About us</title><link>https://vitthalmirji.com/services/about-us/</link><guid isPermaLink="true">https://vitthalmirji.com/services/about-us/</guid><pubDate>Mon, 19 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description><![CDATA[<p>I am a Staff-level data engineer and architect with 12+ years building production data platforms (Scala, Spark/Databricks, Kafka/Flink, GCP/AWS). I help teams ship reliable data systems, improve performance, and build developer-friendly tooling.</p>
+<p>If you want the long-form background and projects, see:</p>
+<ul>
+<li><a href="/about">About</a>
+</li>
+<li><a href="/resume">Resume</a>
+</li>
+</ul>
+<p>For services and pricing, see:</p>
+<ul>
+<li><a href="/services">Services</a>
+</li>
+</ul>]]></description><content:encoded><![CDATA[<p>I am a Staff-level data engineer and architect with 12+ years building production data platforms (Scala, Spark/Databricks, Kafka/Flink, GCP/AWS). I help teams ship reliable data systems, improve performance, and build developer-friendly tooling.</p>
+<p>If you want the long-form background and projects, see:</p>
+<ul>
+<li><a href="/about">About</a>
+</li>
+<li><a href="/resume">Resume</a>
+</li>
+</ul>
+<p>For services and pricing, see:</p>
+<ul>
+<li><a href="/services">Services</a>
+</li>
+</ul>
+]]></content:encoded></item><item><title>Cancellation Policy</title><link>https://vitthalmirji.com/services/cancellation-policy/</link><guid isPermaLink="true">https://vitthalmirji.com/services/cancellation-policy/</guid><pubDate>Mon, 19 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description><![CDATA[<p>This policy covers cancellations for consulting and learning services purchased via <strong>vitthalmirji.com</strong>.</p>
+<h2 id="1-one-off-sessions">1. One-off sessions</h2>
+<ul>
+<li>You can cancel or reschedule with <strong>24 hours</strong> notice.</li>
+<li>Cancellations within 24 hours or no-shows are treated as a delivered session, unless we agree otherwise in writing.</li>
+</ul>
+<h2 id="2-project-engagements">2. Project engagements</h2>
+<ul>
+<li>Cancellation must be communicated in writing (email is fine).</li>
+<li>Work completed up to the cancellation date will be billed.</li>
+<li>Any unused prepaid amount may be refunded as per the <strong>Refund Policy</strong>.</li>
+</ul>
+<h2 id="3-monthly-and-yearly-subscriptions">3. Monthly and yearly subscriptions</h2>
+<ul>
+<li>You can cancel anytime before the next billing date.</li>
+<li>Access and support continue until the end of the paid period.</li>
+<li>Unused hours do not carry forward unless agreed in writing.</li>
+<li>No prorated refunds unless required by law.</li>
+</ul>
+<h2 id="4-how-to-cancel">4. How to cancel</h2>
+<p>Email <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong> with your invoice reference and the effective cancellation date.</p>]]></description><content:encoded><![CDATA[<p>This policy covers cancellations for consulting and learning services purchased via <strong>vitthalmirji.com</strong>.</p>
+<h2 id="1-one-off-sessions">1. One-off sessions</h2>
+<ul>
+<li>You can cancel or reschedule with <strong>24 hours</strong> notice.</li>
+<li>Cancellations within 24 hours or no-shows are treated as a delivered session, unless we agree otherwise in writing.</li>
+</ul>
+<h2 id="2-project-engagements">2. Project engagements</h2>
+<ul>
+<li>Cancellation must be communicated in writing (email is fine).</li>
+<li>Work completed up to the cancellation date will be billed.</li>
+<li>Any unused prepaid amount may be refunded as per the <strong>Refund Policy</strong>.</li>
+</ul>
+<h2 id="3-monthly-and-yearly-subscriptions">3. Monthly and yearly subscriptions</h2>
+<ul>
+<li>You can cancel anytime before the next billing date.</li>
+<li>Access and support continue until the end of the paid period.</li>
+<li>Unused hours do not carry forward unless agreed in writing.</li>
+<li>No prorated refunds unless required by law.</li>
+</ul>
+<h2 id="4-how-to-cancel">4. How to cancel</h2>
+<p>Email <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong> with your invoice reference and the effective cancellation date.</p>
+]]></content:encoded></item><item><title>Payment options</title><link>https://vitthalmirji.com/services/payment/</link><guid isPermaLink="true">https://vitthalmirji.com/services/payment/</guid><pubDate>Mon, 19 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description><![CDATA[<p>Payments are collected using PCI-DSS compliant payment gateways. We do not store full card details on our servers.</p>
+<h2 id="dual-gateway-support">Dual gateway support</h2>
+<p>We offer two payment gateways for the best experience:</p>
+<ul>
+<li><strong>Domestic (India):</strong> UPI, Indian debit/credit cards, Net Banking, Wallets — lower fees via Cashfree</li>
+<li><strong>International:</strong> International cards, AMEX, multi-currency (130+ currencies) — via PayU</li>
+</ul>
+<p>Each service has two payment options. Choose the one that matches your payment method for the best rates.</p>]]></description><content:encoded><![CDATA[<p>Payments are collected using PCI-DSS compliant payment gateways. We do not store full card details on our servers.</p>
+<h2 id="dual-gateway-support">Dual gateway support</h2>
+<p>We offer two payment gateways for the best experience:</p>
+<ul>
+<li><strong>Domestic (India):</strong> UPI, Indian debit/credit cards, Net Banking, Wallets — lower fees via Cashfree</li>
+<li><strong>International:</strong> International cards, AMEX, multi-currency (130+ currencies) — via PayU</li>
+</ul>
+<p>Each service has two payment options. Choose the one that matches your payment method for the best rates.</p>
+<h3 id="cashfree---domestic-payments-india">Cashfree - Domestic Payments (India)</h3>
+<ul>
+<li><strong>Best for:</strong> UPI, Indian cards, Net Banking, Wallets</li>
+<li><strong>Fees:</strong> 1.6% + GST</li>
+<li><strong>Methods:</strong> UPI, Debit Cards (India), Credit Cards (India), Net Banking, Wallets (Paytm, PhonePe, etc.)</li>
+<li><strong>Refund timeline:</strong> 5-7 business days</li>
+</ul>
+<h3 id="payu---international--amex">PayU - International &amp; AMEX</h3>
+<ul>
+<li><strong>Best for:</strong> International cards, AMEX, Multi-currency</li>
+<li><strong>Fees:</strong> 3% + GST</li>
+<li><strong>Methods:</strong> International Credit Cards, International Debit Cards, American Express (AMEX), Diners Club, Multi-currency (130+ currencies)</li>
+<li><strong>Refund timeline:</strong> 5-21 business days</li>
+</ul>
+<p><strong>Payment Security:</strong></p>
+<ul>
+<li>We do not store full card details on our servers.</li>
+<li>All payments are processed through PCI-DSS compliant gateways.</li>
+<li>Refunds are processed back to the original payment method.</li>
+<li>GST (18%) is applicable on gateway fees.</li>
+</ul>
+<h2 id="payment-flow">Payment flow</h2>
+<ol>
+<li>Choose a service from <a href="/services">Services</a>
+.</li>
+<li>Click <strong>Pay with UPI/Cards</strong> (domestic) or <strong>Pay with Intl Card/AMEX</strong> (international).</li>
+<li>Complete payment on the gateway page.</li>
+<li>You receive a payment confirmation (gateway + email).</li>
+<li>I confirm delivery schedule by email and share the invoice/receipt.</li>
+<li>Service is delivered as per the agreed scope and timelines.</li>
+</ol>
+<p>If you need a custom payment link or invoice, email <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong>.</p>
+]]></content:encoded></item><item><title>Shipping and Delivery Policy</title><link>https://vitthalmirji.com/services/shipping-policy/</link><guid isPermaLink="true">https://vitthalmirji.com/services/shipping-policy/</guid><pubDate>Mon, 19 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description><![CDATA[<blockquote>
+  <p>Technical consulting services. No physical goods.</p>
+
+</blockquote><h2 id="1-no-physical-shipping">1. No physical shipping</h2>
+<p>We do not sell or ship physical products. All services are delivered digitally (email, documents, or video calls).</p>
+<h2 id="2-delivery-timelines">2. Delivery timelines</h2>
+<ul>
+<li>Delivery timelines are agreed in writing in the proposal/invoice/email.</li>
+<li>If no timeline is specified, we confirm the schedule within <strong>2 business days</strong> of payment.</li>
+<li>For one-off sessions, scheduling is typically within <strong>7 business days</strong>, subject to mutual availability.</li>
+</ul>
+<h2 id="3-delivery-mode">3. Delivery mode</h2>
+<ul>
+<li>Video calls (Google Meet/Zoom) for sessions</li>
+<li>Email or shared documents for reports and deliverables</li>
+</ul>]]></description><content:encoded><![CDATA[<blockquote>
+  <p>Technical consulting services. No physical goods.</p>
+
+</blockquote><h2 id="1-no-physical-shipping">1. No physical shipping</h2>
+<p>We do not sell or ship physical products. All services are delivered digitally (email, documents, or video calls).</p>
+<h2 id="2-delivery-timelines">2. Delivery timelines</h2>
+<ul>
+<li>Delivery timelines are agreed in writing in the proposal/invoice/email.</li>
+<li>If no timeline is specified, we confirm the schedule within <strong>2 business days</strong> of payment.</li>
+<li>For one-off sessions, scheduling is typically within <strong>7 business days</strong>, subject to mutual availability.</li>
+</ul>
+<h2 id="3-delivery-mode">3. Delivery mode</h2>
+<ul>
+<li>Video calls (Google Meet/Zoom) for sessions</li>
+<li>Email or shared documents for reports and deliverables</li>
+</ul>
+]]></content:encoded></item><item><title>Privacy Policy</title><link>https://vitthalmirji.com/services/privacy-policy/</link><guid isPermaLink="true">https://vitthalmirji.com/services/privacy-policy/</guid><pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description>Privacy policy</description><content:encoded><![CDATA[<p>This Privacy Policy explains how <strong>VITTAL MIRJI</strong> (we, us, our) collects, uses, shares, and protects personal data when you use <strong>vitthalmirji.com</strong> (Website) or purchase services.</p>
+<blockquote>
+  <p>Technical consulting services. No physical goods. No restricted categories.</p>
+
+</blockquote><h2 id="1-what-we-collect">1. What we collect</h2>
+<p>Depending on how you interact with us, we may collect:</p>
+<ul>
+<li>Identity and contact info: name, email, phone, company, role</li>
+<li>Communication content: emails, messages, meeting notes you send us</li>
+<li>Billing details: invoice references, payment status, partial payment identifiers (we do <strong>not</strong> store full card details)</li>
+<li>Technical data: IP address, browser/device info, approximate location, pages visited (via cookies/analytics if enabled)</li>
+</ul>
+<h2 id="2-how-we-use-your-data">2. How we use your data</h2>
+<p>We use personal data to:</p>
+<ul>
+<li>Provide consulting services and deliver agreed work</li>
+<li>Create invoices, confirm payments, and maintain accounting records</li>
+<li>Respond to requests and support queries</li>
+<li>Prevent fraud/abuse and secure our Website</li>
+<li>Comply with legal obligations</li>
+</ul>
+<h2 id="3-payments-and-payment-processors">3. Payments and payment processors</h2>
+<p>Payments are processed through a payment gateway/aggregator (for example, Cashfree & PayU) and the banks/payment networks involved in processing. The payment processor handles sensitive payment credentials as per its systems and policies.</p>
+<p>We may receive payment confirmation details such as transaction reference, amount, date, and status.</p>
+<h2 id="4-legal-basis-and-your-rights">4. Legal basis and your rights</h2>
+<p>We process personal data for lawful purposes such as providing services you request, and where required, based on your consent.</p>
+<p>Under India’s <strong>Digital Personal Data Protection Act, 2023</strong>, you have rights including:</p>
+<ul>
+<li>correction/updating and erasure (subject to legal retention needs)</li>
+<li>readily available means of grievance redressal  <a href="https://www.meity.gov.in/static/uploads/2024/06/2bf1f0e9f04e6fb4f8fef35e82c42aa5.pdf" rel="noopener external" target="_blank">MeitY</a>
+</li>
+</ul>
+<h2 id="5-data-sharing">5. Data sharing</h2>
+<p>We may share limited personal data with:</p>
+<ul>
+<li>Payment processors (for example, Cashfree & PayU and associated banking/payment partners) for payment processing</li>
+<li>Service providers we use to run the business (hosting, email, analytics, invoicing/accounting), under appropriate safeguards</li>
+<li>Authorities, if required by law or to protect rights/safety</li>
+</ul>
+<p>We do not sell your personal data.</p>
+<h2 id="6-data-retention">6. Data retention</h2>
+<p>We retain personal data only as long as necessary for:</p>
+<ul>
+<li>delivering services</li>
+<li>resolving disputes</li>
+<li>complying with legal/accounting requirements</li>
+</ul>
+<h2 id="7-security">7. Security</h2>
+<p>We use reasonable technical and organizational measures to protect personal data. No method of transmission or storage is 100 percent secure, so we cannot guarantee absolute security.</p>
+<h2 id="8-cookies">8. Cookies</h2>
+<p>We may use cookies to improve site functionality and understand traffic. You can control cookies through your browser settings. If you disable cookies, some parts of the site may not work as intended.</p>
+<h2 id="9-children">9. Children</h2>
+<p>This Website and Services are not directed to individuals under 18. If you believe a child has provided personal data, contact us and we will take appropriate steps.</p>
+<h2 id="10-contact-and-grievance">10. Contact and grievance</h2>
+<p>For privacy requests or grievances, contact:</p>
+<ul>
+<li>Privacy Contact: <strong>VITTAL MIRJI</strong></li>
+<li>Email: <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong></li>
+<li>Mobile: <strong>+91-9845-630-306</strong></li>
+</ul>
+<p>We aim to respond within a reasonable time and as required by applicable law.  <a href="https://www.meity.gov.in/static/uploads/2024/06/2bf1f0e9f04e6fb4f8fef35e82c42aa5.pdf" rel="noopener external" target="_blank">MeitY</a>
+</p>
+<h2 id="11-updates">11. Updates</h2>
+<p>We may update this policy. The latest version will always be posted here with the updated date.</p>
+]]></content:encoded></item><item><title>Refund and Return Policy</title><link>https://vitthalmirji.com/services/refund-policy/</link><guid isPermaLink="true">https://vitthalmirji.com/services/refund-policy/</guid><pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description><![CDATA[<p>This policy applies to consulting services purchased from <strong>VITTAL MIRJI</strong> via <strong>vitthalmirji.com</strong> and paid using online payment methods.</p>
+<blockquote>
+  <p>Technical consulting services. No physical goods. No restricted categories.</p>
+
+</blockquote><p>Returns do not apply because we do not sell physical goods.</p>
+<h2 id="1-consulting-services-are-generally-non-refundable">1. Consulting services are generally non-refundable</h2>
+<p>Consulting time and delivered work are <strong>generally non-refundable</strong> once:</p>
+<ul>
+<li>the engagement has started, or</li>
+<li>a session has been conducted, or</li>
+<li>a deliverable has been shared.</li>
+</ul>
+<p>Why: the service is time and effort based, and value is delivered as work progresses.</p>]]></description><content:encoded><![CDATA[<p>This policy applies to consulting services purchased from <strong>VITTAL MIRJI</strong> via <strong>vitthalmirji.com</strong> and paid using online payment methods.</p>
+<blockquote>
+  <p>Technical consulting services. No physical goods. No restricted categories.</p>
+
+</blockquote><p>Returns do not apply because we do not sell physical goods.</p>
+<h2 id="1-consulting-services-are-generally-non-refundable">1. Consulting services are generally non-refundable</h2>
+<p>Consulting time and delivered work are <strong>generally non-refundable</strong> once:</p>
+<ul>
+<li>the engagement has started, or</li>
+<li>a session has been conducted, or</li>
+<li>a deliverable has been shared.</li>
+</ul>
+<p>Why: the service is time and effort based, and value is delivered as work progresses.</p>
+<h2 id="2-when-refunds-may-be-granted">2. When refunds may be granted</h2>
+<p>We may consider refunds in limited situations such as:</p>
+<ul>
+<li>duplicate payment for the same invoice</li>
+<li>payment made in error (wrong amount) and reported promptly</li>
+<li>we are unable to start the engagement and no work has begun</li>
+<li>a service was paid for but not provided due to our fault</li>
+</ul>
+<p>Refund decisions are at our discretion unless required otherwise by applicable law.</p>
+<h2 id="3-refund-window-and-mode">3. Refund window and mode</h2>
+<ul>
+<li>Refund requests must be raised within <strong>7 days</strong> of payment if the service has not started.</li>
+<li>If the service has started or any deliverable has been shared, the fee is <strong>non-refundable</strong>, unless required by applicable law.</li>
+<li>Approved refunds are issued to the <strong>original payment method</strong> (same card/bank account/UPI/wallet).</li>
+</ul>
+<h2 id="4-how-refunds-are-processed">4. How refunds are processed</h2>
+<p>If a refund is approved:</p>
+<ul>
+<li>refunds are initiated via the payment gateway dashboard/API</li>
+<li>refunds are sent to the <strong>original payment source</strong></li>
+<li>the refunded amount is <strong>deducted from our settlement</strong></li>
+<li>processing time depends on the gateway used:
+<ul>
+<li><strong>Cashfree (domestic):</strong> 5-7 business days</li>
+<li><strong>PayU (international/AMEX):</strong> 5-21 business days</li>
+</ul>
+</li>
+</ul>
+<h2 id="5-chargebacks-and-disputes">5. Chargebacks and disputes</h2>
+<p>A chargeback is different from a refund. Chargebacks are initiated by the customer with their bank for reasons such as fraud, dissatisfaction, or service disputes.</p>
+<p>If a chargeback occurs, we may submit documentation (invoice, written scope, delivery evidence, communication logs) to contest it.</p>
+<h2 id="6-contact">6. Contact</h2>
+<p>To request a refund or reschedule, email <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong> with:</p>
+<ul>
+<li>invoice/payment reference</li>
+<li>date and amount</li>
+<li>reason for request</li>
+<li>any relevant context</li>
+</ul>
+<p>You can also reach us at:</p>
+<ul>
+<li>Mobile: <strong>+91-9845-630-306</strong></li>
+</ul>
+]]></content:encoded></item><item><title>Terms of Service</title><link>https://vitthalmirji.com/services/terms/</link><guid isPermaLink="true">https://vitthalmirji.com/services/terms/</guid><pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate><dc:creator>Vitthal Mirji</dc:creator><description>Terms of Service</description><content:encoded><![CDATA[<p>These Terms of Service (Terms) govern your use of <strong>vitthalmirji.com</strong> (Website) and the purchase of services from <strong>VITTAL MIRJI</strong> (we, us, our).</p>
+<p>By accessing this Website or paying an invoice/payment link, you agree to these Terms.</p>
+<blockquote>
+  <p>Technical consulting services. No physical goods. No restricted categories.</p>
+
+</blockquote><h2 id="1-who-we-are">1. Who we are</h2>
+<ul>
+<li>Provider: <strong>VITTAL MIRJI</strong></li>
+<li>Email: <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong></li>
+<li>Mobile: <strong>+91-9845-630-306</strong></li>
+<li>Working hours: <strong>10:00 hrs - 16:00 hrs / IST</strong></li>
+</ul>
+<h2 id="2-services-we-provide">2. Services we provide</h2>
+<p>We provide <strong>consulting</strong> and <strong>training/learning</strong> services in areas such as <strong>data engineering, software architecture, and related technical advisory</strong> (Services).</p>
+<p>Deliverables, timelines, and fees are agreed in writing (email, proposal, statement of work, or invoice description) before work begins.</p>
+<h2 id="3-payments">3. Payments</h2>
+<p>Payments may be collected online using payment methods offered by our payment service provider (for example, cards, UPI, netbanking).</p>
+<ul>
+<li>Payments are processed through a payment gateway/aggregator and its partner acquiring banks/payment networks, as applicable.</li>
+<li>We do not store your full card details on our servers.</li>
+<li>Current provider (as of today): Cashfree & PayU.</li>
+</ul>
+<p>Payment gateway usage is limited to <strong>consulting</strong> and <strong>training/learning</strong> services listed on the website.</p>
+<p>If a payment fails but your account is debited, the reversal/refund may be handled by the bank/payment system as per their timelines.</p>
+<h2 id="4-invoices-taxes-and-receipts">4. Invoices, taxes, and receipts</h2>
+<ul>
+<li>Invoices describe the scope, fee, and due date.</li>
+<li>You are responsible for any taxes that apply to your purchase, unless explicitly stated otherwise.</li>
+<li>A payment confirmation/receipt may be issued electronically.</li>
+</ul>
+<h2 id="5-client-responsibilities">5. Client responsibilities</h2>
+<p>To deliver the Services effectively, you agree to:</p>
+<ul>
+<li>Provide accurate information and timely access to systems/materials (where relevant).</li>
+<li>Review deliverables within reasonable timeframes.</li>
+<li>Use recommendations responsibly and in compliance with your internal policies and applicable law.</li>
+</ul>
+<h2 id="6-no-prohibited-use">6. No prohibited use</h2>
+<p>You may not use our Website or payment links for any unlawful purpose, or for products/services that are banned or restricted under the payment gateway or applicable law. We provide consulting services only.</p>
+<h2 id="7-intellectual-property">7. Intellectual property</h2>
+<p>Unless agreed otherwise in writing:</p>
+<ul>
+<li>Pre-existing tools, templates, code snippets, frameworks, and know-how we bring remain ours.</li>
+<li>Work product created specifically for you as part of a paid engagement may be licensed or assigned as stated in the proposal/invoice/email agreement.</li>
+</ul>
+<h2 id="8-confidentiality">8. Confidentiality</h2>
+<p>If you share confidential information, we will use it only to provide the Services and will take reasonable steps to protect it. Do not share credentials or secrets unless explicitly required and agreed.</p>
+<h2 id="9-disclaimers">9. Disclaimers</h2>
+<p>We provide consulting and advisory services. Outcomes depend on many factors outside our control. Except where prohibited by law, we do not guarantee specific results.</p>
+<h2 id="10-limitation-of-liability">10. Limitation of liability</h2>
+<p>To the maximum extent permitted by law:</p>
+<ul>
+<li>We are not liable for indirect, incidental, special, consequential, or punitive damages.</li>
+<li>Our total liability for any claim related to the Services is limited to the amount you paid us for the specific engagement that gave rise to the claim.</li>
+</ul>
+<h2 id="11-disputes-chargebacks-and-evidence">11. Disputes, chargebacks, and evidence</h2>
+<p>Card payments may allow customers to raise disputes/chargebacks through their bank. If a dispute arises, you agree to cooperate in good faith, and we may provide documentation such as invoices, written scope, delivery evidence (emails, meeting notes), and timelines to the payment processor/bank.</p>
+<h2 id="12-grievance-and-support">12. Grievance and support</h2>
+<p>For questions, complaints, or service issues, email <strong><a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</strong> with:</p>
+<ul>
+<li>invoice/payment reference</li>
+<li>date and amount</li>
+<li>brief description of the issue</li>
+</ul>
+<h2 id="13-changes-to-these-terms">13. Changes to these Terms</h2>
+<p>We may update these Terms from time to time. The latest version will be posted on this page with the updated date.</p>
+<h2 id="14-governing-law-and-jurisdiction">14. Governing law and jurisdiction</h2>
+<p>These Terms are governed by the laws of <strong>India</strong>. Courts at <strong>THANE, MAHARASHTRA</strong> shall have jurisdiction, unless applicable law requires otherwise.</p>
+]]></content:encoded></item></channel></rss>

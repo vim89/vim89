@@ -1,0 +1,1203 @@
+<!doctype html><html lang=en-us data-theme-mode=auto><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><script data-cfasync=false>(function(){"use strict";try{var e,t,s,o=document.documentElement.getAttribute("data-theme-mode")||"auto",n=null;try{n=localStorage.getItem("theme")}catch{}t=!1;try{t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches}catch{}s=n==="dark"||!n&&(o==="dark"||o==="auto"&&t),s&&document.documentElement.classList.add("dark"),e=function(){if(typeof document=="undefined"||!document.querySelectorAll)return;var e,n,t=document.querySelectorAll("link[data-preload-css]");if(!t||!t.length)return;for(n=function(e){var t=function(){try{e.media!=="all"&&(e.media="all"),e.removeAttribute("data-preload-css")}catch{}};e.addEventListener&&e.addEventListener("load",t,{once:!0}),setTimeout(t,3e3),e.sheet&&t()},e=0;e<t.length;e++)n(t[e])},typeof document!="undefined"&&document.readyState==="loading"?(document.addEventListener("DOMContentLoaded",e,{once:!0}),typeof window!="undefined"&&window.addEventListener&&window.addEventListener("load",e,{once:!0})):e()}catch{}})()</script><meta http-equiv=Content-Security-Policy content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' plausible.io static.cloudflareinsights.com https://giscus.app; style-src 'self' 'unsafe-inline' https://giscus.app; img-src 'self' data: *.gravatar.com avatars.githubusercontent.com imgs.xkcd.com; font-src 'self' data:; connect-src 'self' plausible.io; frame-src 'self' https://giscus.app; object-src 'none'; base-uri 'self'; form-action 'self'; worker-src 'self'; manifest-src 'self'; media-src 'self'; upgrade-insecure-requests"><meta http-equiv=X-Content-Type-Options content="nosniff"><meta http-equiv=X-XSS-Protection content="1; mode=block"><meta name=referrer content="strict-origin-when-cross-origin"><meta http-equiv=Permissions-Policy content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), autoplay=()"><link rel=preconnect href=https://plausible.io crossorigin><link rel=preconnect href=https://static.cloudflareinsights.com crossorigin><link rel=dns-prefetch href=//github.com><link rel=dns-prefetch href=//twitter.com><link rel=dns-prefetch href=//linkedin.com><title>Error hierarchy refinement: smart constructors and the code we deleted in prod - Vitthal Mirji</title><link rel=icon type=image/x-icon href=/favicon.ico><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><meta name=theme-color content="#007acc"><meta name=msapplication-TileColor content="#007acc"><meta name=msapplication-config content="/browserconfig.xml"><meta name=viewport content="width=device-width,initial-scale=1"><link rel=preload href=/css/bundle.min.f17db7eb988f34990e9688ae965f26bd0d40cb0ec0ad4a6339845466301f0b5f.css as=style><link rel=preload href=/js/main.min.23ef81b4e3f4dafe8cd26a1690dd1a7ce5c62037878f8941c8c093e2e09200d4.js as=script><meta name=description content="Stop letting invalid errors exist. Build smart constructors that validate at creation time, eliminate boolean flags with traits, and simplify code through better abstractions. Real refactor from llm4s removed 263 lines and added structure."><link rel=canonical href=https://vitthalmirji.com/2025/08/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod/><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"\"Error hierarchy refinement: smart constructors and the code we deleted in prod\"","description":"\"Stop letting invalid errors exist. Build smart constructors that validate at creation time, eliminate boolean flags with traits, and simplify code through better abstractions. Real refactor from llm4s removed 263 lines and added structure.\"","image":"\"https://vitthalmirji.com/images/og/2025-08-llm4s-error-hierarchy-refinement.png\"","datePublished":"\"2025-08-17T09:00:00Z\"","dateModified":"\"2025-08-17T09:00:00Z\"","author":{"@type":"Person","name":"\"Vitthal Mirji\"","url":"\"https://vitthalmirji.com\"","jobTitle":"\"Engineer building platforms - Data, Software \\u0026 OSS\""},"publisher":{"@type":"Organization","name":"\"Vitthal Mirji\"","url":"\"https://vitthalmirji.com/\"","logo":{"@type":"ImageObject","url":"\"https://vitthalmirji.com/images/logo.png\""}},"mainEntityOfPage":{"@type":"WebPage","@id":"\"https://vitthalmirji.com/2025/08/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod/\""},"keywords":"\"scala, error-handling, smart-constructors, refactoring, llm4s, functional-programming, code-quality, testing, llm\"","wordCount":5011,"articleSection":"\"Posts\""}</script><meta property="og:type" content="article"><meta property="og:title" content="Error hierarchy refinement: smart constructors and the code we deleted in prod"><meta property="og:description" content="Stop letting invalid errors exist. Build smart constructors that validate at creation time, eliminate boolean flags with traits, and simplify code through better abstractions. Real refactor from llm4s …"><meta property="og:site_name" content="Vitthal Mirji"><meta property="og:locale" content="en_US"><meta property="og:image" content="https://vitthalmirji.com/images/og/2025-08-llm4s-error-hierarchy-refinement.png"><meta property="og:image:secure_url" content="https://vitthalmirji.com/images/og/2025-08-llm4s-error-hierarchy-refinement.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Error hierarchy refinement: smart constructors and the code we deleted in prod"><meta property="article:published_time" content="2025-08-17T09:00:00Z"><meta property="article:modified_time" content="2025-08-17T09:00:00Z"><meta property="article:author" content="vitthal-mirji"><meta property="article:tag" content="scala"><meta property="article:tag" content="error-handling"><meta property="article:tag" content="smart-constructors"><meta property="article:tag" content="refactoring"><meta property="article:tag" content="llm4s"><meta property="article:tag" content="functional-programming"><meta property="article:tag" content="code-quality"><meta property="article:tag" content="testing"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Error hierarchy refinement: smart constructors and the code we deleted in prod"><meta name=twitter:description content="Stop letting invalid errors exist. Build smart constructors that validate at creation time, eliminate boolean flags with traits, and simplify code through better abstractions. Real refactor from llm4s …"><meta name=twitter:image content="https://vitthalmirji.com/images/og/2025-08-llm4s-error-hierarchy-refinement.png"><meta name=twitter:image:alt content="Error hierarchy refinement: smart constructors and the code we deleted in prod"><meta name=twitter:site content="@whoami_vim"><meta name=twitter:creator content="@whoami_vim"><meta property="og:url" content="https://vitthalmirji.com/2025/08/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod/"><meta name=twitter:url content="https://vitthalmirji.com/2025/08/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod/"><style>body{font-family:-apple-system,BlinkMacSystemFont,segoe ui,Roboto,sans-serif;line-height:1.6;color:#212121;margin:0;padding:0}.container{max-width:900px;margin:0 auto;padding:0 1rem}.header{text-align:center;padding:2rem 0}.site-title{margin:.5rem 0;font-size:2rem}.site-title a{color:#212121;text-decoration:none}@media(prefers-color-scheme:dark){body{color:#e0e0e0;background:#1a1a1a}.site-title a{color:#e0e0e0}}.dark{color:#e0e0e0;background:#1a1a1a}.dark .site-title a{color:#e0e0e0}</style><link rel=preload href=/css/bundle.min.f17db7eb988f34990e9688ae965f26bd0d40cb0ec0ad4a6339845466301f0b5f.css as=style fetchpriority=high><link rel=stylesheet href=/css/bundle.min.f17db7eb988f34990e9688ae965f26bd0d40cb0ec0ad4a6339845466301f0b5f.css integrity="sha256-8X2365iPNJkOloiull8mvQ1Ayw7ArUpjOYRUZjAfC18="><script data-cfasync=false src=/js/bundle-init.min.038f1e8bd4bafed03c58e7b14a113689fec584955ac4b5e26a21c6f8ea0a69b2.js defer></script><script data-cfasync=false src=/js/main.min.23ef81b4e3f4dafe8cd26a1690dd1a7ce5c62037878f8941c8c093e2e09200d4.js defer></script><script data-cfasync=false src=/js/lazy-content.min.4ddf069792e2b8c6294601d3e4060d0b523d1df3f5916743630dc7c16409e49e.js defer></script><script data-cfasync=false src=/js/error-tracker.min.2a0a7699f92e5742bb809870c7c5410b1fc1093b237cb3d0e480041f666fc3a2.js defer></script></head><body data-pagefind-body><a href=#main-content class=skip-link>Skip to main content</a><div class="container-wide wrapper"><header class=site-header><div class=header><h1 class=site-title><a href=https://vitthalmirji.com/>Vitthal Mirji</a></h1><div class=site-description><p>Software Engineering, Data Engineering, Functional Programming, Scala, JVM, Rust, GNU/Linux, Data, AI/ML, and other things</p><nav class="nav social" aria-label="Social media links"><ul class=flat><li><a href=https://github.com/vim89/ title=Github aria-label=Github target=_blank rel="nofollow noopener noreferrer"><i data-feather=github aria-hidden=true></i></a></li><li><a href=https://twitter.com/whoami_vim/ title=Twitter aria-label=Twitter target=_blank rel="nofollow noopener noreferrer"><i data-feather=twitter aria-hidden=true></i></a></li><li><a href=https://www.linkedin.com/in/vitthal10/ title=LinkedIn aria-label=LinkedIn target=_blank rel="nofollow noopener noreferrer"><i data-feather=linkedin aria-hidden=true></i></a></li><li><a href=/index.xml title=RSS aria-label=RSS target=_blank rel="nofollow noopener noreferrer"><i data-feather=rss aria-hidden=true></i></a></li><li><span class=scheme-toggle><a href=# id=scheme-toggle aria-label="Toggle dark/light theme" role=button></a></span></li></ul></nav></div><nav class=nav aria-label="Main navigation"><ul class=flat><li><a href=/>Home</a></li><li><a href=/about>About</a></li><li><a href=/topics/>Topics</a></li><li><a href=/series/>Series</a></li><li><a href=/tags>Tags & Stats</a></li><li><a href=/resume/ target=_blank rel="noopener noreferrer">Resume</a></li><li><a href=/search/>Search</a></li></ul></nav></div></header><main role=main aria-label="Main content" id=main-content><div class=article-nav id=article-nav-id><div class=post><nav aria-label=Breadcrumb class=breadcrumb><ol class=breadcrumb-list itemscope itemtype=https://schema.org/BreadcrumbList><li class=breadcrumb-item itemprop=itemListElement itemscope itemtype=https://schema.org/ListItem><a href=/ itemprop=item><span itemprop=name>Home</span>
+</a><meta itemprop=position content="1"></li><li class=breadcrumb-item itemprop=itemListElement itemscope itemtype=https://schema.org/ListItem><a href=/posts/ itemprop=item><span itemprop=name>Posts</span>
+</a><meta itemprop=position content="2"></li><li class="breadcrumb-item active" itemprop=itemListElement itemscope itemtype=https://schema.org/ListItem><span itemprop=name aria-current=page>Error hierarchy refinement: smart constructors and the code we deleted in prod</span>
+<meta itemprop=position content="3"></li></ol></nav><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/vitthalmirji.com\/"},{"@type":"ListItem","position":2,"name":"\"Posts\"","item":"https:\/\/vitthalmirji.com\/posts\/"},{"@type":"ListItem","position":3,"name":"\"Error hierarchy refinement: smart constructors and the code we deleted in prod\"","item":"https:\/\/vitthalmirji.com\/2025\/08\/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod\/"}]}</script><div class=post-header><div class=meta><div class=date><span class=day>17</span>
+<span class=rest>Aug 2025</span></div></div><div class=matter><h1 class=title>Error hierarchy refinement: smart constructors and the code we deleted in prod</h1></div></div><aside class="show-on-mobile toc" id=static-toc><header><h3>Contents</h3></header><nav id=TableOfContents><ol><li><a href=#what-needed-fixing>What needed fixing</a></li><li><a href=#the-smart-constructor-pattern-making-invalid-states-impossible>The smart constructor pattern: making invalid states impossible</a></li><li><a href=#eliminating-boolean-flags-marker-traits-for-compile-time-safety>Eliminating boolean flags: marker traits for compile-time safety</a></li><li><a href=#the-new-error-types>The new error types</a></li><li><a href=#the-refactor-in-numbers>The refactor in numbers</a></li><li><a href=#the-test-suite>The test suite</a></li><li><a href=#the-merge-conflict-resolution>The merge conflict resolution</a></li><li><a href=#what-we-learned-from-code-reviews>What we learned from code reviews</a></li><li><a href=#better-abstractions--less-code>Better abstractions = less code</a></li><li><a href=#impact-on-other-work-how-error-refinement-enabled-various-assignments>Impact on other work: how error refinement enabled various assignments</a></li><li><a href=#try-it-yourself>Try it yourself</a></li><li><a href=#whats-next>What&rsquo;s next</a></li></ol></nav></aside><p class=lead><p><a href=https://github.com/llm4s/llm4s/pull/180 rel="noopener external" target=_blank>PR #180</a>
+had merge conflicts.</p><p>I&rsquo;d built on top of <a href=https://github.com/llm4s/llm4s/pull/137 rel="noopener external" target=_blank>PR #137</a>
+(the error hierarchy from Post 1). But while I was working, other PRs merged. Now my branch was 15 commits behind main. Merge conflicts everywhere.</p><p>I stared at the diff. Red and green lines mixed together. I honestly didn&rsquo;t know where to start.</p><p>That&rsquo;s when <a href=https://github.com/rorygraves rel="noopener external" target=_blank>Rory Graves</a>
+messaged me: &ldquo;I&rsquo;ll handle the rebase. Continue what you were doing&rdquo;</p><p>24 hours later, <a href=https://github.com/llm4s/llm4s/pull/197 rel="noopener external" target=_blank>PR #197</a>
+was born - a cleaned-up, conflict-free version of my work. But more than that, it incorporated feedback from <a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a>
+that made the error hierarchy actually elegant.</p><p>This is the story of how we refined the <a href=https://github.com/llm4s/llm4s rel="noopener external" target=_blank>llm4s</a>
+error system with smart constructors, eliminated code smells, and wrote 201 lines of tests. The code got simpler and more capable.</p></p><p><p><a class=btn href=https://github.com/llm4s/llm4s/pull/197 target=_blank rel="noopener noreferrer">Open PR #197 on GitHub</a></p><p><a class=btn href=https://github.com/llm4s/llm4s target=_blank rel="noopener noreferrer">Browse llm4s on GitHub</a></p></p><h2 id=what-needed-fixing>What needed fixing</h2><p>Remember the error hierarchy from <a href=https://github.com/llm4s/llm4s/pull/137 rel="noopener external" target=_blank>PR #137</a>
+? It worked. But it had rough edges.</p><p><strong>Problem 1: Invalid errors could exist</strong></p><p>Nothing stopped you from creating garbage:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>val</span> <span class=n>badError</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>              <span class=c1>// Empty message!
+</span></span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>             <span class=c1>// Empty provider!
+</span></span></span><span class=line><span class=cl>  <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(-</span><span class=mf>5.</span><span class=n>seconds</span><span class=o>),</span> <span class=c1>// Negative duration!
+</span></span></span><span class=line><span class=cl>  <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;&#34;</span>              <span class=c1>// Empty endpoint!
+</span></span></span><span class=line><span class=cl><span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p>That compiles. It runs. It&rsquo;s completely useless.</p><p><strong>Problem 2: Boolean flags for categorization</strong></p><p>The original design used <code>isRecoverable: Boolean</code>:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>case</span> <span class=k>class</span> <span class=nc>LLMError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>isRecoverable</span><span class=k>:</span> <span class=kt>Boolean</span>  <span class=c1>// Flag smell
+</span></span></span><span class=line><span class=cl><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Using it
+</span></span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>(</span><span class=n>error</span><span class=o>.</span><span class=n>isRecoverable</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>failFast</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>Atul saw this in review and said: &ldquo;Boolean flags are a code smell. Use traits.&rdquo;</p><p>He was right. That <code>if</code> statement? It&rsquo;s runtime logic that could be compile-time.</p><p><strong>Problem 3: Context maps were inconsistent</strong></p><p>Some errors had context. Some didn&rsquo;t. There was no pattern:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Rate limited&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>.</span><span class=n>empty</span>  <span class=c1>// Why empty?
+</span></span></span><span class=line><span class=cl><span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p>We needed structure.</p><h2 id=the-smart-constructor-pattern-making-invalid-states-impossible>The smart constructor pattern: making invalid states impossible</h2><div class="admonition warning"><div class=admonition-title>Common mistake</div><div class=admonition-content>Public case class constructors let anyone create garbage data. Make the constructor private, add a validated factory method. Discover bugs during development, not in production logs.</div></div><p>Here&rsquo;s what <a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a>
+taught me. Instead of public case class constructors, use private constructors with validation.</p><p><strong>What&rsquo;s a smart constructor?</strong> It&rsquo;s a design pattern where you make the class constructor private (so no one can call it directly), then provide a factory method (usually named <code>apply</code>) that validates inputs before creating the object. The &ldquo;smart&rdquo; part is that the factory refuses to create invalid objects.</p><p><strong>Why private?</strong> In Scala, when you mark a constructor <code>private</code>, it can only be called from within the class itself or its companion object. This forces everyone to use your validated factory method instead of bypassing validation.</p><p><strong>What&rsquo;s a companion object?</strong> In Scala, an <code>object</code> with the same name as a <code>class</code> is called a companion object. It&rsquo;s like a singleton that has special access to the class&rsquo;s private members. It&rsquo;s commonly used for factory methods.</p><p><strong>Before (anyone can create invalid errors):</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>retryAfter</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>FiniteDuration</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>endpoint</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>.</span><span class=n>empty</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span></span></span></code></pre></td></tr></table></div></div><p>The problem? Nothing stops this:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>val</span> <span class=n>garbage</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>                      <span class=c1>// Empty! Useless in logs
+</span></span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>                     <span class=c1>// Empty! Don&#39;t know which provider failed
+</span></span></span><span class=line><span class=cl>  <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(-</span><span class=mf>999.</span><span class=n>seconds</span><span class=o>),</span>   <span class=c1>// Negative! When should we retry? Never?
+</span></span></span><span class=line><span class=cl>  <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>                     <span class=c1>// Empty! Don&#39;t know what endpoint hit the limit
+</span></span></span><span class=line><span class=cl>  <span class=n>context</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>(</span><span class=s>&#34;random&#34;</span> <span class=o>-&gt;</span> <span class=s>&#34;junk&#34;</span><span class=o>)</span>  <span class=c1>// Inconsistent! No timestamp, no thread info
+</span></span></span><span class=line><span class=cl><span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p>It compiles. It runs. It creates completely useless error objects that make debugging impossible.</p><p><strong>After (validation required):</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// src/main/scala/org/llm4s/error/RateLimitError.scala
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span> <span class=k>private</span> <span class=o>(</span>  <span class=c1>// &lt;- Note: &#34;private&#34; constructor!
+</span></span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>retryAfter</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>FiniteDuration</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>endpoint</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>retryMsg</span> <span class=k>=</span> <span class=n>retryAfter</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>d</span> <span class=k>=&gt;</span> <span class=s>s&#34; Retry after </span><span class=si>${</span><span class=n>d</span><span class=o>.</span><span class=n>toSeconds</span><span class=si>}</span><span class=s>s&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[RateLimitError] </span><span class=si>$message</span><span class=s> (provider: </span><span class=si>$provider</span><span class=s>, endpoint: </span><span class=si>$endpoint</span><span class=s>)</span><span class=si>$retryMsg</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>object</span> <span class=nc>RateLimitError</span> <span class=o>{</span>  <span class=c1>// &lt;- Companion object with factory method
+</span></span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>apply</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>retryAfter</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>FiniteDuration</span><span class=o>]</span> <span class=k>=</span> <span class=nc>None</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>endpoint</span><span class=k>:</span> <span class=kt>String</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span><span class=k>:</span> <span class=kt>RateLimitError</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Validation using require()
+</span></span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>message</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Error message cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>provider</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Provider cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>endpoint</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Endpoint cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>retryAfter</span><span class=o>.</span><span class=n>foreach</span> <span class=o>{</span> <span class=n>duration</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=n>require</span><span class=o>(</span><span class=n>duration</span><span class=o>.</span><span class=n>toSeconds</span> <span class=o>&gt;</span> <span class=mi>0</span><span class=o>,</span> <span class=s>s&#34;Retry duration must be positive, got: </span><span class=si>${</span><span class=n>duration</span><span class=o>.</span><span class=n>toSeconds</span><span class=si>}</span><span class=s>s&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Auto-populate context with consistent structure
+</span></span></span><span class=line><span class=cl>    <span class=k>new</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=n>message</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>provider</span> <span class=k>=</span> <span class=n>provider</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>retryAfter</span> <span class=k>=</span> <span class=n>retryAfter</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>endpoint</span> <span class=k>=</span> <span class=n>endpoint</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>context</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;timestamp&#34;</span> <span class=o>-&gt;</span> <span class=nc>Instant</span><span class=o>.</span><span class=n>now</span><span class=o>().</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;thread&#34;</span> <span class=o>-&gt;</span> <span class=nc>Thread</span><span class=o>.</span><span class=n>currentThread</span><span class=o>().</span><span class=n>getName</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;errorType&#34;</span> <span class=o>-&gt;</span> <span class=s>&#34;RateLimitError&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Convenience constructor from HTTP response
+</span></span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>fromResponse</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>endpoint</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>response</span><span class=k>:</span> <span class=kt>HttpResponse</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span><span class=k>:</span> <span class=kt>RateLimitError</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>retryAfter</span> <span class=k>=</span> <span class=n>response</span><span class=o>.</span><span class=n>header</span><span class=o>(</span><span class=s>&#34;Retry-After&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>      <span class=o>.</span><span class=n>flatMap</span><span class=o>(</span><span class=n>h</span> <span class=k>=&gt;</span> <span class=nc>Try</span><span class=o>(</span><span class=n>h</span><span class=o>.</span><span class=n>toLong</span><span class=o>.</span><span class=n>seconds</span><span class=o>).</span><span class=n>toOption</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>apply</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=s>s&#34;Rate limit exceeded for </span><span class=si>$provider</span><span class=s>&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>provider</span> <span class=k>=</span> <span class=n>provider</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>retryAfter</span> <span class=k>=</span> <span class=n>retryAfter</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>endpoint</span> <span class=k>=</span> <span class=n>endpoint</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>What&rsquo;s require()?</strong> It&rsquo;s a built-in Scala function that throws <code>IllegalArgumentException</code> if the condition is false. It&rsquo;s perfect for precondition checks in factory methods. If someone passes bad data, require() blows up immediately with your custom error message.</p><p>Look at what we gained:</p><div class=table-wrap role=region aria-label="Scrollable table"><table><thead><tr><th>Benefit</th><th>What it does</th><th>Why it matters</th><th>Example</th></tr></thead><tbody><tr><td><strong>Validation at construction</strong></td><td>Can&rsquo;t create invalid error objects</td><td>Discover problems during development, not production</td><td><code>RateLimitError(message = "")</code> → <code>IllegalArgumentException: Error message cannot be empty</code></td></tr><tr><td><strong>Auto-populated context</strong></td><td>Every error gets timestamp, thread, error type</td><td>No one forgets to add context, consistent observability</td><td><code>context("timestamp")</code> = &ldquo;2025-08-17T14:23:45.123Z&rdquo; automatically</td></tr><tr><td><strong>Convenience constructors</strong></td><td><code>fromResponse</code> handles common HTTP scenarios</td><td>No repetitive code, extract retry-after header automatically</td><td><code>RateLimitError.fromResponse(provider, endpoint, response)</code> one line instead of 10</td></tr></tbody></table></div><p><strong>Real production scenario-the difference it makes:</strong></p><p><strong>Before smart constructors, we&rsquo;d see logs like this:</strong></p><div class="highlight highlight-text" data-lang=text><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>[ERROR] RateLimitError: message=&#34;&#34;, provider=&#34;&#34;, endpoint=&#34;&#34;
+</span></span><span class=line><span class=cl>  context: {}
+</span></span><span class=line><span class=cl>  timestamp: (missing)
+</span></span><span class=line><span class=cl>  thread: (missing)</span></span></code></pre></td></tr></table></div></div><p>Totally useless. We can&rsquo;t tell:</p><ul><li>Which provider hit the rate limit?</li><li>What endpoint was called?</li><li>When did it happen?</li><li>Which thread was making the call?</li></ul><p><strong>After smart constructors, it&rsquo;s impossible to create that garbage. Logs look like this:</strong></p><div class="highlight highlight-text" data-lang=text><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>[ERROR] RateLimitError: OpenAI rate limit exceeded (provider: openai, endpoint: /v1/chat/completions) Retry after 60s
+</span></span><span class=line><span class=cl>  context: {
+</span></span><span class=line><span class=cl>    timestamp: 2025-08-17T14:23:45.123Z,
+</span></span><span class=line><span class=cl>    thread: pool-1-thread-3,
+</span></span><span class=line><span class=cl>    errorType: RateLimitError
+</span></span><span class=line><span class=cl>  }</span></span></code></pre></td></tr></table></div></div><p>Clear. Actionable. Complete.</p><p><strong>What happens if you try to create invalid errors now?</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>val</span> <span class=n>badError</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>     <span class=c1>// Empty message
+</span></span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(-</span><span class=mf>5.</span><span class=n>seconds</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>// Exception in thread &#34;main&#34; java.lang.IllegalArgumentException:
+</span></span></span><span class=line><span class=cl><span class=c1>//   requirement failed: Error message cannot be empty
+</span></span></span><span class=line><span class=cl><span class=c1>//     at scala.Predef$.require(Predef.scala:268)
+</span></span></span><span class=line><span class=cl><span class=o>//</span>     <span class=n>at</span> <span class=nc>RateLimitError</span><span class=n>$</span><span class=o>.</span><span class=n>apply</span><span class=o>(</span><span class=nc>RateLimitError</span><span class=o>.</span><span class=n>scala</span><span class=k>:</span><span class=err>42</span><span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p><strong>Compile time:</strong> This still compiles (the types are correct).
+<strong>Runtime:</strong> It fails immediately at the call site with a clear error.</p><p>That&rsquo;s the key. You discover the problem during development, not after deployment. The stack trace points directly to where you called <code>RateLimitError(...)</code> with bad data. You fix it immediately.</p><p><strong>Real usage from OpenAI provider:</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// providers/openai/src/main/scala/OpenAIClient.scala
+</span></span></span><span class=line><span class=cl><span class=k>def</span> <span class=n>handleRateLimit</span><span class=o>(</span><span class=n>response</span><span class=k>:</span> <span class=kt>HttpResponse</span><span class=o>)</span><span class=k>:</span> <span class=kt>Result</span><span class=o>[</span><span class=kt>CompletionResponse</span><span class=o>]</span> <span class=k>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Before smart constructors: manual error construction
+</span></span></span><span class=line><span class=cl>  <span class=c1>// val error = RateLimitError(
+</span></span></span><span class=line><span class=cl>  <span class=c1>//   message = &#34;Rate limit exceeded&#34;,  // Hardcoded message
+</span></span></span><span class=line><span class=cl>  <span class=c1>//   provider = &#34;openai&#34;,               // Hardcoded provider
+</span></span></span><span class=line><span class=cl>  <span class=c1>//   retryAfter = None,                 // Forgot to parse Retry-After header!
+</span></span></span><span class=line><span class=cl>  <span class=c1>//   endpoint = &#34;/v1/chat/completions&#34;, // Hardcoded endpoint
+</span></span></span><span class=line><span class=cl>  <span class=c1>//   context = Map.empty                // Forgot to add context!
+</span></span></span><span class=line><span class=cl>  <span class=c1>// )
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// After smart constructors: convenience constructor does it all
+</span></span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>.</span><span class=n>fromResponse</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/chat/completions&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>response</span> <span class=k>=</span> <span class=n>response</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Automatically:
+</span></span></span><span class=line><span class=cl>  <span class=c1>// - Parses &#34;Retry-After&#34; header if present
+</span></span></span><span class=line><span class=cl>  <span class=c1>// - Generates clear message
+</span></span></span><span class=line><span class=cl>  <span class=c1>// - Populates context with timestamp, thread, error type
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>One line. No repetition. No mistakes. The smart constructor handles all the details.</p><h2 id=eliminating-boolean-flags-marker-traits-for-compile-time-safety>Eliminating boolean flags: marker traits for compile-time safety</h2><div class="admonition success"><div class=admonition-title>FP best practice</div><div class=admonition-content>Boolean flags are runtime checks. Marker traits are compile-time guarantees. Use the type system to categorize, not runtime if statements. The compiler will catch your mistakes.</div></div><p><a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a>
+&rsquo;s critical feedback: &ldquo;Replace <code>isRecoverable: Boolean</code> with traits. Boolean flags are a code smell.&rdquo;</p><p><strong>Why are boolean flags a problem?</strong> They push decisions to runtime when the compiler could enforce correctness at compile time. Every <code>if (flag)</code> check is a runtime branch that could be a compile-time type check instead.</p><p><strong>The old way (boolean flags):</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>sealed</span> <span class=k>trait</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>message</span><span class=k>:</span> <span class=kt>String</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>isRecoverable</span><span class=k>:</span> <span class=kt>Boolean</span>  <span class=c1>// Runtime flag
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Every error type needs to set this flag
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>isRecoverable</span> <span class=k>=</span> <span class=kc>true</span>  <span class=c1>// Easy to forget or set wrong!
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>AuthenticationError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>isRecoverable</span> <span class=k>=</span> <span class=kc>false</span>  <span class=c1>// What if someone changes this by mistake?
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Using it
+</span></span></span><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span> <span class=k>if</span> <span class=n>e</span><span class=o>.</span><span class=n>isRecoverable</span> <span class=k>=&gt;</span> <span class=n>retry</span><span class=o>()</span>  <span class=c1>// Runtime check
+</span></span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span> <span class=k>=&gt;</span> <span class=n>failFast</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>Problems with this approach:</p><p><strong>1. Runtime checks instead of compile-time safety</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>if</span> <span class=o>(</span><span class=n>error</span><span class=o>.</span><span class=n>isRecoverable</span><span class=o>)</span> <span class=o>{</span> <span class=o>...</span> <span class=o>}</span>  <span class=o>//</span> <span class=nc>Runtime</span> <span class=n>decision</span></span></span></code></pre></td></tr></table></div></div><p>The compiler can&rsquo;t help you. You might forget to check the flag. You might check it wrong.</p><p><strong>2. Can&rsquo;t enforce exhaustiveness</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span> <span class=k>if</span> <span class=n>e</span><span class=o>.</span><span class=n>isRecoverable</span> <span class=k>=&gt;</span> <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// What if someone forgets the else case?
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>//</span> <span class=nc>Compiler</span><span class=k>:</span> <span class=err>&#34;</span><span class=kt>This</span> <span class=kt>is</span> <span class=kt>fine!</span><span class=err>&#34;</span> <span class=o>(</span><span class=kt>It</span><span class=err>&#39;</span><span class=kt>s</span> <span class=kt>not</span> <span class=kt>fine!</span><span class=o>)</span></span></span></code></pre></td></tr></table></div></div><p><strong>3. Flags can be set incorrectly</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>isRecoverable</span> <span class=k>=</span> <span class=kc>false</span>  <span class=c1>// BUG! Should be true!
+</span></span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>The compiler won&rsquo;t catch this. It&rsquo;s just a boolean value. Tests might miss it. Users discover it in production.</p><p><strong>The new way (marker traits):</strong></p><p><strong>What&rsquo;s a marker trait?</strong> It&rsquo;s a trait with no methods or fields-its only purpose is to mark a type as belonging to a category. It uses the type system for classification instead of runtime values.</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>sealed</span> <span class=k>trait</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>message</span><span class=k>:</span> <span class=kt>String</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Marker traits for categorization
+</span></span></span><span class=line><span class=cl><span class=k>sealed</span> <span class=k>trait</span> <span class=nc>RecoverableError</span> <span class=k>extends</span> <span class=nc>LLMError</span>
+</span></span><span class=line><span class=cl><span class=k>sealed</span> <span class=k>trait</span> <span class=nc>NonRecoverableError</span> <span class=k>extends</span> <span class=nc>LLMError</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Concrete errors pick their category via inheritance
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>TimeoutError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>NetworkError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>AuthenticationError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ValidationError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ProcessingError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span></span></span></code></pre></td></tr></table></div></div><p>The <code>with RecoverableError</code> part is called <strong>mixin composition</strong>-you&rsquo;re mixing the marker trait into the error type. Now <code>RateLimitError</code> isn&rsquo;t just an <code>LLMError</code>, it&rsquo;s also a <code>RecoverableError</code>. The type system knows this at compile time.</p><p><strong>Using it with type-based pattern matching:</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=o>(</span><span class=s>s&#34;Recoverable error, retrying: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>formatted</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>NonRecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=o>(</span><span class=s>s&#34;Non-recoverable error, failing: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>formatted</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>failFast</span><span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>Why this is better:</strong></p><p><strong>1. Compile-time type checking</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RecoverableError</span> <span class=o>=&gt;</span> <span class=n>retry</span><span class=o>()</span>  <span class=o>//</span> <span class=nc>Compiler</span> <span class=n>knows</span> <span class=n>e</span> <span class=n>is</span> <span class=n>recoverable</span></span></span></code></pre></td></tr></table></div></div><p>No runtime flag check. The type system handles it. The compiler verifies your logic.</p><p><strong>2. Exhaustiveness checking</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RecoverableError</span> <span class=o>=&gt;</span> <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Forgot NonRecoverableError case?
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// Warning: match may not be exhaustive.
+</span></span></span><span class=line><span class=cl><span class=o>//</span> <span class=nc>It</span> <span class=n>would</span> <span class=n>fail</span> <span class=n>on</span><span class=k>:</span> <span class=kt>NonRecoverableError</span></span></span></code></pre></td></tr></table></div></div><p>The compiler warns you. You fix it before running the code.</p><p><strong>3. Can&rsquo;t set the category wrong</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>RateLimitError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span>
+</span></span><span class=line><span class=cl><span class=c1>// Later: someone reviews the PR
+</span></span></span><span class=line><span class=cl><span class=c1>// &#34;Wait, rate limit errors ARE recoverable. Fix this.&#34;
+</span></span></span><span class=line><span class=cl><span class=o>//</span> <span class=nc>The</span> <span class=k>type</span> <span class=kt>is</span> <span class=kt>visible</span> <span class=kt>in</span> <span class=kt>the</span> <span class=kt>class</span> <span class=kt>declaration</span><span class=o>,</span> <span class=n>easy</span> <span class=n>to</span> <span class=n>review</span></span></span></code></pre></td></tr></table></div></div><p><strong>Real production scenario-why this matters:</strong></p><p>Before trait-based categorization, we had this bug:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Someone added a new error type
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ContentFilterError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>isRecoverable</span> <span class=k>=</span> <span class=kc>true</span>  <span class=c1>// Thought it was recoverable
+</span></span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Retry logic
+</span></span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>(</span><span class=n>error</span><span class=o>.</span><span class=n>isRecoverable</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>retryWithBackoff</span><span class=o>()</span>  <span class=c1>// This retries content filter errors!
+</span></span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>The problem? Content filtering errors aren&rsquo;t recoverable. If the LLM refuses to generate content because it violates content policy, retrying won&rsquo;t help. The input is the problem, not a transient issue.</p><p>But the boolean flag was set to <code>true</code>, so we kept retrying uselessly. Users saw 3-5 retry attempts before we gave up. Wasted time. Wasted tokens. Poor user experience.</p><p>After switching to marker traits:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ContentFilterError</span><span class=o>(...)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// The type system prevents retries
+</span></span></span><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>ContentFilterError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Specific handling: explain to user what was filtered
+</span></span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nc>Left</span><span class=o>(</span><span class=n>e</span><span class=o>)</span>  <span class=c1>// Don&#39;t retry
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=n>retryWithBackoff</span><span class=o>()</span>  <span class=c1>// ContentFilterError doesn&#39;t match here!
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>NonRecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nc>Left</span><span class=o>(</span><span class=n>e</span><span class=o>)</span>  <span class=c1>// ContentFilterError caught here instead
+</span></span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>Now the categorization is enforced by types. You can&rsquo;t accidentally retry a non-recoverable error.</p><p><strong>Getting more specific with pattern matching:</strong></p><p>The beautiful thing about marker traits? You can match at any level of specificity:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Most specific: match exact error type
+</span></span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RateLimitError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>waitTime</span> <span class=k>=</span> <span class=n>e</span><span class=o>.</span><span class=n>retryAfter</span><span class=o>.</span><span class=n>getOrElse</span><span class=o>(</span><span class=mf>60.</span><span class=n>seconds</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=o>(</span><span class=s>s&#34;Rate limited, waiting </span><span class=si>${</span><span class=n>waitTime</span><span class=o>.</span><span class=n>toSeconds</span><span class=si>}</span><span class=s>s&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=nc>Thread</span><span class=o>.</span><span class=n>sleep</span><span class=o>(</span><span class=n>waitTime</span><span class=o>.</span><span class=n>toMillis</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>TimeoutError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Different retry strategy for timeouts
+</span></span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>warn</span><span class=o>(</span><span class=s>s&#34;Timeout after </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>timeout</span><span class=o>.</span><span class=n>toSeconds</span><span class=si>}</span><span class=s>s, retrying immediately&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>AuthenticationError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Don&#39;t retry auth errors - they won&#39;t succeed
+</span></span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=o>(</span><span class=s>s&#34;Authentication failed: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>apiKeyPrefix</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>failFast</span><span class=o>(</span><span class=s>s&#34;Fix your API key: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>apiKeyPrefix</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Less specific: match by category
+</span></span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Catch-all for other recoverable errors we didn&#39;t handle above
+</span></span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=o>(</span><span class=s>s&#34;Recoverable error: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>formatted</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>retry</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>NonRecoverableError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Catch-all for non-recoverable errors
+</span></span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=o>(</span><span class=s>s&#34;Non-recoverable error: </span><span class=si>${</span><span class=n>e</span><span class=o>.</span><span class=n>formatted</span><span class=si>}</span><span class=s>&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>failFast</span><span class=o>(</span><span class=n>e</span><span class=o>.</span><span class=n>formatted</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>The compiler verifies this is exhaustive. Every possible <code>LLMError</code> is either:</p><ul><li>A specific type we handle explicitly (RateLimitError, TimeoutError, AuthenticationError), OR</li><li>Caught by one of the trait-based catch-alls (RecoverableError, NonRecoverableError)</li></ul><p><strong>Testing the categorization:</strong></p><p>With marker traits, testing is straightforward:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError should be recoverable&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span><span class=s>&#34;Rate limited&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>,</span> <span class=s>&#34;/v1/chat&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>error</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>RecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;AuthenticationError should be non-recoverable&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>AuthenticationError</span><span class=o>(</span><span class=s>&#34;Invalid API key&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>error</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>NonRecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>The type system is the truth. Tests just verify it.</p><h2 id=the-new-error-types>The new error types</h2><p><a href=https://github.com/llm4s/llm4s/pull/197 rel="noopener external" target=_blank>PR #197</a>
+added missing error types based on real production scenarios:</p><p><strong>1. ProcessingError</strong> (when internal processing fails)</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ProcessingError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>operation</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>input</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>String</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>cause</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>Throwable</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>inputSnippet</span> <span class=k>=</span> <span class=n>input</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>i</span> <span class=k>=&gt;</span> <span class=s>s&#34;\nInput: </span><span class=si>${</span><span class=n>i</span><span class=o>.</span><span class=n>take</span><span class=o>(</span><span class=mi>200</span><span class=o>)</span><span class=si>}</span><span class=s>...&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>causeMsg</span> <span class=k>=</span> <span class=n>cause</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>t</span> <span class=k>=&gt;</span> <span class=s>s&#34;\nCause: </span><span class=si>${</span><span class=n>t</span><span class=o>.</span><span class=n>getMessage</span><span class=si>}</span><span class=s>&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[ProcessingError] </span><span class=si>$message</span><span class=s> during operation: </span><span class=si>$operation$inputSnippet$causeMsg</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>object</span> <span class=nc>ProcessingError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>apply</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>operation</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>input</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>String</span><span class=o>]</span> <span class=k>=</span> <span class=nc>None</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>cause</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>Throwable</span><span class=o>]</span> <span class=k>=</span> <span class=nc>None</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span><span class=k>:</span> <span class=kt>ProcessingError</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>message</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Message cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>operation</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Operation cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>new</span> <span class=nc>ProcessingError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=n>message</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>operation</span> <span class=k>=</span> <span class=n>operation</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>input</span> <span class=k>=</span> <span class=n>input</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>cause</span> <span class=k>=</span> <span class=n>cause</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>context</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;timestamp&#34;</span> <span class=o>-&gt;</span> <span class=nc>Instant</span><span class=o>.</span><span class=n>now</span><span class=o>().</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;operation&#34;</span> <span class=o>-&gt;</span> <span class=n>operation</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>2. InvalidInputError</strong> (when user input is malformed)</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>InvalidInputError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>field</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>value</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>expected</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>String</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>expectation</span> <span class=k>=</span> <span class=n>expected</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>e</span> <span class=k>=&gt;</span> <span class=s>s&#34; Expected: </span><span class=si>$e</span><span class=s>.&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[InvalidInputError] </span><span class=si>$message\nField</span><span class=s>: </span><span class=si>$field\nValue</span><span class=s>: </span><span class=si>${</span><span class=n>value</span><span class=o>.</span><span class=n>take</span><span class=o>(</span><span class=mi>100</span><span class=o>)</span><span class=si>}$expectation</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>3. APIError</strong> (when provider API returns unexpected response)</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>APIError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>statusCode</span><span class=k>:</span> <span class=kt>Int</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>responseBody</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>String</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>body</span> <span class=k>=</span> <span class=n>responseBody</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>b</span> <span class=k>=&gt;</span> <span class=s>s&#34;\nResponse: </span><span class=si>${</span><span class=n>b</span><span class=o>.</span><span class=n>take</span><span class=o>(</span><span class=mi>500</span><span class=o>)</span><span class=si>}</span><span class=s>&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[APIError] </span><span class=si>$message</span><span class=s> (provider: </span><span class=si>$provider</span><span class=s>, status: </span><span class=si>$statusCode</span><span class=s>)</span><span class=si>$body</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>Each one follows the same pattern:</p><ul><li>Private constructor</li><li>Smart constructor with validation</li><li>Rich context</li><li>Formatted output</li><li>Proper categorization (recoverable vs non-recoverable)</li></ul><h2 id=the-refactor-in-numbers>The refactor in numbers</h2><p>Here&rsquo;s what changed in <a href=https://github.com/llm4s/llm4s/pull/197 rel="noopener external" target=_blank>PR #197</a>
+:</p><p><strong>Code metrics:</strong></p><ul><li><strong>+638 lines</strong> added</li><li><strong>-263 lines</strong> removed</li><li><strong>+375 net lines</strong> (but simpler code!)</li><li><strong>25 files</strong> changed</li></ul><p><strong>Key changes:</strong></p><p><strong>1. LLMError.scala simplified</strong></p><ul><li>Before: 178 lines (complex inheritance)</li><li>After: 52 lines (clean sealed trait)</li><li><strong>Reduction:</strong> 126 lines (71% simpler)</li></ul><p><strong>2. New error types added</strong></p><ul><li>ProcessingError.scala: 23 lines</li><li>InvalidInputError.scala: 27 lines</li><li>APIError.scala: 30 lines</li></ul><p><strong>3. Smart constructors for all errors</strong></p><ul><li>Each error got validation</li><li>Each error got context auto-population</li><li>Each error got convenience constructors</li></ul><p><strong>4. Provider updates</strong></p><ul><li>AnthropicClient: 5 lines changed (error handling)</li><li>OpenRouterClient: 4 lines changed (error handling)</li><li>Both now use new error types properly</li></ul><p><strong>5. Test coverage explosion</strong></p><ul><li>New file: LLMErrorSpec.scala (201 lines)</li><li>Test scenarios: ~25 test cases</li><li>Coverage: All error types tested</li></ul><p><strong>6. Trait hierarchy refined</strong></p><ul><li>RecoverableError: 6 lines</li><li>NonRecoverableError: 6 lines</li><li>Clear categorization enforced by types</li></ul><h2 id=the-test-suite>The test suite</h2><div class="admonition tip"><div class=admonition-title>Testing strategy</div><div class=admonition-content>Test your smart constructors thoroughly. Verify they reject invalid inputs AND accept valid ones. These tests are executable documentation showing exactly how the API works.</div></div><p>Here&rsquo;s the real quality bar: 201 lines of tests in <code>LLMErrorSpec.scala</code>.</p><p><strong>Testing smart constructors:</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>class</span> <span class=nc>LLMErrorSpec</span> <span class=k>extends</span> <span class=nc>AnyFunSuite</span> <span class=k>with</span> <span class=nc>Matchers</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: should require non-empty message&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>assertThrows</span><span class=o>[</span><span class=kt>IllegalArgumentException</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>      <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>  <span class=c1>// Invalid
+</span></span></span><span class=line><span class=cl>        <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: should require non-empty provider&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>assertThrows</span><span class=o>[</span><span class=kt>IllegalArgumentException</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>      <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Rate limited&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;&#34;</span><span class=o>,</span>  <span class=c1>// Invalid
+</span></span></span><span class=line><span class=cl>        <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: should reject negative retry duration&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>assertThrows</span><span class=o>[</span><span class=kt>IllegalArgumentException</span><span class=o>]</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>      <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Rate limited&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(-</span><span class=mf>5.</span><span class=n>seconds</span><span class=o>),</span>  <span class=c1>// Invalid
+</span></span></span><span class=line><span class=cl>        <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: should accept valid inputs&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;OpenAI rate limit exceeded&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(</span><span class=mf>60.</span><span class=n>seconds</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>message</span> <span class=n>shouldBe</span> <span class=s>&#34;OpenAI rate limit exceeded&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>provider</span> <span class=n>shouldBe</span> <span class=s>&#34;openai&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>retryAfter</span> <span class=n>shouldBe</span> <span class=nc>Some</span><span class=o>(</span><span class=mf>60.</span><span class=n>seconds</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>endpoint</span> <span class=n>shouldBe</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span> <span class=n>should</span> <span class=n>contain</span> <span class=n>key</span> <span class=s>&#34;timestamp&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span> <span class=n>should</span> <span class=n>contain</span> <span class=n>key</span> <span class=s>&#34;thread&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: should auto-populate context&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Rate limited&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span> <span class=n>should</span> <span class=n>contain</span> <span class=n>key</span> <span class=s>&#34;timestamp&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span> <span class=n>should</span> <span class=n>contain</span> <span class=n>key</span> <span class=s>&#34;thread&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span> <span class=n>should</span> <span class=n>contain</span> <span class=n>key</span> <span class=s>&#34;errorType&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span><span class=o>.</span><span class=n>context</span><span class=o>(</span><span class=s>&#34;errorType&#34;</span><span class=o>)</span> <span class=n>shouldBe</span> <span class=s>&#34;RateLimitError&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>Testing categorization:</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;RecoverableError: should include expected error types&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>rateLimitError</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>,</span> <span class=s>&#34;/v1/chat&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>timeoutError</span> <span class=k>=</span> <span class=nc>TimeoutError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=mf>30.</span><span class=n>seconds</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>networkError</span> <span class=k>=</span> <span class=nc>NetworkError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>rateLimitError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>RecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>  <span class=n>timeoutError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>RecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>  <span class=n>networkError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>RecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;NonRecoverableError: should include expected error types&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>authError</span> <span class=k>=</span> <span class=nc>AuthenticationError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>validationError</span> <span class=k>=</span> <span class=nc>ValidationError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;input&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>processingError</span> <span class=k>=</span> <span class=nc>ProcessingError</span><span class=o>(</span><span class=s>&#34;msg&#34;</span><span class=o>,</span> <span class=s>&#34;parse&#34;</span><span class=o>,</span> <span class=nc>None</span><span class=o>,</span> <span class=nc>None</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>authError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>NonRecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>  <span class=n>validationError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>NonRecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>  <span class=n>processingError</span> <span class=n>shouldBe</span> <span class=n>a</span><span class=o>[</span><span class=kt>NonRecoverableError</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p><strong>Testing formatted output:</strong></p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;RateLimitError: formatted should include all context&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>RateLimitError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;OpenAI rate limit exceeded&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>retryAfter</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(</span><span class=mf>60.</span><span class=n>seconds</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>endpoint</span> <span class=k>=</span> <span class=s>&#34;/v1/completions&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>formatted</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>formatted</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;RateLimitError&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;OpenAI rate limit exceeded&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;provider: openai&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;endpoint: /v1/completions&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;Retry after 60s&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>test</span><span class=o>(</span><span class=s>&#34;AuthenticationError: formatted should mask API key&#34;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>error</span> <span class=k>=</span> <span class=nc>AuthenticationError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Invalid API key&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>apiKeyPrefix</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(</span><span class=s>&#34;sk-proj-12345&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>formatted</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>formatted</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;AuthenticationError&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;Invalid API key&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>include</span><span class=o>(</span><span class=s>&#34;sk-proj-12345&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=n>formatted</span> <span class=n>should</span> <span class=n>not</span> <span class=n>include</span> <span class=s>&#34;sk-proj-12345678901234567890&#34;</span>  <span class=c1>// Full key never shown
+</span></span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>These tests are executable documentation. They show exactly how the API should be used.</p><h2 id=the-merge-conflict-resolution>The merge conflict resolution</h2><p>Remember: this all started because PR #180 had merge conflicts.</p><p>Rory rebased it. Here&rsquo;s what he did:</p><p><strong>1. Pulled latest main</strong></p><div class="highlight highlight-bash" data-lang=bash><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git checkout main
+</span></span><span class=line><span class=cl>git pull origin main</span></span></code></pre></td></tr></table></div></div><p><strong>2. Created new branch from my work</strong></p><div class="highlight highlight-bash" data-lang=bash><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git checkout error-hierarchy-refinement-180
+</span></span><span class=line><span class=cl>git checkout -b error-hierarchy-refinement-197</span></span></code></pre></td></tr></table></div></div><p><strong>3. Interactive rebase</strong></p><div class="highlight highlight-bash" data-lang=bash><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git rebase -i main</span></span></code></pre></td></tr></table></div></div><p><strong>4. Resolved conflicts file by file</strong></p><ul><li>Kept my smart constructors</li><li>Integrated changes from other merged PRs</li><li>Fixed import paths that changed</li><li>Updated tests for new API</li></ul><p><strong>5. Verified everything</strong></p><div class="highlight highlight-bash" data-lang=bash><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sbt compile
+</span></span><span class=line><span class=cl>sbt <span class=nb>test</span>  <span class=c1># 119 tests passing</span></span></span></code></pre></td></tr></table></div></div><p><strong>6. Opened PR #197</strong></p><p>24 hours. Zero drama. Rory handled it because he&rsquo;s done this 100 times.</p><p>That&rsquo;s mentorship. Not just code reviews. Actual help when you&rsquo;re stuck.</p><h2 id=what-we-learned-from-code-reviews>What we learned from code reviews</h2><div class=table-wrap role=region aria-label="Scrollable table"><table><thead><tr><th>Reviewer</th><th>Feedback</th><th>What changed</th><th>Impact</th></tr></thead><tbody><tr><td><strong><a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a></strong></td><td>&ldquo;Boolean flags are code smells&rdquo;</td><td>Replaced <code>isRecoverable: Boolean</code> with marker traits</td><td>Compiler enforces categorization, exhaustive pattern matching</td></tr><tr><td><strong><a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a></strong></td><td>&ldquo;Use smart constructors for validation&rdquo;</td><td>Made constructors private, added validated <code>apply</code> methods</td><td>Invalid errors impossible to create, fail fast during development</td></tr><tr><td><strong><a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a></strong></td><td>&ldquo;Context maps should be consistent&rdquo;</td><td>Auto-populate timestamp, thread, error type in smart constructors</td><td>Every error has full context, no manual logging needed</td></tr><tr><td><strong><a href=https://github.com/atulkhot rel="noopener external" target=_blank>Atul S. Khot</a></strong></td><td>&ldquo;Convenience constructors reduce boilerplate&rdquo;</td><td>Added <code>fromResponse</code>, <code>fromThrowable</code> helpers</td><td>One-line error creation instead of 10-line manual construction</td></tr><tr><td><strong><a href=https://github.com/rorygraves rel="noopener external" target=_blank>Rory Graves</a></strong></td><td>Handled merge conflicts (15 commits behind main)</td><td>Rebased PR #180 → PR #197, resolved conflicts file by file</td><td>Unblocked progress, enabled collaboration</td></tr><tr><td><strong><a href=https://github.com/rorygraves rel="noopener external" target=_blank>Rory Graves</a></strong></td><td>Reviewed smart constructor validation logic</td><td>Caught edge cases in retry duration validation</td><td>Prevented negative durations from slipping through</td></tr><tr><td><strong><a href=https://github.com/rorygraves rel="noopener external" target=_blank>Rory Graves</a></strong></td><td>Suggested better test structure</td><td>Organized tests by error type, added exhaustiveness tests</td><td>201-line test suite covering all validations</td></tr></tbody></table></div><h2 id=better-abstractions--less-code>Better abstractions = less code</h2><p>Here&rsquo;s the counter-intuitive result:</p><p>We added 638 lines. We removed 263 lines. Net: +375 lines.</p><p>But the code got <strong>simpler</strong>. How?</p><p><strong>Before:</strong> 178 lines in LLMError.scala with complex inheritance
+<strong>After:</strong> 52 lines in LLMError.scala with clean sealed trait</p><p><strong>Before:</strong> Error creation scattered across providers
+<strong>After:</strong> Smart constructors centralize validation</p><p><strong>Before:</strong> No tests for error creation
+<strong>After:</strong> 201 lines of tests covering all cases</p><p>We added structure. The structure made the code easier to understand, modify, and extend.</p><p>That&rsquo;s good design. Not fewer lines. Better abstractions.</p><h2 id=impact-on-other-work-how-error-refinement-enabled-various-assignments>Impact on other work: how error refinement enabled various assignments</h2><p>This refinement became the foundation for all contributors&rsquo; work. Here&rsquo;s how smart constructors and marker traits helped each contributor.</p><p><strong><a href=https://github.com/Vi-shub rel="noopener external" target=_blank>Shubham Vishwakarma</a>
+worked on tracing and observability work:</strong></p><p>Shubham built Langfuse integration for llm4s. Langfuse is an observability platform that tracks LLM calls, traces execution, and helps debug production issues.</p><p>The structured errors made this possible:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Shubham&#39;s tracing code
+</span></span></span><span class=line><span class=cl><span class=k>def</span> <span class=n>logError</span><span class=o>(</span><span class=n>error</span><span class=k>:</span> <span class=kt>LLMError</span><span class=o>,</span> <span class=n>trace</span><span class=k>:</span> <span class=kt>Trace</span><span class=o>)</span><span class=k>:</span> <span class=kt>Unit</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>// Every error has consistent context thanks to smart constructors
+</span></span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>errorEvent</span> <span class=k>=</span> <span class=nc>ErrorEvent</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>timestamp</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>context</span><span class=o>(</span><span class=s>&#34;timestamp&#34;</span><span class=o>),</span>  <span class=c1>// Auto-populated by smart constructor
+</span></span></span><span class=line><span class=cl>    <span class=n>thread</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>context</span><span class=o>(</span><span class=s>&#34;thread&#34;</span><span class=o>),</span>        <span class=c1>// Auto-populated
+</span></span></span><span class=line><span class=cl>    <span class=n>errorType</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>context</span><span class=o>(</span><span class=s>&#34;errorType&#34;</span><span class=o>),</span>  <span class=c1>// Auto-populated
+</span></span></span><span class=line><span class=cl>    <span class=n>message</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>formatted</span><span class=o>,</span>                <span class=c1>// Consistent formatting
+</span></span></span><span class=line><span class=cl>    <span class=n>recoverable</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>isInstanceOf</span><span class=o>[</span><span class=kt>RecoverableError</span><span class=o>],</span>  <span class=c1>// Type-based categorization
+</span></span></span><span class=line><span class=cl>    <span class=n>metadata</span> <span class=k>=</span> <span class=n>error</span><span class=o>.</span><span class=n>context</span>                 <span class=c1>// Full context map
+</span></span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>langfuse</span><span class=o>.</span><span class=n>logEvent</span><span class=o>(</span><span class=n>trace</span><span class=o>.</span><span class=n>id</span><span class=o>,</span> <span class=n>errorEvent</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>Without smart constructors? Shubham would&rsquo;ve had to handle missing context, inconsistent timestamps, and empty error messages. The auto-populated context maps mean every error that flows through Langfuse has complete information.</p><p>Real example from production: when debugging a rate limit issue, Shubham could see in Langfuse:</p><ul><li>Exact timestamp of each rate limit error</li><li>Which thread hit the limit</li><li>Which provider and endpoint</li><li>Retry-after duration</li><li>Full stack trace</li></ul><p>All because the error object had everything. No manual logging. No missing data.</p><p><strong><a href=https://github.com/AnshumanAI rel="noopener external" target=_blank>Anshuman Awasthi</a>
+worked on multimodal support:</strong></p><p>Anshuman added image generation support (DALL-E, Stable Diffusion). Images have constraints: dimensions must be specific values (256x256, 512x512, 1024x1024), formats must be PNG or JPEG, sizes must be under limits.</p><p>Smart constructors made validation clean:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Anshuman&#39;s image error types
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>InvalidImageDimensionsError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>requested</span><span class=k>:</span> <span class=o>(</span><span class=kt>Int</span><span class=o>,</span> <span class=kt>Int</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>supported</span><span class=k>:</span> <span class=kt>List</span><span class=o>[(</span><span class=kt>Int</span>, <span class=kt>Int</span><span class=o>)],</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>supportedStr</span> <span class=k>=</span> <span class=n>supported</span><span class=o>.</span><span class=n>map</span> <span class=o>{</span> <span class=k>case</span> <span class=o>(</span><span class=n>w</span><span class=o>,</span> <span class=n>h</span><span class=o>)</span> <span class=k>=&gt;</span> <span class=s>s&#34;</span><span class=si>${</span><span class=n>w</span><span class=si>}</span><span class=s>x</span><span class=si>${</span><span class=n>h</span><span class=si>}</span><span class=s>&#34;</span> <span class=o>}.</span><span class=n>mkString</span><span class=o>(</span><span class=s>&#34;, &#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=o>(</span><span class=n>w</span><span class=o>,</span> <span class=n>h</span><span class=o>)</span> <span class=k>=</span> <span class=n>requested</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[InvalidImageDimensionsError] </span><span class=si>${</span><span class=n>w</span><span class=si>}</span><span class=s>x</span><span class=si>${</span><span class=n>h</span><span class=si>}</span><span class=s> not supported by </span><span class=si>$provider</span><span class=s>. Use one of: </span><span class=si>$supportedStr</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>object</span> <span class=nc>InvalidImageDimensionsError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>apply</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>requested</span><span class=k>:</span> <span class=o>(</span><span class=kt>Int</span><span class=o>,</span> <span class=kt>Int</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>supported</span><span class=k>:</span> <span class=kt>List</span><span class=o>[(</span><span class=kt>Int</span>, <span class=kt>Int</span><span class=o>)],</span>
+</span></span><span class=line><span class=cl>    <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span><span class=k>:</span> <span class=kt>InvalidImageDimensionsError</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=o>(</span><span class=n>width</span><span class=o>,</span> <span class=n>height</span><span class=o>)</span> <span class=k>=</span> <span class=n>requested</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>width</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=n>height</span> <span class=o>&gt;</span> <span class=mi>0</span><span class=o>,</span> <span class=s>&#34;Dimensions must be positive&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>require</span><span class=o>(</span><span class=n>supported</span><span class=o>.</span><span class=n>nonEmpty</span><span class=o>,</span> <span class=s>&#34;Supported dimensions list cannot be empty&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>new</span> <span class=nc>InvalidImageDimensionsError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>message</span> <span class=k>=</span> <span class=s>s&#34;Invalid dimensions: </span><span class=si>${</span><span class=n>width</span><span class=si>}</span><span class=s>x</span><span class=si>${</span><span class=n>height</span><span class=si>}</span><span class=s>&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>requested</span> <span class=k>=</span> <span class=n>requested</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>supported</span> <span class=k>=</span> <span class=n>supported</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>provider</span> <span class=k>=</span> <span class=n>provider</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>      <span class=n>context</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;timestamp&#34;</span> <span class=o>-&gt;</span> <span class=nc>Instant</span><span class=o>.</span><span class=n>now</span><span class=o>().</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;requestedWidth&#34;</span> <span class=o>-&gt;</span> <span class=n>width</span><span class=o>.</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;requestedHeight&#34;</span> <span class=o>-&gt;</span> <span class=n>height</span><span class=o>.</span><span class=n>toString</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;provider&#34;</span> <span class=o>-&gt;</span> <span class=n>provider</span>
+</span></span><span class=line><span class=cl>      <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>When a user requests 640x480 but OpenAI only supports 256x256, 512x512, 1024x1024:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=nc>Left</span><span class=o>(</span><span class=nc>InvalidImageDimensionsError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>requested</span> <span class=k>=</span> <span class=o>(</span><span class=mi>640</span><span class=o>,</span> <span class=mi>480</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>supported</span> <span class=k>=</span> <span class=nc>List</span><span class=o>((</span><span class=mi>256</span><span class=o>,</span> <span class=mi>256</span><span class=o>),</span> <span class=o>(</span><span class=mi>512</span><span class=o>,</span> <span class=mi>512</span><span class=o>),</span> <span class=o>(</span><span class=mi>1024</span><span class=o>,</span> <span class=mi>1024</span><span class=o>)),</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span>
+</span></span><span class=line><span class=cl><span class=o>))</span>
+</span></span><span class=line><span class=cl><span class=o>//</span> <span class=nc>Error</span> <span class=n>message</span><span class=k>:</span> <span class=err>&#34;640</span><span class=kt>x480</span> <span class=kt>not</span> <span class=kt>supported</span> <span class=kt>by</span> <span class=kt>openai.</span> <span class=kt>Use</span> <span class=kt>one</span> <span class=kt>of:</span> <span class=err>256</span><span class=kt>x256</span><span class=o>,</span> <span class=mi>512</span><span class=n>x512</span><span class=o>,</span> <span class=mi>1024</span><span class=n>x1024</span><span class=err>&#34;</span></span></span></code></pre></td></tr></table></div></div><p>Clear. Actionable. The user knows exactly what to fix. This wouldn&rsquo;t be possible with generic error messages.</p><p><strong><a href=https://github.com/elvankonukseven rel="noopener external" target=_blank>Elvan Konukseven</a>
+work on agent framework:</strong></p><p>Elvan built an agent system that can retry failed operations, delegate to different tools, and recover from errors intelligently.</p><p>Marker traits made retry logic elegant:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Elvan&#39;s agent retry logic
+</span></span></span><span class=line><span class=cl><span class=k>def</span> <span class=n>executeWithRetry</span><span class=o>[</span><span class=kt>A</span><span class=o>](</span>
+</span></span><span class=line><span class=cl>  <span class=n>operation</span><span class=k>:</span> <span class=o>=&gt;</span> <span class=nc>Result</span><span class=o>[</span><span class=kt>A</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>maxRetries</span><span class=k>:</span> <span class=kt>Int</span> <span class=o>=</span> <span class=mi>3</span>
+</span></span><span class=line><span class=cl><span class=o>)</span><span class=k>:</span> <span class=kt>Result</span><span class=o>[</span><span class=kt>A</span><span class=o>]</span> <span class=k>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=nd>@tailrec</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>attempt</span><span class=o>(</span><span class=n>retriesLeft</span><span class=k>:</span> <span class=kt>Int</span><span class=o>)</span><span class=k>:</span> <span class=kt>Result</span><span class=o>[</span><span class=kt>A</span><span class=o>]</span> <span class=k>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>operation</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>case</span> <span class=nc>Right</span><span class=o>(</span><span class=n>value</span><span class=o>)</span> <span class=k>=&gt;</span> <span class=nc>Right</span><span class=o>(</span><span class=n>value</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>case</span> <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=k>:</span> <span class=kt>RecoverableError</span><span class=o>)</span> <span class=k>if</span> <span class=n>retriesLeft</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Type-based decision: retry recoverable errors
+</span></span></span><span class=line><span class=cl>        <span class=n>error</span> <span class=k>match</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>          <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>RateLimitError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// Wait for retry-after duration
+</span></span></span><span class=line><span class=cl>            <span class=k>val</span> <span class=n>waitTime</span> <span class=k>=</span> <span class=n>e</span><span class=o>.</span><span class=n>retryAfter</span><span class=o>.</span><span class=n>getOrElse</span><span class=o>(</span><span class=mf>60.</span><span class=n>seconds</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=nc>Thread</span><span class=o>.</span><span class=n>sleep</span><span class=o>(</span><span class=n>waitTime</span><span class=o>.</span><span class=n>toMillis</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>          <span class=k>case</span> <span class=n>e</span><span class=k>:</span> <span class=kt>TimeoutError</span> <span class=o>=&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// Exponential backoff for timeouts
+</span></span></span><span class=line><span class=cl>            <span class=k>val</span> <span class=n>backoff</span> <span class=k>=</span> <span class=o>(</span><span class=mi>4</span> <span class=o>-</span> <span class=n>retriesLeft</span><span class=o>)</span> <span class=o>*</span> <span class=mi>2</span>  <span class=c1>// 2s, 4s, 6s
+</span></span></span><span class=line><span class=cl>            <span class=nc>Thread</span><span class=o>.</span><span class=n>sleep</span><span class=o>(</span><span class=n>backoff</span> <span class=o>*</span> <span class=mi>1000</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>          <span class=k>case</span> <span class=k>_</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// Other recoverable errors: wait 1 second
+</span></span></span><span class=line><span class=cl>            <span class=nc>Thread</span><span class=o>.</span><span class=n>sleep</span><span class=o>(</span><span class=mi>1000</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=n>attempt</span><span class=o>(</span><span class=n>retriesLeft</span> <span class=o>-</span> <span class=mi>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>case</span> <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=k>:</span> <span class=kt>NonRecoverableError</span><span class=o>)</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Type-based decision: don&#39;t retry non-recoverable errors
+</span></span></span><span class=line><span class=cl>        <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>case</span> <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=k>:</span> <span class=kt>RecoverableError</span><span class=o>)</span> <span class=k>=&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Out of retries
+</span></span></span><span class=line><span class=cl>        <span class=nc>Left</span><span class=o>(</span><span class=n>error</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>attempt</span><span class=o>(</span><span class=n>maxRetries</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>The type system guides the retry logic. <code>RecoverableError</code> vs <code>NonRecoverableError</code> determines whether to retry. Specific error types (RateLimitError, TimeoutError) get custom retry strategies. Everything else gets a simple backoff.</p><p>Before marker traits, this would&rsquo;ve been a mess of <code>if</code> statements checking error codes or messages.</p><p><strong><a href=https://github.com/GOPITRINADH3561 rel="noopener external" target=_blank>Gopi Trinadh Maddikunta</a>
+&rsquo;s RAG pipeline:</strong></p><p>Gopi worked to build a Retrieval-Augmented Generation system: vector embeddings for documents, similarity search, context injection into prompts.</p><p>RAG has many failure points:</p><ul><li>Embedding generation can fail</li><li>Vector search can timeout</li><li>Context size can exceed limits</li><li>Documents can be malformed</li></ul><p>Smart constructors made each failure clear:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Gopi&#39;s RAG error types
+</span></span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>EmbeddingGenerationError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>document</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>cause</span><span class=k>:</span> <span class=kt>Option</span><span class=o>[</span><span class=kt>Throwable</span><span class=o>],</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>RecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>docSnippet</span> <span class=k>=</span> <span class=n>document</span><span class=o>.</span><span class=n>take</span><span class=o>(</span><span class=mi>100</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>causeMsg</span> <span class=k>=</span> <span class=n>cause</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>t</span> <span class=k>=&gt;</span> <span class=s>s&#34; Cause: </span><span class=si>${</span><span class=n>t</span><span class=o>.</span><span class=n>getMessage</span><span class=si>}</span><span class=s>&#34;</span><span class=o>).</span><span class=n>getOrElse</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[EmbeddingGenerationError] Failed to generate embedding for document: </span><span class=si>$docSnippet</span><span class=s>...</span><span class=si>$causeMsg</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>final</span> <span class=k>case</span> <span class=k>class</span> <span class=nc>ContextSizeExceededError</span> <span class=k>private</span> <span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>requestedTokens</span><span class=k>:</span> <span class=kt>Int</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>maxTokens</span><span class=k>:</span> <span class=kt>Int</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>context</span><span class=k>:</span> <span class=kt>Map</span><span class=o>[</span><span class=kt>String</span>, <span class=kt>String</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>)</span> <span class=k>extends</span> <span class=nc>LLMError</span> <span class=k>with</span> <span class=nc>NonRecoverableError</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>  <span class=k>def</span> <span class=n>formatted</span><span class=k>:</span> <span class=kt>String</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=s>s&#34;[ContextSizeExceededError] Requested </span><span class=si>$requestedTokens</span><span class=s> tokens exceeds </span><span class=si>$provider</span><span class=s> limit of </span><span class=si>$maxTokens</span><span class=s>&#34;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span></span></span></code></pre></td></tr></table></div></div><p>When Gopi&rsquo;s RAG pipeline fails, the error explains exactly what went wrong:</p><div class="highlight highlight-scala" data-lang=scala><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// Embedding generation failed
+</span></span></span><span class=line><span class=cl><span class=nc>Left</span><span class=o>(</span><span class=nc>EmbeddingGenerationError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Embedding API returned 500&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>document</span> <span class=k>=</span> <span class=s>&#34;...&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;openai&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>cause</span> <span class=k>=</span> <span class=nc>Some</span><span class=o>(</span><span class=nc>IOException</span><span class=o>(</span><span class=s>&#34;Connection reset&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl><span class=o>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Too much context
+</span></span></span><span class=line><span class=cl><span class=nc>Left</span><span class=o>(</span><span class=nc>ContextSizeExceededError</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>message</span> <span class=k>=</span> <span class=s>&#34;Context too large&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>requestedTokens</span> <span class=k>=</span> <span class=mi>150000</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>maxTokens</span> <span class=k>=</span> <span class=mi>128000</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>provider</span> <span class=k>=</span> <span class=s>&#34;gpt-4&#34;</span>
+</span></span><span class=line><span class=cl><span class=o>))</span></span></span></code></pre></td></tr></table></div></div><p>Users don&rsquo;t see &ldquo;something went wrong.&rdquo; They see &ldquo;Requested 150000 tokens exceeds gpt-4 limit of 128000.&rdquo; They know to reduce context size or switch models.</p><p><strong>The common thread:</strong></p><p>All contributors built on the error hierarchy we created in <a href=https://github.com/llm4s/llm4s/pull/197 rel="noopener external" target=_blank>PR #197</a>
+. They didn&rsquo;t have to think about:</p><ul><li>How to structure errors</li><li>How to validate error data</li><li>How to categorize recoverable vs non-recoverable</li><li>How to format error messages</li><li>How to populate context</li></ul><p>The patterns were already there. They just extended them for their specific domains. That&rsquo;s good infrastructure-it enables future work without getting in the way.</p><h2 id=try-it-yourself>Try it yourself</h2><p>The code is in <a href=https://github.com/llm4s/llm4s rel="noopener external" target=_blank>github.com/llm4s/llm4s</a>
+.</p><p><a href=https://github.com/llm4s/llm4s/pull/197 rel="noopener external" target=_blank>PR #197</a>
+: Smart constructors and error refinement</p><p>Error hierarchy: <code>src/main/scala/org/llm4s/error/</code></p><p>Tests: <code>src/test/scala/org/llm4s/error/LLMErrorSpec.scala</code></p><p>Want to use <a href=https://github.com/llm4s/llm4s rel="noopener external" target=_blank>llm4s</a>
+?</p><div class="highlight highlight-bash" data-lang=bash><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sbt new llm4s/llm4s.g8
+</span></span><span class=line><span class=cl><span class=nb>cd</span> my-llm-app
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>OPENAI_API_KEY</span><span class=o>=</span>sk-...
+</span></span><span class=line><span class=cl>sbt run</span></span></code></pre></td></tr></table></div></div><p>The errors are already integrated. You&rsquo;ll get structured error handling out of the box.</p><h2 id=whats-next>What&rsquo;s next</h2><p>We had structured errors. We had smart constructors. But across the <a href=https://github.com/llm4s/llm4s rel="noopener external" target=_blank>llm4s</a>
+codebase, we still had 47 try-catch blocks.</p><p>Next post: How we eliminated every single one using the Safety refactor (<a href=https://github.com/llm4s/llm4s/pull/260 rel="noopener external" target=_blank>PR #260</a>
+). That&rsquo;s where we fixed the P1 streaming bug and unified error handling across 8 LLM providers.</p><hr><p><strong>Series Navigation:</strong>
+<a href=/2025/07/developer-experience-how-we-turned-20-minute-llm4s-setup-into-60-seconds-today/>← Previous: Developer experience with llm4s.g8</a>
+| <a href=/2025/08/type-system-upgrades-the-asistant-typo-that-compiled-and-ran-in-production/>Next: Type system upgrades →</a></p><p><em>This is part 3 of a 6-part series on building type-safe LLM infrastructure in Scala. <a href=https://github.com/llm4s/llm4s rel="noopener external" target=_blank>llm4s</a>
+is maintained by <a href=https://github.com/rorygraves rel="noopener external" target=_blank>Rory Graves</a>
+and <a href=https://github.com/kannupriyakalra rel="noopener external" target=_blank>Kannupriya Kalra</a>
+. Join the community at <a href=https://discord.gg/4uvTPn6qww rel="noopener external" target=_blank>discord.gg/4uvTPn6qww</a>
+.</em></p></div><nav class="hide-on-mobile section-nav"><nav id=TableOfContents><ol><li><a href=#what-needed-fixing>What needed fixing</a></li><li><a href=#the-smart-constructor-pattern-making-invalid-states-impossible>The smart constructor pattern: making invalid states impossible</a></li><li><a href=#eliminating-boolean-flags-marker-traits-for-compile-time-safety>Eliminating boolean flags: marker traits for compile-time safety</a></li><li><a href=#the-new-error-types>The new error types</a></li><li><a href=#the-refactor-in-numbers>The refactor in numbers</a></li><li><a href=#the-test-suite>The test suite</a></li><li><a href=#the-merge-conflict-resolution>The merge conflict resolution</a></li><li><a href=#what-we-learned-from-code-reviews>What we learned from code reviews</a></li><li><a href=#better-abstractions--less-code>Better abstractions = less code</a></li><li><a href=#impact-on-other-work-how-error-refinement-enabled-various-assignments>Impact on other work: how error refinement enabled various assignments</a></li><li><a href=#try-it-yourself>Try it yourself</a></li><li><a href=#whats-next>What&rsquo;s next</a></li></ol></nav></nav></div><div class=post><hr class=footer-separator><div class=tags><ul class=flat><li class=tag-li><a href=/tags/scala/>scala</a></li><li class=tag-li><a href=/tags/error-handling/>error-handling</a></li><li class=tag-li><a href=/tags/smart-constructors/>smart-constructors</a></li><li class=tag-li><a href=/tags/refactoring/>refactoring</a></li><li class=tag-li><a href=/tags/llm4s/>llm4s</a></li><li class=tag-li><a href=/tags/functional-programming/>functional-programming</a></li><li class=tag-li><a href=/tags/code-quality/>code-quality</a></li><li class=tag-li><a href=/tags/testing/>testing</a></li><li class=tag-li><a href=/tags/llm/>llm</a></li></ul></div><aside class=social-share aria-label="Share this article"><h3>Share This Article</h3><div class=social-share-buttons><button type=button class="share-button share-copy" data-copy-url=https://vitthalmirji.com/2025/08/error-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod/ aria-label="Copy link to clipboard" title="Copy link">
+<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M16 1H4c-1.1.0-2 .9-2 2v12h2V3h12V1zm3 4H8c-1.1.0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1.0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+<span>Copy Link</span>
+</button><a href="https://twitter.com/intent/tweet?text=Error+hierarchy+refinement%3A+smart+constructors+and+the+code+we+deleted+in+prod&url=https%3A%2F%2Fvitthalmirji.com%2F2025%2F08%2Ferror-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod%2F&hashtags=Scala%2CErrorhandling%2CSmartconstructors" target=_blank rel="noopener noreferrer" class="share-button share-twitter" aria-label="Post on X (Twitter)" title="Post on X (Twitter)">
+<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958.0 002.163-2.723c-.951.555-2.005.959-3.127 1.184A4.92 4.92.0 0011.78 8.288C7.69 8.095 4.067 6.13 1.64 3.162A4.822 4.822.0 00.974 5.637c0 1.71.87 3.213 2.188 4.096A4.904 4.904.0 01.934 9.117v.06a4.923 4.923.0 003.946 4.827 4.996 4.996.0 01-2.212.085 4.936 4.936.0 004.604 3.417A9.867 9.867.0 011.17 19.611c-.39.0-.779-.023-1.17-.067a13.995 13.995.0 007.557 2.209c9.053.0 13.998-7.496 13.998-13.985.0-.21.0-.42-.015-.63A9.935 9.935.0 0024 4.59z"/></svg>
+<span>Tweet</span>
+</a><a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fvitthalmirji.com%2F2025%2F08%2Ferror-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod%2F" target=_blank rel="noopener noreferrer" class="share-button share-linkedin" aria-label="Share on LinkedIn" title="Share on LinkedIn"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853.0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601.0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144.0-2.063-.926-2.063-2.065.0-1.138.92-2.063 2.063-2.063 1.14.0 2.064.925 2.064 2.063.0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225.0H1.771C.792.0.0.774.0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2.0 22.222.0h.003z"/></svg>
+<span>Share</span>
+</a><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fvitthalmirji.com%2F2025%2F08%2Ferror-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod%2F" target=_blank rel="noopener noreferrer" class="share-button share-facebook" aria-label="Share on Facebook" title="Share on Facebook"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312.0 2.686.235 2.686.235v2.953H15.83c-1.491.0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+<span>Share</span>
+</a><a href="https://reddit.com/submit?url=https%3A%2F%2Fvitthalmirji.com%2F2025%2F08%2Ferror-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod%2F&title=Error+hierarchy+refinement%3A+smart+constructors+and+the+code+we+deleted+in+prod" target=_blank rel="noopener noreferrer" class="share-button share-reddit" aria-label="Share on Reddit" title="Share on Reddit"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688.0 1.25.561 1.25 1.249a1.25 1.25.0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968.0 1.754.786 1.754 1.754.0.716-.435 1.333-1.01 1.614a3.111 3.111.0 01.042.52c0 2.694-3.13 4.87-7.004 4.87s-7.004-2.176-7.004-4.87c0-.183.015-.366.043-.534A1.748 1.748.0 014.028 12c0-.968.786-1.754 1.754-1.754.463.0.898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342.0 01.14-.197.35.35.0 01.238-.042l2.906.617a1.214 1.214.0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687.0 1.248-.561 1.248-1.249S9.937 12 9.249 12zm5.5.0c-.687.0-1.248.561-1.248 1.25.0.687.561 1.248 1.249 1.248S16 13.937 16 13.249c0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327.0 00-.231.094.33.33.0 000 .463c.842.842 2.484.913 2.961.913s2.105-.056 2.961-.913a.361.361.0 00.029-.463.33.33.0 00-.464.0c-.547.533-1.684.73-2.512.73-.828.0-1.979-.196-2.512-.73a.326.326.0 00-.232-.095z"/></svg>
+<span>Reddit</span>
+</a><a href="https://www.reddit.com/r/scala/submit?url=https%3A%2F%2Fvitthalmirji.com%2F2025%2F08%2Ferror-hierarchy-refinement-smart-constructors-and-the-code-we-deleted-in-prod%2F&title=Error+hierarchy+refinement%3A+smart+constructors+and+the+code+we+deleted+in+prod" target=_blank rel="noopener noreferrer" class="share-button share-reddit-scala" aria-label="Share on Reddit/scala" title="Share on Reddit/scala"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0zm5.01 4.744c.688.0 1.25.561 1.25 1.249a1.25 1.25.0 01-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968.0 1.754.786 1.754 1.754.0.716-.435 1.333-1.01 1.614a3.111 3.111.0 01.042.52c0 2.694-3.13 4.87-7.004 4.87s-7.004-2.176-7.004-4.87c0-.183.015-.366.043-.534A1.748 1.748.0 014.028 12c0-.968.786-1.754 1.754-1.754.463.0.898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342.0 01.14-.197.35.35.0 01.238-.042l2.906.617a1.214 1.214.0 011.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687.0 1.248-.561 1.248-1.249S9.937 12 9.249 12zm5.5.0c-.687.0-1.248.561-1.248 1.25.0.687.561 1.248 1.249 1.248S16 13.937 16 13.249c0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327.0 00-.231.094.33.33.0 000 .463c.842.842 2.484.913 2.961.913s2.105-.056 2.961-.913a.361.361.0 00.029-.463.33.33.0 00-.464.0c-.547.533-1.684.73-2.512.73-.828.0-1.979-.196-2.512-.73a.326.326.0 00-.232-.095z"/></svg>
+<span>Reddit/scala</span></a></div></aside><div class=author-bio itemscope itemtype=https://schema.org/Person><div class=author-bio-header><img src=/images/authors/vitthal.jpg alt="Vitthal Mirji profile photo" class=author-avatar itemprop=image width=80 height=80 loading=lazy><div class=author-bio-info><h4 class=author-name itemprop=name>Vitthal Mirji</h4><p class=author-position><span itemprop=jobTitle>Engineer building platforms - Data, Software & OSS</span></p><p class=author-location><i data-feather=map-pin aria-hidden=true></i>
+<span itemprop=address>Stuttgart, 🇩🇪Germany</span></p></div></div><p class=author-bio-text itemprop=description>Data, Software & OSS | Staff Software Engineer | Sharing insights on Data Engineering, Functional programming, Scala, Rust, Open source, and life.</p><div class=author-social-links><a href=https://twitter.com/whoami_vim target=_blank rel="noopener noreferrer me" class=author-social-link aria-label="Twitter profile" itemprop=sameAs><i data-feather=twitter aria-hidden=true></i>
+<span>Twitter</span>
+</a><a href=https://github.com/vim89 target=_blank rel="noopener noreferrer me" class=author-social-link aria-label="GitHub profile" itemprop=sameAs><i data-feather=github aria-hidden=true></i>
+<span>GitHub</span>
+</a><a href=https://www.linkedin.com/in/vitthal10 target=_blank rel="noopener noreferrer me" class=author-social-link aria-label="LinkedIn profile" itemprop=sameAs><i data-feather=linkedin aria-hidden=true></i>
+<span>LinkedIn</span>
+</a><a href=https://vitthalmirji.com target=_blank rel="noopener noreferrer me" class=author-social-link aria-label=Website itemprop=url><i data-feather=globe aria-hidden=true></i>
+<span>Website</span></a></div><div class=author-expertise><h5>Expertise</h5><ul class=expertise-tags><li><span class=expertise-tag>Data Engineering</span></li><li><span class=expertise-tag>Scala</span></li><li><span class=expertise-tag>Apache Spark</span></li><li><span class=expertise-tag>Rust</span></li><li><span class=expertise-tag>Functional Programming</span></li><li><span class=expertise-tag>Cloud Architecture</span></li><li><span class=expertise-tag>GCP</span></li><li><span class=expertise-tag>Big Data</span></li></ul></div><meta itemprop=name content="Vitthal Mirji"></div><aside class=related-content-advanced aria-label="Related articles"><h3>Related Articles</h3><ul class=related-articles-list><li class=related-article-item><article class=related-article><h4 class=related-article-title><a href=/2025/08/production-error-handling-when-our-llm-pipeline-threw-unknown-error-in-logs/>Production error handling: When our LLM pipeline threw "Unknown error" in logs</a></h4><p class=related-article-description>Stop runtime exceptions from crashing LLM pipelines. Build type-safe error hierarchies with Scala Either, ADTs, and …</p><div class=related-article-meta><time datetime=2025-08-01 class=related-article-date>Aug 1, 2025
+</time><span class="match-strength match-high" title="High relevance (322% match)"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5 5.5.5-4 4 1 5.5-5-2.5L3 16l1-5.5-4-4L5.5 6z"/></svg>
+High Match</span></div><div class=related-article-tags><span class=related-tag>scala</span><span class=related-tag>error-handling</span><span class=related-tag>type-safety</span></div></article></li><li class=related-article-item><article class=related-article><h4 class=related-article-title><a href=/2025/09/safety-refactor-the-p1-streaming-bug-wrong-errors-and-47-try-catch-blocks/>Safety refactor: The P1 streaming bug, wrong errors, and 47 try-catch blocks</a></h4><p class=related-article-description>Stop swallowing errors in try-catch blocks. Build safety utilities that preserve context, enable composition, and make …</p><div class=related-article-meta><time datetime=2025-09-21 class=related-article-date>Sep 21, 2025
+</time><span class="match-strength match-high" title="High relevance (316% match)"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5 5.5.5-4 4 1 5.5-5-2.5L3 16l1-5.5-4-4L5.5 6z"/></svg>
+High Match</span></div><div class=related-article-tags><span class=related-tag>scala</span><span class=related-tag>safety</span><span class=related-tag>error-handling</span></div></article></li><li class=related-article-item><article class=related-article><h4 class=related-article-title><a href=/2025/08/type-system-upgrades-the-asistant-typo-that-compiled-and-ran-in-production/>Type system upgrades: The 'asistant' typo that compiled and ran in production</a></h4><p class=related-article-description>Stop typos from reaching production. Replace string constants with enums, add type classes for effect polymorphism, and …</p><div class=related-article-meta><time datetime=2025-08-31 class=related-article-date>Aug 31, 2025
+</time><span class="match-strength match-high" title="High relevance (305% match)"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5 5.5.5-4 4 1 5.5-5-2.5L3 16l1-5.5-4-4L5.5 6z"/></svg>
+High Match</span></div><div class=related-article-tags><span class=related-tag>scala</span><span class=related-tag>type-safety</span><span class=related-tag>enums</span></div></article></li><li class=related-article-item><article class=related-article><h4 class=related-article-title><a href=/2025/10/five-production-patterns-from-building-llm4s-what-actually-works-in-prod-today/>Five production patterns from building llm4s: what actually works in prod today</a></h4><p class=related-article-description>After five major contributions across error handling, type safety, and safety utilities, here are the production …</p><div class=related-article-meta><time datetime=2025-10-15 class=related-article-date>Oct 15, 2025
+</time><span class="match-strength match-high" title="High relevance (283% match)"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5 5.5.5-4 4 1 5.5-5-2.5L3 16l1-5.5-4-4L5.5 6z"/></svg>
+High Match</span></div><div class=related-article-tags><span class=related-tag>Scala</span><span class=related-tag>Error Handling</span><span class=related-tag>Type Safety</span></div></article></li><li class=related-article-item><article class=related-article><h4 class=related-article-title><a href=/2025/10/llm4s-type-safe-llm-infra-for-scala-that-makes-runtime-errors-compile-time/>llm4s: Type-safe LLM infra for Scala that makes runtime errors compile-time</a></h4><p class=related-article-description>Deep-dive into llm4s, a production-grade Scala framework for building LLM applications. From type-safe error handling to …</p><div class=related-article-meta><time datetime=2025-10-31 class=related-article-date>Oct 31, 2025
+</time><span class="match-strength match-high" title="High relevance (280% match)"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2.5 5 5.5.5-4 4 1 5.5-5-2.5L3 16l1-5.5-4-4L5.5 6z"/></svg>
+High Match</span></div><div class=related-article-tags><span class=related-tag>Scala</span><span class=related-tag>llm4s</span><span class=related-tag>LLM</span></div></article></li></ul></aside><div class=back><a href=https://github.com/vim89/vitthalmirji.com/blob/master/content/posts/2025/08/llm4s-error-hierarchy-refinement/index.md title=github><i data-feather=github></i> Edit this on GitHub</a></div><div class=back><a href=https://vitthalmirji.com/><span aria-hidden=true>← Back</span></a></div><div class=back>Next time, we'll talk about <i>"The Zen of Debugging: When println() is Your Only Friend"</i></div><nav class=series-navigation aria-label="Series navigation"><div class=series-header><h3 class=series-title><a href=/series/llm4s-building-type-safe-llm-infrastructure-for-scala/>Llm4s: Building Type-Safe LLM Infrastructure for Scala</a></h3><p class=series-progress>Part 3 of 7</p></div><div class=series-controls><a class=series-prev href=/2025/08/production-error-handling-when-our-llm-pipeline-threw-unknown-error-in-logs/>← Production error handling: When our LLM pipeline threw "Unknown error" in logs</a><a class=series-next href=/2025/08/type-system-upgrades-the-asistant-typo-that-compiled-and-ran-in-production/>Type system upgrades: The 'asistant' typo that compiled and ran in production →</a></div></nav><section class=comments><script src=https://giscus.app/client.js data-cfasync=false data-repo=vim89/vim89 data-repo-id=R_kgDONdMkeg data-category=General data-category-id=DIC_kwDONdMkes4DFBmI data-mapping=pathname data-strict=0 data-reactions-enabled=1 data-emit-metadata=0 data-input-position=bottom data-theme=preferred_color_scheme data-lang=en crossorigin=anonymous async></script><noscript>Please enable JavaScript to view comments.</noscript></section></div></main></div><footer class=site-footer><svg style="display:none" aria-hidden="true"><symbol id="icon-github" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37.0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44.0 0020 4.77 5.07 5.07.0 0019.91 1S18.73.65 16 2.48a13.38 13.38.0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07.0 005 4.77 5.44 5.44.0 003.5 8.55c0 5.42 3.3 6.61 6.44 7A3.37 3.37.0 009 18.13V22"/></symbol><symbol id="icon-twitter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9.0 01-3.14 1.53 4.48 4.48.0 00-7.86 3v1A10.66 10.66.0 013 4s-4 9 5 13a11.64 11.64.0 01-7 2c9 5 20 0 20-11.5a4.5 4.5.0 00-.08-.83A7.72 7.72.0 0023 3z"/></symbol><symbol id="icon-linkedin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></symbol><symbol id="icon-rss" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 019 9"/><path d="M4 4a16 16 0 0116 16"/><circle cx="5" cy="19" r="1"/></symbol><symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol><symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></symbol></svg><footer class="footer wrapper" role=contentinfo><nav class=nav aria-label="Footer navigation"><div>2025</div></nav></footer></footer><script>const enableTruncate=!0;let filterDepth=!1;const MAX_DEPTH=9;window.addEventListener("DOMContentLoaded",()=>{const t=new IntersectionObserver(e=>{e.reverse().forEach(e=>{const n=e.target.getAttribute("id");if(e.intersectionRatio<=0)return;const t=document.querySelectorAll(`nav li a[href="#${n}"]`);if(!t)return;t.forEach(e=>{if(!e)return;const t=getDepth(e.parentElement);if(filterDepth&&t>MAX_DEPTH)return;clearActiveStatesInTableOfContents(),e.parentElement.classList.add("active"),centerActiveIntoView(e),updateTocProgress()})})});document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]").forEach(e=>{t.observe(e)});const e=document.querySelector(".section-nav")||document.querySelector("aside.toc");if(e&&e.addEventListener("click",e=>{const t=e.target.closest('a[href^="#"]');if(!t)return;const n=document.getElementById(t.getAttribute("href").slice(1));if(!n)return;e.preventDefault(),n.scrollIntoView({behavior:"smooth",block:"start"})}),e&&!e.querySelector(".toc-progress")){const t=document.createElement("div");t.className="toc-progress",e.appendChild(t),updateTocProgress(),window.addEventListener("scroll",updateTocProgress,{passive:!0})}});function isVisible(e){if(!(e instanceof Element))return!1;const o=getComputedStyle(e);if(o.display==="none")return!1;if(o.visibility!=="visible")return!1;if(o.opacity<.1)return!1;const t=e.getBoundingClientRect();if(t.width===0&&t.height===0)return!1;const n={x:t.left+t.width/2,y:t.top+t.height/2};if(n.x<0)return!1;if(n.x>(document.documentElement.clientWidth||window.innerWidth))return!1;if(n.y<0)return!1;if(n.y>(document.documentElement.clientHeight||window.innerHeight))return!1;let s=document.elementFromPoint(n.x,n.y);for(;s;){if(s===e)return!0;s=s.parentNode}return!1}function clearActiveStatesInTableOfContents(){document.querySelectorAll("nav li").forEach(e=>{e.classList.remove("active")})}function getDepth(e){let t=0;for(;e&&e.tagName.toLowerCase()!=="ul";)t++,e=e.parentElement;return t}function navItems(){const e=document.querySelectorAll("nav nav li a");return Array.from(e).filter(e=>e.href&&e.hash&&e.hash.startsWith("#"))}function lastItemInNavBarVisible(){const e=navItems();return e.length===0||isVisible(e[e.length-1])}document.addEventListener("DOMContentLoaded",()=>{if(!enableTruncate)return;lastItemInNavBarVisible()||(filterDepth=!0,navItems().forEach(e=>{const t=getDepth(e.parentElement);t>MAX_DEPTH&&e.parentElement.classList.add("depth-nested")}))});function centerActiveIntoView(e){const t=document.querySelector(".section-nav");if(!t)return;const n=e.closest("li");if(!n)return;const s=n.getBoundingClientRect(),o=t.getBoundingClientRect(),i=s.top-(o.top+o.height/2)+s.height/2;t.scrollBy({top:i,behavior:"smooth"})}function updateTocProgress(){const t=document.querySelector(".section-nav"),n=t&&t.querySelector(".toc-progress");if(!t||!n)return;const e=Array.from(document.querySelectorAll("h1[id],h2[id],h3[id],h4[id]"));if(e.length===0){n.style.height="0%";return}const o=window.innerHeight*.35;let s=0;for(let t=0;t<e.length;t++)if(e[t].getBoundingClientRect().top-o<=0)s=t;else break;const i=s/Math.max(1,e.length-1)*100;n.style.height=i+"%"}</script></body></html>

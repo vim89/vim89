@@ -1,0 +1,1245 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/big-data/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/big-data/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Is Hadoop dead? Cloudera-Hortonworks, MapR layoffs, and Hadoop 3.0 reality now</title><link>https://vitthalmirji.com/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/</link><guid isPermaLink="true">https://vitthalmirji.com/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/</guid><pubDate>Mon, 01 Jul 2019 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>aws</category><category>azure</category><category>big data</category><category>cloud</category><category>google cloud</category><category>hive</category><category>linux</category><category>programming</category><category>spark</category><description>Deep-dive into Hadoop's state in 2019: Cloudera+Hortonworks merger, MapR struggles, and what Hadoop 3.0 delivers (GPU scheduling, Docker, Hive ACID). Learn why AWS/GCP/Azure dominate but Hadoop is evolving into hybrid cloud with Spark.</description><content:encoded><![CDATA[<p>You know that question everyone&rsquo;s been asking since 2016: &ldquo;Is Hadoop dead?&rdquo;</p>
+<p>Fair question. Look at the headlines:</p>
+<ul>
+<li><strong>2019:</strong> Cloudera and Hortonworks merge (consolidation usually means struggling)</li>
+<li><strong>2019:</strong> MapR cuts jobs, announces intent to sell company</li>
+<li><strong>Every quarter:</strong> AWS, Azure, GCP revenue skywards</li>
+</ul>
+<p>Meanwhile, your on-premise Hadoop cluster sits there, maintained by three overworked engineers, running batch jobs that could probably run on BigQuery for $50/month.</p>
+<p>But here&rsquo;s the thing: While everyone was writing Hadoop&rsquo;s obituary, Hadoop 3.0 shipped GPU scheduling, Docker containers, ACID transactions in Hive, and native S3 support. Spark became cloud-agnostic. Hive got 10x faster with LLAP.</p>
+<p>This post looks at what actually happened to Hadoop in 2019 - not the hype, not the headlines, but the technical reality. Is it dead? Evolving? Worth investing in?</p>
+<p>Spoiler: It&rsquo;s complicated. The answer depends on whether you value cloud lock-in or portable code.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s why the &ldquo;Is Hadoop dead?&rdquo; question actually matters:</p>
+<p><strong>If Hadoop is dead</strong>, your organization should:</p>
+<ul>
+<li>Stop investing in on-premise clusters</li>
+<li>Migrate to BigQuery/Redshift/Synapse</li>
+<li>Retrain engineers on cloud-native tools</li>
+<li>Accept vendor lock-in as the price of convenience</li>
+</ul>
+<p><strong>If Hadoop is evolving</strong>, you should:</p>
+<ul>
+<li>Invest in Spark (it runs everywhere)</li>
+<li>Consider hybrid cloud approaches</li>
+<li>Leverage portable code across providers</li>
+<li>Maintain independence from single vendors</li>
+</ul>
+<p>The difference? Potentially millions in migration costs and strategic lock-in to a single cloud provider.</p>
+<p>I started with Hadoop around 2014/2015. Back then, it had things other platforms lacked:</p>
+<ul>
+<li><strong>Open source</strong> - No vendor lock-in</li>
+<li><strong>Beyond MapReduce</strong> - Spark, Hive, real-time with Storm</li>
+<li><strong>Runs on anything</strong> - Old hardware, laptops (my 2013 MacBook Pro still runs local HDFS/YARN/Hive)</li>
+<li><strong>Enterprise support</strong> - Hortonworks HDP, Cloudera CDH, MapR</li>
+</ul>
+<p>But it wasn&rsquo;t easy. Configuration, performance tuning, tool selection, ops, and development required deep expertise. One wrong config could tank cluster performance.</p>
+<p>Then cloud providers showed up with managed services. Click a button, get a cluster. No ops team needed.</p>
+<p>So what happened? Let&rsquo;s look at the data.</p>
+<hr>
+<h2 id="part-1---the-business-reality-mergers-and-struggles">Part 1 - The business reality: mergers and struggles</h2>
+<p>Apache Hadoop, the open source framework for “reliable, scalable, distributed computing”, first saw the light of the day
+in 2006, based on Google’s &ldquo;MapReduce: Simplified Data Processing on Large Clusters&rdquo; whitepaper (
+available <a href="http://ai.google/research/pubs/pub62" rel="noopener external" target="_blank">here</a>
+) from 2003. Over the coming years, more and more tools (such as
+Pig by Yahoo) emerge, the major distributions from Hortonworks, Cloudera, and MapR are being released, performance
+records are being made (2008/2009), SQL-like support by Apache Hive becomes available in 2010 and schedulers like YARN
+become popular (2012/2013).</p>
+<p>Around 2014/2015, Hadoop finally had a lot of things going for it which other platforms lacked - it was Open Source,
+already moved past the tedious limitations of Java-based Map/Reduce programs, supported both Batch and Real-Time
+applications, ran on pretty much every old piece of hardware you could find, could be run by either setting it up
+yourself (my 2013 Macbook Pro still has a local HDFS, YARN, and Hive instance running) or as enterprise level solution
+by Hortonworks’ HDP, Cloudera’s CDH, or MapR. It enabled companies to ingest, store, and analyze any data and was used
+heavily in production across major companies.</p>
+<p>A lot of additional tools supported the framework - the below tables gives a rough overview of components we will
+mention in this article:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Tool</th>
+					<th>Description</th>
+					<th>First Release</th>
+					<th>Latest Release</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><a href="https://hadoop.apache.org" rel="noopener external" target="_blank">YARN</a>
+</td>
+					<td>Resource Manager &amp; Scheduler</td>
+					<td>2006</td>
+					<td>2019-02-06</td>
+			</tr>
+			<tr>
+					<td><a href="https://hbase.apache.org/" rel="noopener external" target="_blank">Hbase</a>
+</td>
+					<td>no-SQL database</td>
+					<td>2008</td>
+					<td>2019-06-11</td>
+			</tr>
+			<tr>
+					<td><a href="https://hive.apache.org/" rel="noopener external" target="_blank">Hive</a>
+</td>
+					<td>Data Warehouse and SQL abstraction</td>
+					<td>2010</td>
+					<td>2019-05-14</td>
+			</tr>
+			<tr>
+					<td><a href="http://sqoop.apache.org" rel="noopener external" target="_blank">Sqoop</a>
+</td>
+					<td>RDMBS ingestion pipeline</td>
+					<td>2009</td>
+					<td>2019-01-18</td>
+			</tr>
+			<tr>
+					<td><a href="https://spark.apache.org" rel="noopener external" target="_blank">Spark</a>
+</td>
+					<td>Data processing framework and compute engine</td>
+					<td>2014</td>
+					<td>2019-05-08</td>
+			</tr>
+			<tr>
+					<td>Tez</td>
+					<td>Execution frameworks for DAGS on Hive or Pig</td>
+					<td>2014</td>
+					<td>2019-03-29</td>
+			</tr>
+	</tbody>
+</table>
+<p>As you can see, all recent releases where within the last 6 months (at the time of writing).</p>
+<p>Things were not without their drawbacks, however - like most Open Source software, especially when bundled in a modular
+way, running on dozens, hundreds, or thousands of machines is not without challenges. Configuration, performance
+optimization, tool selection, maintenance, operations, and development require deep expertise to make any Hadoop
+installation run smoothly, as one wrong configuration setting can severely degrade the performance of the overall
+system. At the same time, this level of granular control also allows for an unmatched level of flexibility and
+adaptability of your tools.</p>
+<h2 id="the-emerging-cloud-market">The emerging Cloud Market</h2>
+<p><picture><source type="image/avif" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/my_sky_hu_cb2459757cd74ebb.avif 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/my_sky_hu_94d18a496a541a77.webp 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/my_sky_hu_4c4e182965b672c4.png 400w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/my_sky_hu_5ed16e91a2b91aa.jpg" alt="" loading="lazy" width="800" height="285">
+    </picture></p>
+<p><a href="https://xkcd.com/1117/" rel="noopener external" target="_blank">https://xkcd.com/1117/</a>
+, CC BY-NC 2.5</p>
+<p>However, over the past years, more and more companies find their benefits in the major Cloud providers - AWS, Google
+Cloud, and Microsoft Azure. Their benefits are many - a massively reduced need for local infrastructure and
+administration, flexible scaling from a couple of GB to TB of memory, storage, and CPU, a flexible bill-by-usage model,
+out-of-the-box machine learning models, and integration into other, non-”Big Data” tools.</p>
+<p>Companies were able to move from needing to maintain expensive, bare-metal boxes in-house that may run idle for 80% of
+the day and cause resource constraints and bottlenecks during scheduled batch-runs, limited by tools the organization
+had Subject Matter Experts or external support for, to reserving resources for massive jobs that can handle terabytes of
+data in minutes or seconds for a couple of $.</p>
+<p>So the question stands - what has happened with Hadoop since then - and is there still a need for it?</p>
+<h2 id="a-look-at-the-overall-ecosystems-changes">A look at the overall ecosystem’s changes</h2>
+<p>Before we dig into the individual components, let’s briefly talk about what happened from a bird’s-eye view.</p>
+<p>In early 2019, two of the major providers (Hortonworks and Cloudera) announced a
+massive <a href="http://hortonworks.com/blog/welcome-brand-new-cloudera/" rel="noopener external" target="_blank">merger</a>
+ of the two companies. The step made sense for
+any Software Engineer familiar with the technology - both companies worked on an almost identical tech stack, both were
+heavily involved in Open Source software, both offered a supported or managed Hadoop stack with convenient
+administration and a multitude of available tools. Cloudera’s focus on Machine Learning and Hortonwork’s focus on data
+ingestion and aggregation also provide potential for powerful synergies. Their press release
+mentions $760M in TTM revenue and $500M in cash without debts.</p>
+<p>One of the key strategic targets of the merger is the focus on Cloud (I quote: “Cloud Everywhere!”) - but a Cloud based
+on Open Source technology. The company’s target is to provide customers with the benefits of Hadoop and (F)OSS (see
+above), as well as the advantages of Public Cloud providers.</p>
+<p>This is not a new development - Hortonwork’s 3.0 release
+already <a href="https://docs.hortonworks.com/HDPDocuments/HDP3/HDP-3.0.0/release-notes/hdp-release-notes.pdf" rel="noopener external" target="_blank">included support for storage on all Cloud providers</a>
+ (
+as opposed to strictly HDFS) in July of 2018.</p>
+<p>At the same time, competitor MapR (who focused mostly on proprietary
+solutions), <a href="http://siliconangle.com/2019/05/30/mapr-may-shut-investor-pulls-following-extremely-poor-results/" rel="noopener external" target="_blank">announced job cuts in May of 2019</a>
+
+and finally announced the intent
+to <a href="https://www.datanami.com/2019/06/18/mapr-says-its-close-to-deal-to-sell-company/" rel="noopener external" target="_blank">sell the company</a>
+ in June 2019.
+The company struggled with the monetization of the business model and the strong drive towards Cloud native operations.</p>
+<p>During all this, the Public Cloud market only knew one
+direction: <a href="https://www.skyhighnetworks.com/cloud-security-blog/microsoft-azure-closes-iaas-adoption-gap-with-amazon-aws/" rel="noopener external" target="_blank">Skywards</a>
+.
+The revenue of AWS, GCP, and Azure provide large portions of the respective companies earnings and seemingly every new
+conference provides impressive advancements in the respective technologies and fewer companies rely on their local data
+centers.</p>
+<p>And <a href="https://www.ciodive.com/news/ibm-still-sees-value-in-hadoop-based-technologies/557326/" rel="noopener external" target="_blank">IBM</a>
+ still sees value in
+Hadoop.</p>
+<h2 id="what-happened-in-the-open-source-space-since-then">What happened in the Open Source space since then?</h2>
+<p>While the above certainly doesn’t inspire confidence, we also should take a look at what actually happened over the past
+years - while the Cloud providers did show some amazing, easy-to-use products from data ingestion all the way through to
+Machine Learning and Analytics use cases, development in the (F)OSS space did not stop.</p>
+<h3 id="hadoop-overall">Hadoop Overall</h3>
+<p>Hadoop 3.0 made some <a href="https://hadoop.apache.org/old/releases.html" rel="noopener external" target="_blank">huge additions</a>
+ to the feature set.</p>
+<p>YARN now
+supports <a href="https://hadoop.apache.org/docs/r3.1.2/hadoop-yarn/hadoop-yarn-site/DockerContainers.html" rel="noopener external" target="_blank">docker containers</a>
+, <a href="https://hadoop.apache.org/docs/r3.1.2/hadoop-yarn/hadoop-yarn-site/UsingGpus.html" rel="noopener external" target="_blank">GPU scheduling</a>
+
+for e.g. TensorFlow, more advanced scheduling features, the overall platform offers native support
+for <a href="http://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html" rel="noopener external" target="_blank">AWS S3</a>
+.</p>
+<p>These changes enable organizations running Hadoop clusters to move away from the traditional approach of running mostly
+large Batch jobs on YARN and separate ML jobs on premise to switch to a more modern container-based approach and utilize
+GPU-driven Machine Learning and also integrate Cloud providers into either “hybrid” or even native Cloud model.</p>
+<h3 id="hbase">HBase</h3>
+<p>Apache HBase is one of those things I have a love-hate relationship with - it is very fast, very powerful and can be
+even simple to use once you grasp the basics, but can also be a beast to tame once it scales up.</p>
+<p>Similar to Spark, Hbase had a major version bump to 2.x., but the changes are less obvious than more end-user facing
+tools such as Hive. As a reminder, HBase (out of the box) offers a Ruby-based shell and APIs for various languages and
+is rarely used as a standalone tool - with the notable exception of <a href="https://phoenix.apache.org" rel="noopener external" target="_blank">Apache Phoenix</a>
+, which
+we won’t cover in this article.</p>
+<p>You can find those releases notes on the project’s homepage
+for <a href="https://apache.org/dist/hbase/2.0.5/RELEASENOTES.md" rel="noopener external" target="_blank">2.0.5</a>
+, <a href="https://apache.org/dist/hbase/2.1.5/RELEASENOTES.md" rel="noopener external" target="_blank">2.1.5</a>
+, <a href="https://apache.org/dist/hbase/2.2.0/RELEASENOTES.md" rel="noopener external" target="_blank">2.2.0</a>
+,
+as well as the
+project’s <a href="https://issues.apache.org/jira/browse/HBASE-22596?jql=project%20%3D%20HBASE%20AND%20issuetype%20in%20%28Improvement%2C%20%22New%20Feature%22%29%20AND%20status%20in%20%28Resolved%2C%20Closed%29%20AND%20fixVersion%20%3D%203.0.0" rel="noopener external" target="_blank">JIRA</a>
+.</p>
+<p>Risking to offend some people - Hbase is a project that follows the UNIX philosophy - do one thing and do it right - a
+lot more than other projects and hence, it’s improvements over the years are less apparent. Looking at the associated
+tools, libraries, and frameworks will give you a better overview.</p>
+<p><a href="https://cloud.google.com/bigtable/" rel="noopener external" target="_blank">Google Cloud’s BigTable</a>
+ is interoperable with Hbase and hence works with all
+existing HBase projects, as a cloud-native, managed service.</p>
+<h3 id="hive">Hive</h3>
+<p>Hive’s compatibility is usually tied to the <a href="http://hive.apache.org/downloads.html" rel="noopener external" target="_blank">release of Hadoop</a>
+ - Hive 3.x works
+with Hadoop 3.x, Hive 2.x works with Hadoop 2.x and so on.</p>
+<p>Just focussing on
+the <a href="https://issues.apache.org/jira/secure/ReleaseNote.jspa?version=12340268&amp;styleName=Text&amp;projectId=12310843" rel="noopener external" target="_blank">3.x release branches</a>
+,
+Hive went from being a rather limited, not exactly fast, Map-Reduce driven SQL-layer to a low-latency, in-memory driven,
+powerful analytics framework.</p>
+<p>The introduction of <a href="https://cwiki.apache.org/confluence/display/Hive/LLAP" rel="noopener external" target="_blank">Hive <strong>LLAP</strong></a>
+ (low-latency analytical
+processing), first introduced in Hive 2.0, provides exactly what the name entails. It runs a daemon service on YARN that
+coordinates job runs, where smaller runs are being orchestrated directly by the daemon and larger, more resource
+intensive jobs are going through a fully-fledged YARN job. This method allows for much quicker queries, while still
+giving users the option to run large jobs that access large volumes of data and hence comes closer to the benefits of a
+large RDMBS cluster, such as Postgres.</p>
+<p><picture><source type="image/avif" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_cd3149c2d445f49c.avif 400w, /2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_77f25ece2cddd38e.avif 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_f8c6bb0a7aa4e1ac.webp 400w, /2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_a7d965a8979d2ae2.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_34af17754bdc60af.png 400w, /2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_febec3aedf5da9a9.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0-1_hu_a46a0d042732a5.jpg" alt="" loading="lazy" width="800" height="402">
+    </picture></p>
+<p><a href="https://cwiki.apache.org/confluence/display/Hive/LLAP" rel="noopener external" target="_blank">https://cwiki.apache.org/confluence/display/Hive/LLAP</a>
+</p>
+<p>Furthermore, it also finally allowed support for <a href="https://cwiki.apache.org/confluence/display/Hive/Hive&#43;Transactions" rel="noopener external" target="_blank">**ACID
+** transactions,</a>
+ a surprisingly new feature for
+Hive data. Where the legacy versions of Hive mostly relied on immutable data, where updates could only be realized using
+INSERT OVERWRITE or CTAS statements.</p>
+<p>While ACID does come with it’s own challenges and limitations, it moves Hive closer and closer to the likes of either a
+traditional RDMBS or a Google BigQuery (which has update support, albeit limited).</p>
+<h3 id="sqoop">Sqoop</h3>
+<p>Sqoop is a powerful tool, as it allows you to ingest data into Hadoop from various RDMBS. While this seems like a
+trivial task, it is usually an operation dominated by the likes of Informatica or Pentaho ETL.</p>
+<p>Similar to HBase, its improvements are mostly under the hood. See the release notes
+of <a href="https://sqoop.apache.org/docs/1.4.7/sqoop-1.4.7.releasenotes.html" rel="noopener external" target="_blank">1.4.7</a>
+, currently shipped with HDP 3.1, for
+reference.</p>
+<p>A special thing to mention here is the lack of comparable tools for most Cloud providers. Sqoop talks to a database,
+either via integrated incremental or full loads, or even custom SQL, and stores the data on HDFS (and Hive, if
+required). It makes ingesting data from operational source systems that do not take analytical or ETL load
+straightforward and easy. As a matter of fact, AWS
+EMR <a href="https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-sqoop-considerations.html" rel="noopener external" target="_blank">supports Sqoop loads to S3</a>
+.</p>
+<p>This point might be controversial and I would gladly take insights into other FOSS tools providing similar capabilities
+to the big managed SQL-likes of the cloud proviers as well as their storage components (S3, GCS etc.).</p>
+<h3 id="spark">Spark</h3>
+<p>Apache Spark (which is not strictly tied to Hadoop, more on that later), had a major version change from 1.6.x
+to <a href="https://spark.apache.org/releases/spark-release-2-0-0.html" rel="noopener external" target="_blank">2.x</a>
+, changing the API and introducing a lot of new
+features.</p>
+<p>The 2.x and subsequent releases enabled more comprehensive SQL support on various platforms, huge performance increases
+on SQL operations on DataFrames/DataSets (2-10X), more support for underlying file formats (ORC, Parquet), native
+support for Kafka in 2.1, more advanced and reliable streaming in 2.2, support for Kubernetes, updated History server, a
+new data source API (e.g., reading CSV files natively) in 2.3, and more support for advanced execution modes for Machine
+Learning / “Deep Learning”, higer order functions and more
+in <a href="https://spark.apache.org/releases/spark-release-2-3-0.html" rel="noopener external" target="_blank">2.4</a>
+.</p>
+<p>Spark is available on Java, Scala, Python, and R and hence provides interfaces for various popular languages an
+organization might have SMEs for.</p>
+<p>Furthermore, the Spark framework is detached from Hadoop as such and is available
+on <a href="https://aws.amazon.com/emr/features/spark/" rel="noopener external" target="_blank">AWS EMR</a>
+, Google Cloud <a href="https://cloud.google.com/dataproc/" rel="noopener external" target="_blank">Dataproc</a>
+,
+and Azure <a href="https://docs.microsoft.com/en-us/azure/hdinsight/spark/apache-spark-overview" rel="noopener external" target="_blank">HDInsights</a>
+, allowing
+developers to lift-and-shift existing Spark applications (whether a small helper script or a massive, multi-tier
+application) to the Cloud on fully-managed services.</p>
+<p>This enables companies to not only re-use existing IP, but also to provide a level of independence towards a single,
+external provider. Despite my high praises for the likes of GCP in previous publications, this independence can be a
+strategic advantage.</p>
+<p><picture><source type="image/avif" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0_hu_960b1e64f0496d77.avif 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0_hu_7acedae1a37f8060.webp 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0_hu_28a1868e2ffeb0c7.png 400w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2019/07/is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now/images/pasted-image-0_hu_456268df32becd8.jpg" alt="" loading="lazy" width="800" height="652">
+    </picture></p>
+<p><a href="https://cloud.google.com/dataproc/" rel="noopener external" target="_blank">https://cloud.google.com/dataproc/</a>
+</p>
+<h3 id="tez">TEZ</h3>
+<p>Apache TEZ allows Hive and PIG to run DAGs, as opposed to M/R jobs. While clearly a Hadoop-exclusive component, it is
+still worth looking into.</p>
+<p>The changes TEZ made are sometimes user facing, like the new TEZ UI
+in <a href="http://tez.apache.org/releases/0.9.0/release-notes.txt" rel="noopener external" target="_blank">0.9.0</a>
+, but mostly also operate under the hood to provide
+better performance and scalability than previous versions. It’s biggest strength is the additional performance and
+monitoring capabilities that it offers over M/R jobs.</p>
+<h3 id="so-what">So what?</h3>
+<p>Now, we’ve talked at length about what happened in some cherry-picked Hadoop and related tools. But what does this mean
+for you?</p>
+<p>One thing is clear - running an Open Source tech stack on bare metal in your data center has its disadvantages, as well
+as clear advantages. You own your data, you own your tech stack, you have the capability to commit back to the ecosystem
+by contributing to Open Source. You have the ability to work on the features you need and are not forced to take the
+ones offered by third parties.</p>
+<p>The independence from Cloud providers gives companies the sovereignty over their data and make them independent of
+bandwidth constraints or regulatory issues (not to be confused with “no regulatory compliance necessary on-premise).</p>
+<p>Hadoop’s new features and stability improvements make using the platform and it’s tools (including all the ones we
+haven’t touched upon in this article) more and more convenient and powerful. The advancements in the ML space,
+specifically on Spark(ML) and YARN, also pave the way for more analytics and less aggregation and traditional database
+modelling.</p>
+<p>The steady rise of Cloud-driven data processing and analytics and
+a <a href="https://www.wsj.com/articles/cloudera-struggles-highlight-rapid-rise-of-public-cloud-11559865497" rel="noopener external" target="_blank">lowering interest in Hadoop</a>
+
+might lead to the belief that it’s a “black and white” situation - either move to Cloud or stay on-premise.</p>
+<p>I disagree - hybrid approaches are real and can offer the best of both worlds. You can maintain a local Hadoop instance
+and combine it with, for instance, a managed Machine Learning service
+like <a href="https://cloud.google.com/automl/" rel="noopener external" target="_blank">Google Cloud AutoML</a>
+ on BigQuery with a subset of your data, stripped from PII.</p>
+<p>You can also move your existing Hadoop workloads to the Cloud with the likes of EMR or Dataproc, taking advantage of the
+Cloud’s scabality and cost savings, whilst developing portable software across Cloud providers.</p>
+<p>The latter is roughly the route I can see Cloudera/Hortonworks taking in the future - take advantage of FOSS, while
+benefiting from the vast amount of proprietary and powerful solutions the Public Cloud offers.</p>
+<p>In some instances, moving legacy systems to the Cloud is not a realistic option without a fully-fledged, multi-year
+migration effort - for instance, 20, 30 (or even older!) year old database systems that manage a business&rsquo;s daily
+operations. However, combining the strength of custom software and Open Source, tailored towards your business needs,
+can prove invaluable.</p>
+<p>In the end, it depends - Hadoop is certainly not dead, but the continued investment by Amazon, Google, and Microsoft
+certainly might change this in the upcoming years.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The question:</strong> Is Hadoop dead in 2019 with cloud providers dominating?</li>
+<li><strong>Business signals:</strong> Cloudera+Hortonworks merged ($760M revenue, &ldquo;Cloud Everywhere!&rdquo; strategy), MapR struggled and sold company, AWS/GCP/Azure revenue soaring</li>
+<li><strong>Technical reality:</strong> Hadoop 3.0 shipped major features (GPU scheduling, Docker containers on YARN, native S3 support, Hive LLAP for 10x faster queries, ACID transactions)</li>
+<li><strong>Hive improvements:</strong> LLAP low-latency processing, ACID support (finally!), moves closer to RDBMS capabilities</li>
+<li><strong>Spark evolution:</strong> Cloud-agnostic (runs on EMR, Dataproc, HDInsights), portable code across providers, 2-10x performance gains in 2.x releases</li>
+<li><strong>The hybrid approach:</strong> Run Hadoop on-premise + managed cloud ML (like AutoML on BigQuery), or lift-shift Spark to cloud while keeping code portable</li>
+<li><strong>Verdict:</strong> Not dead - evolving toward hybrid cloud and cloud-native Hadoop (Dataproc/EMR) with Open Source foundations</li>
+<li><strong>Strategic choice:</strong> Cloud lock-in (faster, easier, managed) vs. portable code (independence, hybrid options, no vendor lock-in)</li>
+<li><strong>The future:</strong> Cloudera/Hortonworks betting on FOSS + Cloud hybrid; Spark&rsquo;s portability = strategic advantage; legacy systems + custom FOSS can coexist with cloud</li>
+<li><strong>Bottom line:</strong> Hadoop isn&rsquo;t dead - it&rsquo;s adapting. Investment by AWS/Google/MS in Hadoop-compatible services proves the tech stack has value</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2019-07-is-hadoop-dead-cloudera-hortonworks-mapr-layoffs-and-hadoop-3.0-reality-now.png" type="image/png"/></item><item><title>Data lakes: Hive is not an RDBMS, HBase 141x faster, Spark's role in practice</title><link>https://vitthalmirji.com/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/</link><guid isPermaLink="true">https://vitthalmirji.com/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/</guid><pubDate>Sat, 04 Nov 2017 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>big data</category><category>hbase</category><category>hive</category><category>spark</category><category>scala</category><category>phoenix</category><category>data lake</category><category>hadoop</category><description>Deep-dive performance comparison of Hive, HBase, and Spark on 9.6M NYC taxi records. Learn why Hive ACID falls short, when HBase is 141x faster for lookups, and what Spark actually optimizes for. Includes benchmarks and usage guidance.</description><content:encoded><![CDATA[<p>You know that moment when business pushes for a &ldquo;data lake&rdquo; and expects it to work like their beloved SQL Server? They want to run complex queries, do random updates, and get instant results. Then reality hits.</p>
+<p>Hive doesn&rsquo;t support UPDATE on external tables. HBase&rsquo;s shell makes you want to cry. Spark requires actual programming. Suddenly, the $500K Hadoop cluster sits there while everyone complains it&rsquo;s &ldquo;too slow.&rdquo;</p>
+<p>I&rsquo;ve seen this play out multiple times. The problem isn&rsquo;t the technology - it&rsquo;s using the wrong tool for the job. You wouldn&rsquo;t use a hammer to cut wood, yet teams constantly try to use Hive like it&rsquo;s Oracle.</p>
+<p>This post shows you the real performance characteristics of Hive, HBase, and Spark on the same dataset (9.6 million NYC taxi records). You&rsquo;ll see:</p>
+<ul>
+<li>Why Hive isn&rsquo;t an RDBMS (and why ACID support is limited)</li>
+<li>When HBase is 141x faster than Hive (and when it&rsquo;s 5x slower)</li>
+<li>What Spark actually optimizes for</li>
+<li>Which tool to use for your actual use case</li>
+</ul>
+<p>Benchmarks included: Real performance numbers on single-node Cloudera with 12 cores, 25GB RAM.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the typical data lake journey:</p>
+<p><strong>Phase 1: Excitement</strong></p>
+<ul>
+<li>&ldquo;We&rsquo;re migrating to Hadoop!&rdquo;</li>
+<li>&ldquo;We&rsquo;ll have a data lake with all our data!&rdquo;</li>
+<li>&ldquo;It&rsquo;ll scale to petabytes!&rdquo;</li>
+</ul>
+<p><strong>Phase 2: Reality</strong></p>
+<ul>
+<li>Business analysts can&rsquo;t run their SQL queries</li>
+<li>UPDATE/DELETE doesn&rsquo;t work</li>
+<li>&ldquo;Why does this query take 4 minutes?&rdquo;</li>
+<li>&ldquo;Our SQL Server was faster&rdquo;</li>
+</ul>
+<p><strong>Phase 3: Blame game</strong></p>
+<ul>
+<li>&ldquo;Hadoop is too slow&rdquo;</li>
+<li>&ldquo;The tools are too complicated&rdquo;</li>
+<li>&ldquo;We should&rsquo;ve stuck with Oracle&rdquo;</li>
+</ul>
+<p>The problem? Organizations build data lakes but don&rsquo;t understand which tool to use for what. They try to use Hive like SQL Server, HBase like MySQL, and wonder why performance is terrible.</p>
+<p><strong>The real questions nobody asks:</strong></p>
+<ul>
+<li>Where&rsquo;s our data? How many systems? How are they connected?</li>
+<li>Who understands the data? Do we have metadata?</li>
+<li>Which technologies fit our actual access patterns?</li>
+<li>What are our ETL requirements?</li>
+<li>Which tool matches our query patterns?</li>
+</ul>
+<p>Let&rsquo;s assume you&rsquo;ve built your data lake. Your data is on the cluster, Sqoop jobs run like clockwork, Kerberos is terrorizing IT (as usual), and everything lives in one place. Great.</p>
+<p><strong>But now what?</strong></p>
+<p>You have options:</p>
+<ul>
+<li><strong>Hive</strong> - SQL-like queries on HDFS</li>
+<li><strong>HBase</strong> - Key-value NoSQL database</li>
+<li><strong>Phoenix</strong> - SQL layer on top of HBase</li>
+<li><strong>Spark</strong> - General-purpose processing engine</li>
+<li><strong>Impala, Kudu, Pig, Cassandra, Accumulo</strong> - Specialized tools</li>
+</ul>
+<p>Each one has different use cases, different performance characteristics, and different mental models. Picking the wrong tool means either terrible performance or endless frustration.</p>
+<p>This post tests three core tools (Hive, HBase, Spark) on the same dataset to show you their actual strengths and weaknesses.</p>
+<hr>
+<h2 id="the-dataset-nyc-taxi-trips">The dataset: NYC taxi trips</h2>
+<p>We&rsquo;re using public NYC taxi trip data: <a href="http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml" rel="noopener external" target="_blank">NYC TLC Trip Record Data</a>
+</p>
+<p><strong>Specs:</strong></p>
+<ul>
+<li>3 months of data (April-June 2017)</li>
+<li>Yellow cabs only</li>
+<li>29,805,311 records total</li>
+<li>2.5GB compressed</li>
+<li>For testing: June 2017 only (9,656,995 records, 813 MB)</li>
+</ul>
+<p>We&rsquo;ll run the same query on each tool: <strong>&ldquo;Find all trips with tips over $100&rdquo;</strong></p>
+<p>This tests aggregation performance (COUNT, MAX, GROUP BY) which is common in analytics workloads.</p>
+<hr>
+<h2 id="part-1---hive-not-an-rdbms-stop-trying-to-make-it-one">Part 1 - Hive: not an RDBMS (stop trying to make it one)</h2>
+<h2 id="a-short-prefix-for-apache-hive">A short prefix for Apache Hive</h2>
+<p>When it comes to Hadoop, the transition is hard. One might argue that one of the, if not the, hardest thing about a
+transition from traditional DWH to Hadoop is not the technology, but rather the way people use it. That being said, the
+first thing that comes to mind when you transition from relational systems to Hadoop might just be Apache Hive – a
+mostly ANSI-SQL compliant tool that allows you to fire SQL queries on your HDFS data.</p>
+<p>First off: Hive is a fantastic piece of software that comes with a lot of flexibility. It runs on your laptop (well, it
+does on mine&hellip;), on a legacy cluster powered by good old M/R2 just like it does on a modern, Spark or Tez fueled
+powerhouse. It makes it easy to work with any data you might have, from legacy CSVs or AS400 Sqoop imports to complex
+Avro-magic.</p>
+<p>So, why not just use Hive like you would, say, a Microsoft SQL Server?</p>
+<p>Because <strong>Hive. Is. Not. A. RDBMS.</strong> I cannot stress this enough. Hive uses Schema-On-Read mechanics, does not have the
+concept of keys (and that is, well, key!) and is not ACID compatible out of the box. You are also responsible for
+managing the underlying system. In the next section, we will dive into the details of what exactly that means.</p>
+<h2 id="hive">Hive</h2>
+<p>We will use the following data
+set: <a href="http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml" rel="noopener external" target="_blank">http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml</a>
+</p>
+<p>Data about the famous NYC cabs!</p>
+<p>For 3 months, 2017-04 to 2017-06 for all Yellow Cabs, it boils down to a total of 29,805,311 records in 2.5GiB. If we
+start with June, we still get 813 MiB and 9,656,995 records.</p>
+<p>As we will re-use the same data set for HBase later, you will need to make sure your HBase Key is unique – if you just
+use the first value in the CSV, VendorID, you will get a total of 3 records – as there are 3 distinct values in that CSV
+for this column. So we need to add an ID using awk. I suggest using head -1000 and piping that to a separate file for
+testing if you want to follow along.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2017-06.csv
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">awk -F<span class="s1">&#39;,&#39;</span> -v <span class="nv">OFS</span><span class="o">=</span><span class="s1">&#39;,&#39;</span> <span class="s1">&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s1">NR == 1 {print &#34;ID&#34;, $0; next}
+</span></span></span><span class="line"><span class="cl"><span class="s1">{print (NR-1), $0}
+</span></span></span><span class="line"><span class="cl"><span class="s1">&#39;</span> yellow_tripdata_2017-06.csv &gt; yellow_tripdata_2017-06_id.csv</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Now, we need to create a DDL and import the data:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">nyc</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">nyc</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">VendorID</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tpep_pickup_datetime</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tpep_dropoff_datetime</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">passenger_count</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">trip_distance</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">RatecodeID</span><span class="w"> </span><span class="n">STRING</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">store_and_fwd_flag</span><span class="w"> </span><span class="n">STRING</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">PULocationID</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">DOLocationID</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">payment_type</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">fare_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">extra</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">mta_tax</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tip_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tolls_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">improvement_surcharge</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">total_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">ROW</span><span class="w"> </span><span class="n">FORMAT</span><span class="w"> </span><span class="n">DELIMITED</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">FIELDS</span><span class="w"> </span><span class="n">TERMINATED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s1">&#39;,&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">STORED</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">TEXTFILE</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">LOAD</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">INPATH</span><span class="w"> </span><span class="s1">&#39;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#39;</span><span class="w"> </span><span class="n">OVERWRITE</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">nyc</span><span class="p">;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Oops. Not good. Wait, let’s just enable transactions! However, you will have issues doing that using Cloudera’s
+distribution. Take this exempt from the documentation:</p>
+<blockquote>
+  <p>_“The CDH distribution of Hive does not support
+transactions (<a href="https://issues.apache.org/jira/browse/HIVE-5317" rel="noopener external" target="_blank">HIVE-5317</a>
+). Currently, transaction support in Hive is
+an experimental feature that only works with the ORC file format. Cloudera recommends using the Parquet file format,
+which works across many tools. Merge updates in Hive tables using existing functionality, including statements such as
+INSERT, INSERT OVERWRITE, and CREATE TABLE AS SELECT.”</p>
+
+</blockquote><p>(<a href="https://www.cloudera.com/documentation/enterprise/5-12-x/topics/hive_ingesting_and_querying_data.html" rel="noopener external" target="_blank">https://www.cloudera.com/documentation/enterprise/5-12-x/topics/hive_ingesting_and_querying_data.html</a>
+)_</p>
+<p>In the interest of transparency, here is how it looks on a manual Hive setup directly on Fedora (On a related note:
+Hortonwork’s HDP does support it out of the box):</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_048_hu_25c4d199b4281166.avif 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_048_hu_c822f46f357023a2.webp 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_048_hu_4f926f903d7438b1.png 400w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_048_hu_328c3df8deae92ce.jpg" alt="" loading="lazy" width="800" height="531">
+    </picture> Hive ACID Enabled</p>
+<p>If you take a look at the official Hive documentation, the limitations become even more apparent:</p>
+<ul>
+<li>Only<a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual&#43;ORC" rel="noopener external" target="_blank">ORC file format</a>
+is supported in this first
+release. The feature has been built such that transactions can be used by any storage format that can determine how
+updates or deletes apply to base records (basically, that has an explicit or implicit row id), but so far the
+integration work has only been done for ORC.</li>
+<li>By default transactions are configured to be off. See
+the[Configuration](<a href="https://cwiki.apache.org/confluence/display/Hive/Hive&#43;Transactions%22" rel="noopener external" target="_blank">https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions"</a>
+ \l &quot;
+HiveTransactions-Configuration)section below for a discussion of which values need to be set to configure it.</li>
+<li>Tables must be<a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual&#43;DDL&#43;BucketedTables" rel="noopener external" target="_blank">bucketed</a>
+to make
+use of these features. Tables in the same system not using transactions and ACID do not need to be bucketed. External
+tables cannot be made ACID tables since the changes on external tables are beyond the control of the
+compactor (<a href="https://issues.apache.org/jira/browse/HIVE-13175" rel="noopener external" target="_blank">HIVE-13175</a>
+).</li>
+<li>Reading/writing to an ACID table from a non-ACID session is not allowed. In other words, the Hive transaction manager
+must be set to org.apache.hadoop.hive.ql.lockmgr.DbTxnManager in order to work with ACID tables</li>
+<li>([https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions#HiveTransactions-ConfigurationValuestoSetforINSERT,UPDATE,DELETE](<a href="https://cwiki.apache.org/confluence/display/Hive/Hive&#43;Transactions%22" rel="noopener external" target="_blank">https://cwiki.apache.org/confluence/display/Hive/Hive+Transactions"</a>
+
+\l &ldquo;HiveTransactions-ConfigurationValuestoSetforINSERT,UPDATE,DELETE))</li>
+</ul>
+<p>While reasonable, it does strengthen my argument – Hive is not an RDMBS, even though you might be importing relational
+data. ACID compatibility is possible, but limited to some fairly specific use cases.</p>
+<p>As long as you are using bucketed (often via a Primary Key from source), ORC-based, managed tables on a distribution
+that supports this, you are doing great. If you start with more uncommon Hadoop use cases, you might – will – run into
+issues.</p>
+<p>So, how do organizations get around this? Usually, you can
+play <a href="http://mathworld.wolfram.com/TowerofHanoi.html" rel="noopener external" target="_blank">The Tower Of Hanoi</a>
+ – meaning, using temporary tables and
+sub-selects to work with INSERT OVERWRITE statements, use a different storage and execution strategy that enables random
+writes and updates (more below) – or you can make this a core target and focus on matching the requirements outlined
+above.</p>
+<p>When going for the first approach, there might be some…
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Cannot insert into target table because column number/types are different</span></span></code></pre></td></tr></table>
+</div>
+</div>
+&hellip;errors and excluding columns still involves regex, but after all, a lot is possible if you put your mind to it.</p>
+<p>In any case, sooner or later you will find yourself in need of working with your now accessible data. If you call this
+process “mapping”, “transformation” or just throw your entire ETL workload on Hadoop, eventually you will want to gain
+some form of insights from your Lake – and usually, this involves Joins, Views and other SQL operations.</p>
+<h2 id="hive-on-9656995-records">Hive on 9,656,995 records</h2>
+<p>Let’s get back to our data. Always keep in mind that this data is currently stored as plain text.</p>
+<p>Let’s try to get all trips with a tip over $100 – it’s NYC, after all:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">with tmp as<span class="o">(</span>
+</span></span><span class="line"><span class="cl">SELECT * FROM Nyc
+</span></span><span class="line"><span class="cl">WHERE tip_amount &gt;<span class="o">=</span> <span class="m">100</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span>
+</span></span><span class="line"><span class="cl">SELECT COUNT<span class="o">(</span>*<span class="o">)</span>, max<span class="o">(</span>tip_amount<span class="o">)</span>, total_amount as max_tip from tmp group by total_amount<span class="p">;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_5e0637d2ff37c771.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_418de11041fc6fc8.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_c0f2d3ae9d35479.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_afbe7c7c5591aecd.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_de83ffe6370db5d9.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_375d37a27f4ffd1b.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_929fabcf69e0e450.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_412a6a08974cb8ae.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_10ac29e2dda1e0b2.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-1_hu_f055d10563e25fb2.jpg" alt="" loading="lazy" width="800" height="635">
+    </picture> Hive on 9M records</p>
+<p>Time taken: 66.138 seconds, Fetched: 185 row(s)</p>
+<p>We got a result in about a minute on a single node <em>(cluster configuration can be found down below)</em>!</p>
+<p>As you can see, I use a less-than-shiny, white-on-black CLI. So, let’s assume we have business users and analysts which
+are used to complex, powerful tools such as MS SQL Management Studio.</p>
+<p>We can provide access to business users using Ambari (Hortonworks), Hue, Zeppelin or other web-based front ends.</p>
+<p><a href="images/Selection_050-1024x566.png"></a>
+ Hue</p>
+<p>However - storing queries, simply exporting results, auto-complete, stored procedures, special characters and (in most
+cases) visualization are not features that are commonly found on these tools.</p>
+<p>You will need an external tool, usually connected via JDBC, for that. Examples include Dbeaver, Squirrel or
+Dbvisualizer. Keep in mind that these tools need to talk to Hive (standard port 10000) and are usually Kerberos
+enabled – and generally speaking, Kerberos really, really hates nice things. It also hates bad things, in many cases,
+that would be Windows.</p>
+<p>To get a bit more serious – <strong>transitioning your seasoned analysts to Hive is not an easy task.</strong> The technology is
+fundamentally different, the available tool sets do not offer the comfort many of us got used to over the years and
+seemingly simple functionality appears to be missing. It is really challenging to explain that Hive does, in fact, does
+not have the concept of “NULLable fields” or even Primary Keys, not to mention the highlighted ACID problematic or
+missing features from other SQL dialetcs.</p>
+<p>However: Hive offers different benefits. It is heavily optimized for huge datasets and will not blow up for very large
+tables (the 9M records from our example might be a good start for a VM, but is not a representative volume!), can be
+easily extended by simply plugging more machines in your cluster, is fully Open Source, can directly work on various
+other data sources that are not managed by Hive (External Tables, see below), is integrated in basically any Big Data
+related technology (Sqoop even creates your tables and DDLs for you when importing data from an RDBMS), can be your
+entry point for Machine Learning on structured data, and serves as key component in any data lake.</p>
+<p><strong>So: You should use Hive</strong>. But do not expect it to work like MariaDB or Oracle. Do not expect setting up a Data Lake
+involving a couple of Hadoop Experts that know Hive in-and-out and to receive good feedback from business. As always,
+communication is key.</p>
+<p>Use Hive to access your data, to transform your data (though not necessarily directly via the CLI), to provide external
+access via JDBC to end users (using the right tool – OpenSource or proprietary), and as major workhorse for your Data
+Lake for anything that even resembles relational data.</p>
+<p>But remember – it is not an RDMBS. It was never meant to be that. It is not going to replace anything – it is a piece of
+technology that requires some careful planning and coordination between both IT and business. Maybe you even want to
+move your results to a different database, visualization tool or warehouse that works better with your Analyst’s toolset
+of choice – it all depends on what you are trying to do. But ultimately, you will be rewarded with a system which
+bridges the gap between abstract, distributed data and related algorithms such as MapReduce and the SQL we all learned
+to love and hate.</p>
+<h2 id="hbase-and-other-non-relational-databases">HBase and other non-relational databases</h2>
+<p>But obviously, there is a world beyond relational data. Enter the world of “noSQL”.</p>
+<p>If you ever had the chance to use a production HBase cluster, there’s pretty much two scenarios. One: You love it
+because it was used exactly like it was meant to. Two: You hate everybody committing to it and burn
+Lars’ <a href="http://www.hbasebook.com/" rel="noopener external" target="_blank">book</a>
+ on occasion (which, by the way, I can only highly recommend).</p>
+<p>Non-relational systems, especially the Column-oriented varieties, like HBase, MongoDB, or Accumulo are a fantastic
+concept. Usually, there is no concept of ACID transactions, but are hellishly fast if used right.</p>
+<p>If we use HBase, a de-facto standard on Hadoop, as an example, we can quickly see what “used right” means and apply some
+common access patterns on our NYC cab data. For details on HBase’s architecture, I will again refer to Lars George’s
+book, “HBase – the Definitive Guide” (O’Reilly Media).</p>
+<p>In general terms, noSQL systems heavily rely on the concept of a key – and therefore, doing exactly what Hive omits for
+good reasons. Now, what is true about Hive – that it does not come with a fancy client – is especially true for HBase.</p>
+<p>A seemingly simple query like “get me all records where X” turns into a long, horrible orgy of sub-commands over a
+charming black-and-white CLI.</p>
+<p>We’ll re-use our NYC Yellow Cab data set (the Hive import from above moves the data set, so you will need to copy it to
+HDFS again).</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ruby" data-lang="ruby"><span class="line"><span class="cl"><span class="n">hbase</span> <span class="n">shell</span> <span class="o">&lt;&lt;&lt;</span> <span class="s2">&#34;create &#39;nyc&#39;, &#39;cf&#39;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">dos2unix</span> <span class="n">yellow_tripdata_2017</span><span class="o">-</span><span class="mo">06</span><span class="n">_id</span><span class="o">.</span><span class="n">csv</span>
+</span></span><span class="line"><span class="cl"><span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">copyFromLocal</span> <span class="n">yellow_tripdata_2017</span><span class="o">-</span><span class="mo">06</span><span class="n">_id</span><span class="o">.</span><span class="n">csv</span> <span class="sr">/user/</span><span class="n">cloudera</span>
+</span></span><span class="line"><span class="cl"><span class="n">hbase</span> <span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">hadoop</span><span class="o">.</span><span class="n">hbase</span><span class="o">.</span><span class="n">mapreduce</span><span class="o">.</span><span class="n">ImportTsv</span> <span class="o">-</span><span class="no">Dimporttsv</span><span class="o">.</span><span class="n">separator</span><span class="o">=</span><span class="p">,</span> <span class="o">-</span><span class="no">Dimporttsv</span><span class="o">.</span><span class="n">columns</span><span class="o">=</span><span class="s2">&#34;HBASE_ROW_KEY,cf:
+</span></span></span><span class="line"><span class="cl"><span class="s2">VendorId,cf:tpep_pickup_datetime,cf:tpep_dropoff_datetime,cf:passenger_count,cf:trip_distance,cf:RatecodeID,cf:
+</span></span></span><span class="line"><span class="cl"><span class="s2">store_and_fwd_flag,cf:PULocationID,cf:DOLocationID,cf:payment_type,cf:fare_amount,cf:extra,cf:mta_tax,cf:tip_amount,cf:
+</span></span></span><span class="line"><span class="cl"><span class="s2">tolls_amount,cf:improvement_surcharge,cf:total_amount&#34;</span> <span class="n">nyc</span> <span class="sr">/user/</span><span class="n">cloudera</span><span class="o">/</span><span class="n">yellow_tripdata_2017</span><span class="o">-</span><span class="mo">06</span><span class="n">_id</span><span class="o">.</span><span class="n">csv</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>One might add that the initial import took plenty of time on the Quickstart Configuration, which, granted, is not very
+good. The command also exits with Bytes Written=0 if something is wrong (like a mismatch in the columns) – do not pass
+Go. Do not collect$200.</p>
+<p>Again, let’s get all trips with a tip &gt; $100.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ruby" data-lang="ruby"><span class="line"><span class="cl"><span class="nb">scan</span> <span class="s1">&#39;nyc&#39;</span><span class="p">,</span> <span class="p">{</span><span class="no">LIMIT</span> <span class="o">=&gt;</span> <span class="mi">10</span><span class="p">,</span> <span class="no">FILTER</span> <span class="o">=&gt;</span> <span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">hadoop</span><span class="o">.</span><span class="n">hbase</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">SingleColumnValueFilter</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="no">Bytes</span><span class="o">.</span><span class="n">toBytes</span><span class="p">(</span><span class="s1">&#39;cf&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl"><span class="no">Bytes</span><span class="o">.</span><span class="n">toBytes</span><span class="p">(</span><span class="s1">&#39;tip_amount&#39;</span><span class="p">),</span> <span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">hadoop</span><span class="o">.</span><span class="n">hbase</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">CompareFilter</span><span class="o">::</span><span class="no">CompareOp</span><span class="o">.</span><span class="n">valueOf</span><span class="p">(</span><span class="s1">&#39;GREATER_OR_EQUAL&#39;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl"><span class="no">Bytes</span><span class="o">.</span><span class="n">toBytes</span><span class="p">(</span><span class="mi">100</span><span class="p">))}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>What’s that?</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_41016daa044ab613.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_4c1653f866f42ee9.avif 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_233d6a77ecbb34b.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_2b6fbbf42fe8c1b4.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_fae8129c879aab09.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_4befa4bd58cb7104.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/Selection_049-1024x644_hu_915ed012031a0311.jpg" alt="" loading="lazy" width="800" height="503">
+    </picture> HBase Query Result</p>
+<p>What happened here? Using the TSV import command, all the values are imported as Strings – and we are trying to compare
+Strings with Bytes. Technically correct, but not very insightful. There is a whole lot more to the way HBase stores its
+data – I will not go into that at this point. But just keep in mind that HBase does not really care about the data you
+throw at it.</p>
+<p>So, let’s use Java, the next low-level abstraction HBase offers. We implement a custom Comparator to work with Double in
+String fields, move that jar to HBase’s classpath, restart HBase and run our query as jar file. Make sure to set
+<code>hbase.client.scanner.timeout.period hbase.regionserver.lease.period</code> accordingly.</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nn">com.otterinasuit.hbase</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">com.otterinasuit.hbase.comparators.ByteToDoubleComparator</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">org.apache.hadoop.hbase.client.*</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">org.apache.hadoop.hbase.filter.CompareFilter</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">org.apache.hadoop.hbase.filter.LongComparator</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="nn">org.apache.hadoop.hbase.filter.SingleColumnValueFilter</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">// import ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Main</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">Logger</span><span class="w"> </span><span class="n">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoggerFactory</span><span class="p">.</span><span class="na">getLogger</span><span class="p">(</span><span class="n">Main</span><span class="p">.</span><span class="na">class</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">THRESHOLD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">100</span><span class="p">.</span><span class="na">00D</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">lStartTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">nanoTime</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">&#34;Start&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Configuration</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Configuration</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">config</span><span class="p">.</span><span class="na">addResource</span><span class="p">(</span><span class="s">&#34;/etc/hbase/conf.cloudera.hbase/hbase-site.xml&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">config</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="s">&#34;hbase.rpc.timeout&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;1800000&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">config</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="s">&#34;hbase.regionserver.lease.period&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;1800000&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Connection</span><span class="w"> </span><span class="n">connection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConnectionFactory</span><span class="p">.</span><span class="na">createConnection</span><span class="p">(</span><span class="n">config</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Table</span><span class="w"> </span><span class="n">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">connection</span><span class="p">.</span><span class="na">getTable</span><span class="p">(</span><span class="n">TableName</span><span class="p">.</span><span class="na">valueOf</span><span class="p">(</span><span class="s">&#34;nyc&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Filter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">SingleColumnValueFilter</span><span class="w"> </span><span class="n">filter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SingleColumnValueFilter</span><span class="p">(</span><span class="n">Bytes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;cf&#34;</span><span class="p">),</span><span class="w"> </span><span class="n">Bytes</span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;tip_amount&#34;</span><span class="p">),</span><span class="w"> </span><span class="n">CompareFilter</span><span class="p">.</span><span class="na">CompareOp</span><span class="p">.</span><span class="na">GREATER_OR_EQUAL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="k">new</span><span class="w"> </span><span class="n">ByteToDoubleComparator</span><span class="p">(</span><span class="n">THRESHOLD</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Scan</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">Scan</span><span class="w"> </span><span class="n">scan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Scan</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">scan</span><span class="p">.</span><span class="na">setFilter</span><span class="p">(</span><span class="n">filter</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">scan</span><span class="p">.</span><span class="na">addFamily</span><span class="p">(</span><span class="n">Bytes</span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;cf&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Run</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">0</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">ResultScanner</span><span class="w"> </span><span class="n">scanner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">getScanner</span><span class="p">(</span><span class="n">scan</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">TreeMap</span><span class="o">&lt;</span><span class="n">Double</span><span class="p">,</span><span class="n">result</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TreeMap</span><span class="o">&lt;</span><span class="n">Double</span><span class="p">,</span><span class="n">result</span><span class="o">&gt;</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Result</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">scanner</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bytes</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="na">getValue</span><span class="p">(</span><span class="n">Bytes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;cf&#34;</span><span class="p">),</span><span class="w"> </span><span class="n">Bytes</span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;tip_amount&#34;</span><span class="p">)));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">String</span><span class="w"> </span><span class="n">tip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bytes</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="na">getValue</span><span class="p">(</span><span class="n">Bytes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                        </span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;cf&#34;</span><span class="p">),</span><span class="w"> </span><span class="n">Bytes</span><span class="p">.</span><span class="na">toBytes</span><span class="p">(</span><span class="s">&#34;total_amount&#34;</span><span class="p">)));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;tip_amount: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tip</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;total_amount: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">total</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="kt">double</span><span class="w"> </span><span class="n">total_amount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Double</span><span class="p">.</span><span class="na">parseDouble</span><span class="p">(</span><span class="n">total</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="kt">double</span><span class="w"> </span><span class="n">tip_amount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Double</span><span class="p">.</span><span class="na">parseDouble</span><span class="p">(</span><span class="n">tip</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">list</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">tip_amount</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">result</span><span class="p">(</span><span class="n">total_amount</span><span class="p">,</span><span class="n">tip_amount</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="n">c</span><span class="o">++</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Calculate in the client</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">double</span><span class="w"> </span><span class="n">max_tip</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Collections</span><span class="p">.</span><span class="na">max</span><span class="p">(</span><span class="n">list</span><span class="p">.</span><span class="na">keySet</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">result</span><span class="w"> </span><span class="n">max_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">max_tip</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;Max tip was &#34;</span><span class="o">+</span><span class="n">max_res</span><span class="p">.</span><span class="na">getTotal</span><span class="p">()</span><span class="o">+</span><span class="s">&#34;, amount was &#34;</span><span class="o">+</span><span class="n">max_res</span><span class="p">.</span><span class="na">tip</span><span class="o">+</span><span class="s">&#34;, ratio: &#34;</span><span class="o">+</span><span class="n">max_res</span><span class="p">.</span><span class="na">getRatio</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;A total of &#34;</span><span class="o">+</span><span class="n">c</span><span class="o">+</span><span class="s">&#34; people tipped over &#34;</span><span class="o">+</span><span class="n">THRESHOLD</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Cleanup</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">table</span><span class="p">.</span><span class="na">close</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">connection</span><span class="p">.</span><span class="na">close</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">lEndTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">nanoTime</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="kt">long</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">lEndTime</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">lStartTime</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">1000000</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&#34;Rumtime: &#34;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&#34;ms / &#34;</span><span class="o">+</span><span class="n">total</span><span class="o">/</span><span class="n">1000</span><span class="o">/</span><span class="n">60</span><span class="o">+</span><span class="s">&#34;min&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">logger</span><span class="p">.</span><span class="na">error</span><span class="p">(</span><span class="s">&#34;Reading from HBase failed!&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="n">e</span><span class="p">.</span><span class="na">printStackTrace</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">static</span><span class="w"> </span><span class="kd">class</span> <span class="nc">result</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Implementing the custom Comparator sounds like a simple exercise, but believe me, I had to read a lot of HBase source
+code in order to get that working. Also, Protobuf. We’ll forge that into a separate article.</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-3_hu_2ab043e9e29ca9aa.avif 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-3_hu_7bb76935dc1b020a.webp 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-3_hu_44deeaf816366b4a.png 400w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-3_hu_79f02b29972bcf9b.jpg" alt="" loading="lazy" width="800" height="1073">
+    </picture></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Max tip was 440.0, amount was 473.3, ratio: 0.9296429326008874
+</span></span><span class="line"><span class="cl">A total of <span class="m">185</span> people tipped over 100.0
+</span></span><span class="line"><span class="cl">Rumtime: 284765ms / 4.7min</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>A total of 185 people tipped over 100.0</p>
+<p><strong>About 5x the runtime of Hive</strong>. I need to add at this point that using a HBase client application is not a very
+efficient way of working with this data in itself and that I threw together that jar in a couple of minutes (which it
+why it screams &ldquo;Kill me!&rdquo;) – but since my test environment is running on a single node anyways, we will let this slide.</p>
+<p>However, this comes back to my point about keys and hence data access patterns. We are using a monotonically increasing,
+artificial, meaningless key. It’s like assigning each record in a pile of loose vinyls a increasing number and expecting
+to find something quick. Sure, it works eventually – but not efficiently.</p>
+<p>Let me demonstrate this by getting the (chosen-at-random) key “200000”:</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_655e68a2b781b49f.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_289d05fbaef49329.avif 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_4622a3dee3ea5c4a.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_942108dcf0a61ea7.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_4e55d2591b8d08e9.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_54ebffbc6e359aca.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-4_hu_b8b3ce41ef703c42.jpg" alt="" loading="lazy" width="800" height="404">
+    </picture> HBase get\</p>
+<p><strong>0.24s isn’t bad at all</strong>. Running a similar query in our (seemingly) quicker Hive table from above looks like this:</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_e90d82247af772fa.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_3fb16f26259c89.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_275eca1252fbc37.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_2128c267e3dc6598.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_7830a56842586daa.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_90c1ad2a7488eff4.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_a4f03f103baa17e2.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_19e682e808a60e7a.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_bc75ee5f789b6b57.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-6_hu_12052ab6a2664ccc.jpg" alt="" loading="lazy" width="800" height="318">
+    </picture> Hive HBase &ldquo;get&rdquo;</p>
+<p><strong>34.4s</strong>! In other words, 141x HBase’s runtime.</p>
+<p>The same finding applies for scanning multiple rows – using</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ruby" data-lang="ruby"><span class="line"><span class="cl"><span class="nb">scan</span> <span class="s1">&#39;nyc&#39;</span><span class="p">,</span> <span class="p">{</span><span class="no">STARTROW</span> <span class="o">=&gt;</span> <span class="s1">&#39;200000&#39;</span><span class="p">,</span> <span class="no">ENDROW</span> <span class="o">=&gt;</span> <span class="s1">&#39;200020&#39;</span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>to get all rows from 200,000 to 200,020 takes 1.9s in my example, the majority of what would be printing to the shell.</p>
+<p>In real life, we would probably use a meaningful HBase key, such as the trip’s time if we are interested in analyzing
+the data based on date and time (on nanosecond precision in order to avoid duplicates). We could ask HBase “get me all
+trips from 2017-07-04 18:00:00.000 to 2017-07-05 01:59:59.000 and show me the average fare” if we want to take a look at
+4th July fares at night.</p>
+<p>Anyways – while HBase also answers my initial query, the Java method is highly inefficient as well:</p>
+<ul>
+<li>The query runs client-side (as mentioned above)</li>
+<li>We needed to essentially customize HBase or at least work around our data type issues (there’s other ways to achieve
+this, but your choice of technology will eventually limit your ability to gain these insights)</li>
+<li>We need to write a custom program in Java</li>
+<li>While it is almost easier than daisy-chaining commands in a shell, it is still fairly complex for such a simple query</li>
+</ul>
+<h2 id="sql-on-nosql">SQL on noSQL</h2>
+<p>But what about SQL? Well, you can use Hive again by pointing an external table to HBase – I just don’t recommend it for
+this use case. First, we need an external table (a table that does not manage data, but rather just points to an
+existing data source), mapping our HBase columns to Hive columns:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">EXTERNAL</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">hbaseNyc</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">VendorID</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tpep_pickup_datetime</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tpep_dropoff_datetime</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">passenger_count</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">trip_distance</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">RatecodeID</span><span class="w"> </span><span class="n">STRING</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">store_and_fwd_flag</span><span class="w"> </span><span class="n">STRING</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">PULocationID</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">DOLocationID</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">payment_type</span><span class="w"> </span><span class="nb">INT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">fare_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">extra</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">mta_tax</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tip_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">tolls_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">improvement_surcharge</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">,</span><span class="n">total_amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">STORED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="s1">&#39;org.apache.hadoop.hive.hbase.HBaseStorageHandler&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">WITH</span><span class="w"> </span><span class="n">SERDEPROPERTIES</span><span class="w"> </span><span class="p">(</span><span class="s2">&#34;hbase.columns.mapping&#34;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">:key
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:tpep_pickup_datetime
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:tpep_dropoff_datetime
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:passenger_count
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:trip_distance
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:RatecodeID
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:store_and_fwd_flag
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:PULocationID
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:DOLocationID
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:payment_type
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:fare_amount
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:extra
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:mta_tax
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:tip_amount
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:tolls_amount
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:improvement_surcharge
+</span></span></span><span class="line"><span class="cl"><span class="s2">,cf:total_amount
+</span></span></span><span class="line"><span class="cl"><span class="s2">&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="n">TBLPROPERTIES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;hbase.table.name&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;nyc&#39;</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>The query certainly is easier to manage, but the performance is also not great either:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="m">1</span> 440.0 473.3
+</span></span><span class="line"><span class="cl">Time taken: 265.434 seconds, Fetched: <span class="m">155</span> row<span class="o">(</span>s<span class="o">)</span>
+</span></span><span class="line"><span class="cl">4.4 minutes.</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>And the explanation remains the same: Column-based random-access is not what HBase was built for.</p>
+<p>HBase is really fast on any access that involves a key, on a lot of inserts and even “updates” (which are really
+overwrites), can manage billions of rows, and is incredible flexible, as it does not dictate a fixed schema apart from
+ColumnFamilies. You can literally make up columns and data types as you go.</p>
+<p>One alternative is Apache Phoenix, an SQL layer on top of HBase that takes care of a lot of optimization for you. I will
+not go into detail at this point – but the key finding (pun intended) remains the same. Using HBase while expecting
+random-read queries is a bad idea!</p>
+<p>I guess what I am trying to say – usability is not HBase’s primary target. And it doesn’t have to be. As my “ID 200,000”
+example shows, HBase wipes the floor with Hive when it comes to very precise lookups, it’s flexibility due to the lack
+of schema is incredible and it will not let you down on very large data sets – if you make sure you know exactly what
+you are after.</p>
+<h2 id="apache-spark">Apache Spark</h2>
+<p>First off, Apache Spark is a general-purpose processing engine. Comparing it to other technologies is not really a good
+start, as it serves many purposes, such as -</p>
+<ul>
+<li>Programming interface for data access, ETL, Machine Learning and more</li>
+<li>Execution Engine (for Hive)</li>
+<li>Streaming data</li>
+<li>Machine Learning</li>
+</ul>
+<p>I’ve used Spark many times and it remains one of my favorite, to-go tools in the Big Data zoo – mostly because it can do
+almost anything and is usually very fast, due to some very smart optimizations and techniques under the hood.</p>
+<p>Without further ado, we will replace M/R2 from the Hive example above with the Scala-based Spark shell (basically, a
+live shell you can get by running $ spark-shell) and fire the same query:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">show_timing</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">proc</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="n">T</span><span class="o">)</span><span class="k">:</span> <span class="kt">T</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">start</span><span class="k">=</span><span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">res</span> <span class="k">=</span> <span class="n">proc</span> <span class="c1">// call the code
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">end</span> <span class="k">=</span> <span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">println</span><span class="o">(</span><span class="s">&#34;Time elapsed: &#34;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="o">)/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span> <span class="o">+</span> <span class="s">&#34; ms&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">res</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">sql</span> <span class="k">=</span> <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">with tmp as(
+</span></span></span><span class="line"><span class="cl"><span class="s">SELECT * FROM Nyc
+</span></span></span><span class="line"><span class="cl"><span class="s">WHERE tip_amount &gt;= 100
+</span></span></span><span class="line"><span class="cl"><span class="s">)
+</span></span></span><span class="line"><span class="cl"><span class="s">
+</span></span></span><span class="line"><span class="cl"><span class="s">SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">show_timing</span><span class="o">(</span><span class="n">sqlContext</span><span class="o">.</span><span class="n">sql</span><span class="o">(</span><span class="n">sql</span><span class="o">).</span><span class="n">show</span><span class="o">(</span><span class="mi">200</span><span class="o">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_35ba013f579edfed.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_fe97b7b6e3741cac.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_2236e244091dca7a.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_cf1b07e7d263b814.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_9830c672e483de70.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_91d37a890942405f.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_f9a27daae7d9a97c.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_a88633e5ab660fe9.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_b16c9556cf8ab0b7.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-8_hu_62dadfa5babdadc8.jpg" alt="" loading="lazy" width="800" height="626">
+    </picture> Spark</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">Time elapsed: <span class="m">12420</span> ms</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>12s for the exact same result. Of course – we already spent time on Hive prior to this, but the same result with a
+slightly different performance outcome could be achieved by reading the CSV from HDFS directly! Using Spark 2 makes this
+easy, but we can use the default 1.6 as well, as installing Spark 2 on Cloudera be a bit tricky.</p>
+<p>So we use the <a href="https://github.com/databricks/spark-csv" rel="noopener external" target="_blank">databricks-csv</a>
+ library:
+<code>spark-shell --packages com.databricks:spark-csv\_2.10:1.5.0</code></p>
+<p>And this bit of code:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">org.apache.spark.sql.SQLContext</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">org.apache.spark.sql.types._</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">show_timing</span><span class="o">[</span><span class="kt">T</span><span class="o">](</span><span class="n">proc</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="n">T</span><span class="o">)</span><span class="k">:</span> <span class="kt">T</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">start</span><span class="k">=</span><span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">res</span> <span class="k">=</span> <span class="n">proc</span> <span class="c1">// call the code
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">end</span> <span class="k">=</span> <span class="nc">System</span><span class="o">.</span><span class="n">nanoTime</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">println</span><span class="o">(</span><span class="s">&#34;Time elapsed: &#34;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="o">)/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span> <span class="o">+</span> <span class="s">&#34; ms&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">res</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">schema</span> <span class="k">=</span> <span class="nc">StructType</span><span class="o">(</span><span class="nc">Array</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;id&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;VendorID&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;tpep_pickup_datetime&#34;</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;tpep_dropoff_datetime&#34;</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;passenger_count&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;trip_distance&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;RatecodeID&#34;</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;store_and_fwd_flag&#34;</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;PULocationID&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;DOLocationID&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;payment_type&#34;</span><span class="o">,</span> <span class="nc">IntegerType</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;fare_amount&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;extra&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;mta_tax&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;tip_amount&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;tolls_amount&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;improvement_surcharge&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl"><span class="nc">StructField</span><span class="o">(</span><span class="s">&#34;total_amount&#34;</span><span class="o">,</span> <span class="nc">DecimalType</span><span class="o">.</span><span class="nc">Unlimited</span><span class="o">,</span> <span class="kc">true</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">df</span> <span class="k">=</span> <span class="n">sqlContext</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">format</span><span class="o">(</span><span class="s">&#34;com.databricks.spark.csv&#34;</span><span class="o">).</span><span class="n">option</span><span class="o">(</span><span class="s">&#34;header&#34;</span><span class="o">,</span> <span class="s">&#34;true&#34;</span><span class="o">).</span><span class="n">option</span><span class="o">(</span><span class="s">&#34;inferSchema&#34;</span><span class="o">,</span> <span class="s">&#34;false&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">.</span><span class="n">schema</span><span class="o">(</span><span class="n">schema</span><span class="o">).</span><span class="n">load</span><span class="o">(</span><span class="s">&#34;hdfs:///user/cloudera/yellow_tripdata_2017-06_id.csv&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">df</span><span class="o">.</span><span class="n">registerTempTable</span><span class="o">(</span><span class="s">&#34;nycspark&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">sql</span> <span class="k">=</span> <span class="s">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">with tmp as(
+</span></span></span><span class="line"><span class="cl"><span class="s">SELECT * FROM nycspark
+</span></span></span><span class="line"><span class="cl"><span class="s">WHERE tip_amount &gt;= 100
+</span></span></span><span class="line"><span class="cl"><span class="s">)
+</span></span></span><span class="line"><span class="cl"><span class="s">SELECT COUNT(*), max(tip_amount), total_amount as max_tip from tmp group by total_amount&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">show_timing</span><span class="o">(</span><span class="n">sqlContext</span><span class="o">.</span><span class="n">sql</span><span class="o">(</span><span class="n">sql</span><span class="o">).</span><span class="n">show</span><span class="o">(</span><span class="mi">200</span><span class="o">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_28dec5a119396eae.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_edde7aa33158720f.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_be5cf9ece74e0293.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_9699d351c4210569.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_ad9d526b5da8270c.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_da1992834ab5d3d6.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_fa254a5a7518bcc0.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_8ac26ca2719c614.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_f99c0a18539c023.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-11_hu_e99e0b8d9ae4c71d.jpg" alt="" loading="lazy" width="800" height="635">
+    </picture> Spark</p>
+<p>As you can see, the performance is not exactly a miracle and we had to manually define a schema, as we removed the CSV
+header – but keep in mind that this approach directly reads your CSV from HDFS, basically skipping Hive altogether.
+While aggregates might not be the key use case here, this is a very neat feature to work with various files directly on
+Spark.</p>
+<p>In order to answer our “200000 key question”, the same query in Hive is not very convincing either:</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_c9a8a7e4324037cc.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_7ec0e5c7e0a8c3dd.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_7b632aaf686a8bb2.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_5c9653c8af03c8c7.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_cd3a2e4bf186e3fd.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_393f645c7bf4abd7.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_4e1efa33c7c38a20.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_3450e9222e1f1cf1.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_5cb6f37bc636c38.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-12_hu_ff5ef637d4e74e1d.jpg" alt="" loading="lazy" width="800" height="631">
+    </picture> Spark Hive &ldquo;get&rdquo;</p>
+<p>Another 50s.</p>
+<p>And for good measure, the same on the CSV:</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_b78ced403406d78f.avif 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_75c475d69341eb4b.avif 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_94d6d0b8b7e1102b.avif 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_f7c61bb24d3d6492.webp 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_b34994b0d9ee65d3.webp 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_9dfd582342afe267.webp 1200w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_aeaaf3f094cc593f.png 400w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_42828818820804bf.png 800w, /2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_5cafc565eba9abc1.png 1200w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/word-image-13_hu_b7fa9d470031c1bb.jpg" alt="" loading="lazy" width="800" height="240">
+    </picture> Spark CSV &ldquo;get&rdquo;</p>
+<p>And even better, knowing just a bit of Scala, we can do much more with that data – we could store it in a DataFrame, do
+more analysis on there, write it to disk, connect it to other sources, read from a completely different file from disk
+without any involvement of Hive whatsoever, combine those results, transform the code into a Real-Time application and
+much more.</p>
+<p>We can use Spark on Python, Scala, Java and R, can run it from a web front-end such as Apache Zeppelin or just build
+mighty, full-size applications that involve build servers and more unit tests than you can imagine even in your wildest
+dreams.</p>
+<p>But again – while the above example surely is simple, really complex Spark applications will result in full-sized
+software projects. But whether it is a simple Script or a complex application, Spark will serve your end users familiar
+with SQL (especially on a graphical tool like Zeppelin) as well as your Data Scientists and Engineers.</p>
+<p>Talking about Spark in a couple of paragraphs does not do it justice, but the gist of it is: Simple to use (although not
+as intuitive as a Microsoft SQL client) quick results, hard to master, and very powerful – but not exactly Microsoft SQL
+Management Studio either.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Let’s summarize: Using a fancy toolset doesn’t help anybody if it’s not used accordingly. Not surprising!</p>
+<p>It gets even more apparent when we sum up our benchmarks:</p>
+<p><picture><source type="image/avif" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/2017-11-03_Performance_hu_442c37ae05988a9e.avif 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/2017-11-03_Performance_hu_14292f6594723934.webp 400w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/2017-11-03_Performance_hu_a9b11fcf4fdd54f1.png 400w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2017/11/data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice/images/2017-11-03_Performance_hu_77aa43be9a64b0fc.jpg" alt="" loading="lazy" width="800" height="450">
+    </picture>Performance Overview</p>
+<p>Hadoop does not magically solve your problems. Period. It does, however, provide a very powerful foundation for many
+years to come, especially when you think beyond your usual DWH Reporting targets.</p>
+<p>Generally speaking -</p>
+<p>Use <strong>Hive</strong> for “standard” queries – it gets as close to an RDBMS as you’re going to get. With ACID enabled and a smart
+use of Bucketing and Partitioning instead of traditional Primary Keys where applicable, using a good choice of ETL
+rules (avoiding VARCHAR join conditions, for instance), it serves as powerful, easy-to-use access layer to your Data
+Lake, especially in combination with a tool like Dbeaver. Do not expect it to make business users happy without proper
+Change Managstrongent.</p>
+<p>It also opens the gate for much more advanced use cases: As starting or end point for your Machine Learning algorithms (
+which might very well combine structured and unstructured data), for instance.</p>
+<p><strong>HBase</strong> is clearly targeted at developers, but can also be exposed to end-users – if you know what you are doing.
+While amazing at certain things, HBase (and Phoenix) need to be used for use cases where you know your access and
+ingestion patterns – but if done right, it will not let you down.</p>
+<p><strong>Spark</strong> got (hopefully) a bit demystified. Spark, ultimately, is an Execution Engine. As such, it is, again, targeted
+at developers. However, using smart tools like Zeppelin and the SparkSQL free-form SQL interface, it can surely be used
+by many Database Architects and Power Users that are willing to handle a bit more coding than usual.</p>
+<p>Independent of the toolset, the well-known Hadoop benefits still hold true today – runs on commodity hardware,
+super-scalable, very robust and Open Source.</p>
+<p>So, is the concept of a “Data Lake” and especially Hadoop right for you? I’ll tell you what I tell all my clients: <strong>It
+depends</strong>. But it is certainly worth a look, especially if you expect your data to grow and your reporting needs to
+evolve.</p>
+<p>There is a ton of topics I did not even mention in this 4,000 word article – but rest assured that a business that knows
+how to make use of more than their standard “reporting” interfaces and ERP- and CRM-extracts will gain a competitive
+advantage in the marketplace – as we all know, knowledge is key!</p>
+<p><em>All tests were done on a single-node Cloudera Quickstart VM, running on QEMU/KVM with 12 AMD Ryzen 1700 vCores @ 3.2Ghz
+and 25GiB RAM, image launched from a 3TB WD RED Raid-1 Array under Fedora 26. yarn.nodemanager.resource.memory-mb was
+set to 4GiB, yarn.nodemanager.resource.cpu-vcores to 10</em></p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> Data lakes fail when organizations use the wrong tool for the job (Hive like SQL Server, HBase like MySQL)</li>
+<li><strong>Benchmark dataset:</strong> 9.6M NYC taxi records, testing &ldquo;tips over $100&rdquo; query</li>
+<li><strong>Hive:</strong> 66s for aggregation query, great for SQL-like queries on HDFS, but NOT an RDBMS (no PRIMARY KEY, limited ACID support, schema-on-read)</li>
+<li><strong>HBase:</strong> 4.7min for column scan (5x slower than Hive), but 0.24s for key lookup (141x faster than Hive&rsquo;s 34s) - use for key-based access, not random queries</li>
+<li><strong>Spark:</strong> 12s for same query (5x faster than Hive), can read CSV directly without Hive, requires programming but extremely flexible</li>
+<li><strong>Key insight:</strong> HBase crushes Hive for key lookups but dies on column scans; Hive is fast for aggregations but isn&rsquo;t an RDBMS; Spark is fastest overall but needs code</li>
+<li><strong>When to use Hive:</strong> SQL-like analytics on large datasets, ETL workloads, bridge between MapReduce and SQL</li>
+<li><strong>When to use HBase:</strong> Key-based lookups, billions of rows, flexible schema needs, high write throughput</li>
+<li><strong>When to use Spark:</strong> Machine learning, ETL, streaming, when you need full programming power</li>
+<li><strong>Lesson:</strong> Understand access patterns before choosing tools - benchmarks don&rsquo;t lie, but using a hammer to cut wood will always suck</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2017-11-data-lakes-hive-is-not-an-rdbms-hbase-141x-faster-sparks-role-in-practice.png" type="image/png"/></item></channel></rss>

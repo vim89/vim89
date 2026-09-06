@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/series/road-to-google-developer-expert/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/series/road-to-google-developer-expert/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>My road to Google Developer Expert (GDE): DevFest samosas, OSS PRs, acceptance</title><link>https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/</guid><pubDate>Wed, 16 Jul 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>gde</category><category>google-developer-expert</category><category>ai-ml</category><category>gcp</category><category>dart</category><category>open-source</category><category>scala</category><category>career</category><category>community</category><category>mentoring</category><category>devfest</category><category>blogging</category><description>Breakdown of my GDE acceptance journey. Learn contribution tracking, referral tactics, interview focus areas, OSS PR examples, blogging setup, CFP submissions, and mentorship. Includes the spreadsheet system and interview questions.</description><content:encoded><![CDATA[<p>You know that moment at a tech conference when someone casually asks, &ldquo;Have you considered applying for GDE?&rdquo; and you think they&rsquo;re joking?</p>
+<p>I was at DevFest Bangalore in late 2024, eating samosas between talks on Vertex AI and FlutterFlow. A conversation about GCP pipelines turned into &ldquo;Wait, you already do this stuff - why aren&rsquo;t you a GDE?&rdquo;</p>
+<p>I hadn&rsquo;t considered it. I was just&hellip; doing the work. Blogging about data pipelines. Contributing PRs to Spark-XML and llm4s. Mentoring engineers on Scala and GCP. Running workshops. Building tools.</p>
+<p>Turns out that&rsquo;s exactly what the <a href="https://developers.google.com/community/experts" rel="noopener external" target="_blank">Google Developer Expert (GDE)</a>
+ program looks for.</p>
+<p>I applied. No flashy cover letter. No polished video. Just documentation of what I&rsquo;d been doing for 12+ years. Three months later: accepted.</p>
+<p>This is the complete breakdown - from contribution tracking to interview questions to what actually matters.</p>
+<p><picture><source type="image/avif" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_cffb533740ef6fe8.avif 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_f2b295778528c702.avif 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_a26b16b9afcc444.webp 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_8416e2ce36cfe6ce.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_c575e107e292f30.png 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_623bfedf5ec6da91.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde_hu_ce5df6319a589db0.jpg" alt="vitthal-gde.png" loading="lazy" width="800" height="65">
+    </picture>
+<picture><source type="image/avif" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_8404c0ec0c50a608.avif 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_2fea4e926b32636d.avif 800w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_3d71b2950b6f5e53.avif 1200w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_a655b4108422d72b.avif 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_45d02706a9c28377.webp 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_d3c1c149182dbd78.webp 800w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_f5c8e39eac65f2bc.webp 1200w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_be5486ea8955936c.webp 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_87ca7d87c2093ad9.png 400w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_1ff5ccc688b83aa6.png 800w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_9f785066ecc29365.png 1200w, /2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_79e9a2cd843dde04.png 1600w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2025/07/my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance/images/vitthal-gde1_hu_fba1799c145c8f36.jpg" alt="vitthal-gde1.png" loading="lazy" width="800" height="167">
+    </picture></p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the GDE reality nobody tells you:</p>
+<p><strong>What people think GDE is:</strong></p>
+<ul>
+<li>You need to be famous</li>
+<li>You must speak at 20 conferences</li>
+<li>You need viral blog posts</li>
+<li>You&rsquo;re competing against influencers</li>
+</ul>
+<p><strong>What GDE actually is:</strong></p>
+<ul>
+<li>Recognition for consistent contribution</li>
+<li>Community impact over personal brand</li>
+<li>Depth in specific domains</li>
+<li>Teaching and enabling others</li>
+</ul>
+<p><strong>The cost of not applying:</strong></p>
+<ul>
+<li>Your contributions go unrecognized</li>
+<li>You miss networking opportunities</li>
+<li>You keep thinking &ldquo;maybe someday&rdquo;</li>
+<li>You undervalue your own impact</li>
+</ul>
+<p><strong>What I needed:</strong></p>
+<ul>
+<li>A system to track contributions</li>
+<li>Proof of community impact</li>
+<li>Domain expertise demonstration</li>
+<li>Clear communication style</li>
+</ul>
+<p>This post shows you what actually worked.</p>
+<hr>
+<h2 id="part-1---why-i-chose-the-gde-path">Part 1 - Why I chose the GDE path</h2>
+<p>For me, GDE wasn’t about a title - it was about <strong>recognizing and amplifying</strong> the work I was already doing. I’ve been
+in the engineering game for 12+ years - data pipelines, architecture, tooling, open source, mentoring - and the GDE
+program felt like a natural next step to formalize those contributions.</p>
+<p>My core focus areas were:</p>
+<ul>
+<li><strong>AI/ML</strong></li>
+<li><strong>Google Cloud Platform (GCP)</strong></li>
+<li><strong>Dart</strong></li>
+</ul>
+<p>These weren’t chosen just because they’re trendy - but because they aligned with what I use, teach, and care about
+deeply.</p>
+<h2 id="part-2---the-backstory-from-devfest-to-decision">Part 2 - The backstory: from DevFest to decision</h2>
+<p>In late 2024, I
+attended <a href="https://gdg.community.dev/events/details/google-gdg-bangalore-presents-devfest-bangalore-2024/" rel="noopener external" target="_blank">DevFest Bangalore</a>
+ -
+just another tech weekend, or so I thought. Between talks on Vertex AI, FlutterFlow, Web, and GCP use cases, I realized
+something weird: most of the topics mirrored what I’d already been working on.</p>
+<p>I had been building CI/CD for data pipelines, working with GCP (DataProc, BigQuery, Storage, Pub/Sub), implementing
+real-world AI/ML use cases, and mentoring folks through functional programming, Scala, Dart, and data platforms.</p>
+<p>One conversation turned into another (yes, samosas were involved), and someone suggested I apply for the Google
+Developer Expert program. I hadn’t thought about it before - but the more I looked into it, the more I realized this
+program wasn’t about being a know-it-all; it was about being useful to other devs.</p>
+<p>So I applied. No flashy cover letter. No polished video. Just a submission of what I’d already been doing for years. And
+it worked.</p>
+<h2 id="part-3---my-foundation-what-i-had-to-show">Part 3 - My foundation: what I had to show</h2>
+<p>Before applying, I took a long look at what I had already built. GDE is <em>not</em> something you prep for like an exam. It’s
+something you grow into by doing real work that helps others.</p>
+<p>Here’s what made up my contribution pillars:</p>
+<h3 id="blogging-and-technical-writing">Blogging and technical writing</h3>
+<ul>
+<li><a href="https://vitthalmirji.com">vitthalmirji.com</a>
+: I moved away from WordPress to a custom Hugo + Nginx setup to better
+reflect my engineering style. All content is markdown-based and versioned.</li>
+<li>Tutorials, guides, and writeups on data contracts, pipeline architectures, functional data engineering, and more.</li>
+</ul>
+<h3 id="talks-cfps-and-community-work">Talks, CFPs, and community work</h3>
+<ul>
+<li><strong>Scala Days 2025 Talk Proposal</strong>: I submitted a talk centered around my real-world experience building scalable data
+tools using Scala and functional design - see <a href="/tags/scala-cfp-submission">Scala CFP Submission</a>
+.</li>
+<li>Regular contributor and volunteer for Java, Scala, and Google Developer communities in Mumbai, Pune, and Belgaum.</li>
+<li>Led and mentored multiple <strong>classroom and workshop-based sessions</strong> on data engineering and tooling.</li>
+</ul>
+<h3 id="open-source-contributions">Open source contributions</h3>
+<ul>
+<li><strong>llm4s PR #101</strong>: Improved SDK usability and onboarding via Giter8
+template – <a href="https://github.com/llm4s/llm4s/pull/101" rel="noopener external" target="_blank">link to PR</a>
+.</li>
+<li><strong>Databricks Spark-XML</strong>: Contributed feature for exploding deeply nested XML into flat, readable DataFrames.</li>
+<li><strong>Apache Spark + HBase Connector (SHC)</strong>: Added enhancements for Google BigTable support.</li>
+<li>My own tools on <a href="https://github.com/vim89" rel="noopener external" target="_blank">GitHub</a>
+:
+<ul>
+<li><code>datapipelines-essentials-python</code></li>
+<li><code>dataengineering-savvy</code></li>
+<li>Accelerators for Spark, HBase, Bash-based pipelines</li>
+</ul>
+</li>
+</ul>
+<h3 id="teaching-and-mentorship">Teaching and mentorship</h3>
+<ul>
+<li>Ran workshops and mentored engineers on Data Engineering, GCP, and tooling best practices.</li>
+<li>Created and delivered a beginner-level training curriculum on Product Architecture for Manufacturing Engineers.</li>
+</ul>
+<h2 id="part-4---the-application-process-what-its-really-like">Part 4 - The application process: what it&rsquo;s really like</h2>
+<div class="admonition info">
+  <div class="admonition-title">Information</div>
+  <div class="admonition-content">
+    This section may cause mild existential reflection. Proceed with a beverage.
+  </div>
+</div>
+<p>The GDE process is <strong>rigorous but human</strong>. Here&rsquo;s the gist:</p>
+<ul>
+<li><strong>Step 1: Track your contributions</strong> – Blog posts, OSS PRs, mentoring sessions, community events. I used a spreadsheet
+to log these like a nerdy historian with version control.</li>
+<li><strong>Step 2: Get a referral</strong> – - This came through someone who was familiar with my community work and OSS visibility.</li>
+<li><strong>Step 3: Interview(s)</strong> – These focused on:
+<ul>
+<li><em>Depth</em> in my declared domains (AI/ML, GCP, Dart)</li>
+<li><em>Impact</em> on the community</li>
+<li><em>Originality</em> and clarity in communication</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+  <p>Spoiler: It’s not about being the smartest person in the room. It’s about clarity, consistency, and care for the
+community.</p>
+
+</blockquote><h2 id="part-5---what-i-learned-along-the-way">Part 5 - What I learned along the way</h2>
+<p>Here are the things I wish someone had told me earlier:</p>
+<ul>
+<li><strong>Start tracking now</strong>: Contributions get lost in the noise if you don’t document them.</li>
+<li><strong>Pick quality over quantity</strong>: One solid article or OSS feature &gt; 10 shallow tutorials.</li>
+<li><strong>Mentorship = leverage</strong>: Getting feedback from existing GDEs was a game-changer.</li>
+<li><strong>Your voice matters</strong>: Write in your own style. Don’t sound like a technical brochure.</li>
+<li><strong>You don’t apply for GDE - you grow into it</strong>: If you&rsquo;re already contributing, the application is just the paperwork.</li>
+</ul>
+<h2 id="part-6---whats-next">Part 6 - What&rsquo;s next</h2>
+<p>The GDE journey isn’t a destination - it’s an amplifier.</p>
+<ul>
+<li>I’m continuing work on:
+<ul>
+<li><strong>Archetype</strong>: A code-generation framework for standardized data pipelines</li>
+<li><strong>DQ Framework</strong>: For automated data quality testing and tracking</li>
+<li><strong>Utilities APIs</strong>: Dev-ready libraries for Gated CRQ and CI/CD tooling</li>
+</ul>
+</li>
+<li>I plan to contribute deeper to <strong>Scala’s ecosystem</strong>, and I’m actively exploring <strong>mentorship and collaboration
+opportunities</strong> in the functional programming and GCP spaces.</li>
+</ul>
+<h2 id="part-7---final-thoughts">Part 7 - Final thoughts</h2>
+<p>If you&rsquo;re on the fence about GDE, here’s my advice:</p>
+<ul>
+<li>Don’t chase the badge - chase impact.</li>
+<li>Show up consistently. Write. Build. Speak. Teach.</li>
+<li>Find your niche and build tools, not just tutorials.</li>
+<li>And when you’re ready… go for it.</li>
+</ul>
+<p>Want to talk more about the GDE process or need help with your
+application? <a href="https://twitter.com/whoami_vim" rel="noopener external" target="_blank">DM me on Twitter</a>
+ or <a href="mailto:vitthalmirji@gmail.com">email me</a>
+.</p>
+<p>If you&rsquo;re attending community events, mentoring others, or just building cool stuff and sharing it - you might already
+be walking the road. Just document it, reflect on it, and apply when it feels natural. That&rsquo;s all I did.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The trigger:</strong> DevFest Bangalore 2024 - someone asked &ldquo;Why aren&rsquo;t you a GDE?&rdquo; over samosas during tech talks</li>
+<li><strong>The realization:</strong> I was already doing the work - blogging, OSS contributions, mentoring, workshops - just hadn&rsquo;t documented it</li>
+<li><strong>What GDE actually is:</strong> Recognition for consistent community contribution, not a popularity contest or fame requirement</li>
+<li><strong>Common myths debunked:</strong> Don&rsquo;t need to be famous, don&rsquo;t need 20 conference talks, don&rsquo;t need viral posts, not competing against influencers</li>
+<li><strong>What matters:</strong> Consistent contribution, community impact over personal brand, depth in specific domains, teaching and enabling others</li>
+<li><strong>My focus areas:</strong> AI/ML, GCP, Dart - chosen because I use, teach, and care about them (not trendy)</li>
+<li><strong>12+ years background:</strong> Data pipelines, architecture, tooling, open source, mentoring across engineering domains</li>
+<li><strong>Blog foundation:</strong> vitthalmirji.com moved from WordPress to Hugo + Nginx, markdown-based content, version-controlled</li>
+<li><strong>Key OSS contributions:</strong> llm4s PR #101 (Giter8 template), Databricks Spark-XML (nested XML flattening), Apache Spark HBase Connector (BigTable support)</li>
+<li><strong>My GitHub projects:</strong> datapipelines-essentials-python, dataengineering-savvy, Spark/HBase/Bash accelerators</li>
+<li><strong>Community work:</strong> Scala Days 2025 CFP submission, volunteer for Java/Scala/Google communities (Mumbai, Pune, Belgaum), classroom workshops</li>
+<li><strong>Mentorship:</strong> Data Engineering training, GCP best practices, Product Architecture curriculum for Manufacturing Engineers</li>
+<li><strong>Application process:</strong> Step 1 = track contributions (used spreadsheet like nerdy historian), Step 2 = get referral (community work), Step 3 = interviews</li>
+<li><strong>Interview focus:</strong> Depth in declared domains (AI/ML, GCP, Dart), impact on community, originality and clarity in communication</li>
+<li><strong>Not about being smartest:</strong> It&rsquo;s about clarity, consistency, and care for the community</li>
+<li><strong>Key lessons:</strong> Start tracking now, quality &gt; quantity (1 solid article &gt; 10 shallow tutorials), mentorship = leverage, write in your own voice</li>
+<li><strong>The truth:</strong> You don&rsquo;t apply for GDE - you grow into it (application is just paperwork for work you&rsquo;re already doing)</li>
+<li><strong>What&rsquo;s next:</strong> Archetype (code-gen for data pipelines), DQ Framework (automated quality testing), Utilities APIs (Gated CRQ + CI/CD)</li>
+<li><strong>Final advice:</strong> Don&rsquo;t chase the badge - chase impact, show up consistently (write, build, speak, teach), find your niche and build tools</li>
+<li><strong>Bottom line:</strong> If you&rsquo;re contributing to communities, mentoring, building and sharing - you might already be on the road, just document it</li>
+<li><strong>Three-month timeline:</strong> Applied with no flashy cover letter or video, just documentation of 12+ years of work → accepted</li>
+</ul>
+<h2 id="related-posts">Related Posts</h2>
+<h3>🔗 Related Posts</h3>
+<ul>
+  
+  
+    
+    <li><a href="/2026/05/type-safe-python-design-patterns-a-scala-developer-uses-to-stop-runtime-surprises/">Type-safe Python design: patterns a Scala developer uses to stop runtime surprises</a></li>
+    
+  
+    
+    <li><a href="/2026/02/build-a-code-review-operating-system-prevent-2-am-incidents-with-an-engineering-code-design-ops-infra-security-performance-review-system/">Build a code review operating system: prevent 2 AM incidents in serious codebases</a></li>
+    
+  
+    
+    <li><a href="/2025/12/det-week-2-homework-1-concision-pass-on-compile-time-contracts-with-redlines/">DET week 2 homework 1: concision pass on compile-time contracts with redlines</a></li>
+    
+  
+    
+    <li><a href="/2025/12/det-week-2-homework-2-detail-jobs-audit-for-compile-time-contracts-tagged-now/">DET week 2 homework 2: detail jobs audit for compile-time contracts tagged now</a></li>
+    
+  
+    
+    <li><a href="/2025/11/det-week-1-homework-2-adding-tension-to-compile-time-data-contracts-well-now/">DET week 1 homework 2: adding tension to compile-time data contracts well now</a></li>
+    
+  
+</ul>
+
+<p>Your voice matters. Let the world hear it.</p>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-07-my-road-to-google-developer-expert-gde-devfest-samosas-oss-prs-acceptance.png" type="image/png"/></item></channel></rss>

@@ -1,0 +1,2111 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/topics/staff-engineering/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/topics/staff-engineering/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Build the harness, not the code: a staff/principal engineer's guide to AI-agent systems</title><link>https://vitthalmirji.com/2026/02/build-the-harness-not-the-code-a-staff/principal-engineers-guide-to-ai-agent-systems/</link><guid isPermaLink="true">https://vitthalmirji.com/2026/02/build-the-harness-not-the-code-a-staff/principal-engineers-guide-to-ai-agent-systems/</guid><pubDate>Thu, 19 Feb 2026 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>ai-engineering</category><category>staff-engineer</category><category>principal-engineer</category><category>harness-engineering</category><category>ai-agents</category><category>skills</category><category>software-architecture</category><category>data-engineering</category><category>codex</category><category>claude</category><category>claude-code</category><category>mcp</category><category>anthropic</category><category>openai</category><category>Engineering</category><category>AI</category><category>Architecture</category><description>How to design reliable AI-agent systems using harness engineering, skills, shell execution, and context compaction. A practical tutorial with real examples for OpenAI Codex and Claude Code ecosystems.</description><content:encoded><![CDATA[<p class="lead">A team at OpenAI shipped a production product with <strong>zero lines of manually-written code</strong>.
+Empty git repo in August 2025. One million lines five months later.
+Three engineers initially, averaging 3.5 PRs per person per day. And throughput <em>increased</em> as the team grew to seven.</p>
+
+
+<p>That&rsquo;s not a research demo. It&rsquo;s a product with hundreds of daily internal users and external alpha testers.</p>
+<p>The constraint was intentional: <strong>humans steer, agents execute</strong>. Every line - application logic, tests, CI config,
+docs, internal tooling - was written by Codex. They estimate they built this in about 1/10th the time it would have
+taken to write the code by hand.</p>
+<p>So what did the humans actually do?</p>
+<p>They built the harness.</p>
+<p><strong>And you can build the same harness with Claude code.</strong></p>
+<div class="admonition info">
+  <div class="admonition-title">What&#39;s in this guide</div>
+  <div class="admonition-content">
+    <ul>
+<li><strong>3 core harness lessons</strong> from OpenAI&rsquo;s internal story, with parallel Claude Code implementation patterns</li>
+<li><strong>10 operational tips</strong> for skills, shell execution, and context compaction (OpenAI + Claude paths)</li>
+<li><strong>15 hard-won lessons</strong> from building ChatGPT Apps, adapted for Claude Desktop and MCP servers</li>
+<li><strong>Architecture enforcement patterns</strong> with mechanical linting via hooks (OpenAI + Claude)</li>
+<li><strong>11-step autonomy ladder</strong> showing the path from bug reproduction to autonomous PR merge</li>
+<li><strong>Quarterly implementation blueprint</strong> for both Codex and Claude Code</li>
+<li><strong>Metrics, failure scenarios, and tool-agnostic adaptation</strong> proven across ecosystems</li>
+</ul>
+<p><strong>This guide shows you both paths.</strong> Whether you&rsquo;re using OpenAI Codex, Claude Code, or planning to switch between them,
+you&rsquo;ll learn the underlying patterns that work everywhere.</p>
+<p>This is a companion to <a href="/code-review-system/">Build a code review operating system</a>
+. This
+article builds the harness. That one closes the feedback loop through review.</p>
+
+  </div>
+</div>
+<hr>
+<h2 id="what-harness-engineering-actually-means">What &ldquo;harness engineering&rdquo; actually means</h2>
+<p>You know how it goes - you&rsquo;re a staff engineer, you spend your time reviewing code, fixing architectural drift, making
+sure junior devs follow conventions. Now imagine that &ldquo;junior dev&rdquo; is an AI agent that can write code 10x faster than
+any human but has no institutional memory, no taste, and no understanding of why you chose PostgreSQL over DynamoDB.</p>
+<p>The harness is everything you build around the agent to make its output reliable. Instructions, tools, checks, context,
+feedback loops. It&rsquo;s the environment design that turns &ldquo;agent can write code&rdquo; into &ldquo;agent can ship production features.&rdquo;</p>
+<p>OpenAI learned this the hard way. Early progress was slower than expected - not because Codex was incapable, but
+because the environment was underspecified. The agent lacked tools, abstractions, and internal structure to make
+progress toward high-level goals. The lack of hands-on human coding <strong>introduced a different kind of engineering work,
+focused on systems, scaffolding, and compounding returns</strong>.</p>
+<p>In practice, this meant working depth-first: breaking down larger goals into smaller building blocks (design, code,
+review, test), prompting the agent to construct those blocks, and using them to unlock more complex tasks. When
+something failed, the fix was almost never &ldquo;try harder.&rdquo; It was always: <strong>what capability is missing, and how do I make
+it both legible and enforceable for the agent?</strong></p>
+<p>That reframe is not philosophical. It&rsquo;s operational. And it&rsquo;s exactly what this article teaches you to do.</p>
+<p>I&rsquo;ve been applying these patterns in my own project - <a href="https://github.com/com-vitthalmirji/flowforge" rel="noopener external" target="_blank">flowforge</a>
+, a
+compile-time data contracts framework. Throughout this article, I&rsquo;ll occasionally show how I applied a pattern in
+practice. But the teaching comes from four critical sources:</p>
+<ol>
+<li><strong>Harness engineering</strong> - OpenAI&rsquo;s internal story of shipping 1M lines with zero manual code</li>
+<li><strong>Skills + shell + compaction</strong> - operational primitives for long-running agents (OpenAI and Claude)</li>
+<li><strong>15 lessons building ChatGPT Apps</strong> - hard-won lessons adapted for Claude Desktop and MCP</li>
+<li><strong>Platform shifts in 2025</strong> - what changed across OpenAI and Anthropic ecosystems</li>
+</ol>
+<hr>
+<h2 id="the-mental-model">The mental model</h2>
+<pre class="mermaid">flowchart LR
+    A[Business intent] --&gt; B[Harness design]
+    B --&gt; C[Agent execution]
+    C --&gt; D[Validation and evals]
+    D --&gt; E[Auto-remediation and learning]
+    E --&gt; B
+</pre><p>You design the map (instructions, boundaries, tools), not a giant manual. You encode quality as checks, not tribal
+review comments. You treat context artifacts as infrastructure.</p>
+<p>Here&rsquo;s the heuristic I trust most: <strong>anything that helps humans ship better software faster usually helps agents do the
+same.</strong></p>
+<p>Skills make this obvious. If you&rsquo;ve worked with internal engineering wikis, you&rsquo;ve already seen this movie: distilled
+playbooks for recurring situations, easy to find, scoped to a concrete job. That pattern worked for humans for years.
+Agent skills are the same pattern, now executable.</p>
+<p>The same logic carries over to compilers and type systems, dependency injection, errors-as-values, and effect systems.
+These abstractions didn&rsquo;t survive because they&rsquo;re fashionable. They survived because they improve reliability and change
+velocity in real codebases. Agents benefit from those constraints too.</p>
+<p>I still keep seeing the &ldquo;language won&rsquo;t matter, agents will just emit assembly&rdquo; take. I don&rsquo;t buy it.
+If a workflow is hard for humans to reason about, review, and maintain, it&rsquo;ll usually break down for agents at scale
+too. Honestly, I&rsquo;m tired of the &ldquo;AI is alien magic&rdquo; framing. It isn&rsquo;t. AI doesn&rsquo;t erase engineering fundamentals; it
+magnifies them. Strong systems get stronger. Fragile systems fail faster.</p>
+<p><strong>This pattern is tool-agnostic.</strong> Whether you&rsquo;re building with Codex, Claude code, Gemini, or Grok, the loop stays the
+same.</p>
+<hr>
+<h2 id="lesson-1-give-agents-a-map-not-a-manual">Lesson 1: give agents a map, not a manual</h2>
+<p>Both OpenAI and Anthropic teams learned the same lesson: the &ldquo;one big instruction file&rdquo; approach fails predictably.</p>
+<div class="admonition warning">
+  <div class="admonition-title">Why the giant instruction file fails</div>
+  <div class="admonition-content">
+    <ul>
+<li><strong>Context is a scarce resource.</strong> A giant instruction file crowds out the task, the code, and the relevant docs - so
+the agent either misses key constraints or starts optimizing for the wrong ones.</li>
+<li><strong>Too much guidance becomes non-guidance.</strong> When everything is &ldquo;important,&rdquo; nothing is. Agents end up pattern-matching
+locally instead of navigating intentionally.</li>
+<li><strong>It rots instantly.</strong> A monolithic manual turns into a graveyard of stale rules. Agents can&rsquo;t tell what&rsquo;s still true,
+humans stop maintaining it, and the file quietly becomes an attractive nuisance.</li>
+<li><strong>It&rsquo;s hard to verify.</strong> A single blob doesn&rsquo;t lend itself to mechanical checks (coverage, freshness, ownership,
+cross-links), so drift is inevitable.</li>
+</ul>
+
+  </div>
+</div>
+<h3 id="what-should-actually-go-into-agentsmd">What should actually go into AGENTS.md</h3>
+<p>There is now benchmark evidence that this is not just a style preference. In analysis highlighted by Addy Osmani
+(covering SWE-bench style agent runs), adding an auto-generated <code>AGENTS.md</code> summary reduced task success by roughly
+2-3 percentage points while increasing token cost by about 20-30%.</p>
+<p>The failure mode is simple: the agent can already inspect your tree, infer your stack, and read module docs on demand.
+If you preload that same information as prose, you create context anchoring noise. The model keeps looking at the pink
+elephant in the room instead of the concrete diff it should make.</p>
+<p>Use a strict filter for what earns a line in <code>AGENTS.md</code>:</p>
+<ol>
+<li><strong>Undiscoverable operational constraints</strong>: setup and tooling gotchas that are not visible from source code alone</li>
+<li><strong>Operational landmines</strong>: risky areas where &ldquo;cleanup&rdquo; can break production behavior</li>
+<li><strong>Non-obvious conventions</strong>: intentional local patterns that look wrong generically but are right for this codebase</li>
+</ol>
+<p>Everything else should be linked, not duplicated. If an agent can discover it by reading the repository, cut it from
+the instruction file.</p>
+<p>Treat <code>AGENTS.md</code> as a temporary smell tracker, not a permanent knowledge dump. If agents repeatedly misuse a
+dependency, write to the wrong folder, or keep violating architecture boundaries, the real fix is usually structural:
+rename modules, improve folder semantics, add linters/hooks, strengthen tests. Then remove the compensating prose.</p>
+<h3 id="the-solution-index-file-as-table-of-contents">The solution: index file as table of contents</h3>
+<p><strong>OpenAI&rsquo;s approach: AGENTS.md</strong></p>
+<p>Instead of treating <code>AGENTS.md</code> as the encyclopedia, OpenAI treats it as <strong>the table of contents</strong>. The repository&rsquo;s
+knowledge base lives in a structured <code>docs/</code> directory. A short <code>AGENTS.md</code> (roughly 100 lines) is injected into context
+and serves primarily as a map, with pointers to deeper sources of truth.</p>
+<details class="details" open>
+  <summary>OpenAI&#39;s actual repository structure</summary>
+  <div class="details__body"><div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">AGENTS.md              (100 lines, injected into context as the map)
+</span></span><span class="line"><span class="cl">ARCHITECTURE.md        (top-level map of domains and package layering)
+</span></span><span class="line"><span class="cl">docs/
+</span></span><span class="line"><span class="cl">├── design-docs/
+</span></span><span class="line"><span class="cl">│   ├── index.md
+</span></span><span class="line"><span class="cl">│   ├── core-beliefs.md   (agent-first operating principles)
+</span></span><span class="line"><span class="cl">│   └── ...
+</span></span><span class="line"><span class="cl">├── exec-plans/
+</span></span><span class="line"><span class="cl">│   ├── active/
+</span></span><span class="line"><span class="cl">│   ├── completed/
+</span></span><span class="line"><span class="cl">│   └── tech-debt-tracker.md
+</span></span><span class="line"><span class="cl">├── generated/
+</span></span><span class="line"><span class="cl">│   └── db-schema.md
+</span></span><span class="line"><span class="cl">├── product-specs/
+</span></span><span class="line"><span class="cl">│   ├── index.md
+</span></span><span class="line"><span class="cl">│   ├── new-user-onboarding.md
+</span></span><span class="line"><span class="cl">│   └── ...
+</span></span><span class="line"><span class="cl">├── references/
+</span></span><span class="line"><span class="cl">│   ├── design-system-reference-llms.txt
+</span></span><span class="line"><span class="cl">│   ├── nixpacks-llms.txt
+</span></span><span class="line"><span class="cl">│   └── ...
+</span></span><span class="line"><span class="cl">├── DESIGN.md
+</span></span><span class="line"><span class="cl">├── FRONTEND.md
+</span></span><span class="line"><span class="cl">├── QUALITY_SCORE.md
+</span></span><span class="line"><span class="cl">└── SECURITY.md</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Plans are first-class artifacts.</strong> Active plans, completed plans, and known technical debt are all versioned and
+co-located, allowing agents to operate without relying on external context.</p></div>
+</details>
+
+<p><strong>Claude code&rsquo;s approach: CLAUDE.md + .claude/ directory</strong></p>
+<p><a href="https://code.claude.com/docs/en/best-practices" rel="noopener external" target="_blank">Claude Code uses <code>CLAUDE.md</code></a>
+ as the agent&rsquo;s &ldquo;constitution&rdquo; - its primary source of truth for how your specific repository works. Unlike AGENTS.md, CLAUDE.md is <strong>automatically read at the start of each session</strong> and holds project-specific instructions you&rsquo;d otherwise repeat in every prompt.</p>
+<p>The filename is case-sensitive and must be exactly <code>CLAUDE.md</code> (uppercase CLAUDE, lowercase .md).</p>
+<details class="details" open>
+  <summary>Claude Code&#39;s repository structure</summary>
+  <div class="details__body"><div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">CLAUDE.md              (50-120 lines, auto-loaded every session)
+</span></span><span class="line"><span class="cl">.claude/
+</span></span><span class="line"><span class="cl">├── agents/            (specialized subagents)
+</span></span><span class="line"><span class="cl">│   ├── reviewer.md
+</span></span><span class="line"><span class="cl">│   ├── security.md
+</span></span><span class="line"><span class="cl">│   └── test-writer.md
+</span></span><span class="line"><span class="cl">├── commands/          (custom slash commands)
+</span></span><span class="line"><span class="cl">│   └── deploy.md
+</span></span><span class="line"><span class="cl">├── hooks/             (lifecycle automation)
+</span></span><span class="line"><span class="cl">│   ├── PreToolUse.sh
+</span></span><span class="line"><span class="cl">│   ├── PostToolUse.sh
+</span></span><span class="line"><span class="cl">│   └── AfterCompaction.sh
+</span></span><span class="line"><span class="cl">└── skills/            (versioned procedure bundles)
+</span></span><span class="line"><span class="cl">    ├── api-design.md
+</span></span><span class="line"><span class="cl">    └── schema-migration.md
+</span></span><span class="line"><span class="cl">docs/
+</span></span><span class="line"><span class="cl">├── architecture/
+</span></span><span class="line"><span class="cl">│   └── decisions.md  (ADRs)
+</span></span><span class="line"><span class="cl">├── evidence/
+</span></span><span class="line"><span class="cl">│   └── current-state.md
+</span></span><span class="line"><span class="cl">└── runbooks/
+</span></span><span class="line"><span class="cl">    └── deployment.md</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Key differences from OpenAI&rsquo;s approach:</strong></p>
+<ul>
+<li><code>.claude/agents/</code> holds <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">specialized subagents</a>
+ that run in isolated
+contexts</li>
+<li><code>.claude/hooks/</code> enforces quality mechanically at <a href="https://docs.anthropic.com/en/docs/claude-code/hooks" rel="noopener external" target="_blank">15 lifecycle events</a>
+</li>
+<li>CLAUDE.md is smaller (50-120 lines vs 100+) because hooks handle enforcement</li>
+<li><a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers</a>
+ provide external tool access via standardized protocol</li>
+</ul></div>
+</details>
+
+<h3 id="progressive-disclosure-in-both-ecosystems">Progressive disclosure in both ecosystems</h3>
+<pre class="mermaid">flowchart LR
+    subgraph openai [&#34;OpenAI: AGENTS.md&#34;]
+        A1[&#34;AGENTS.md ~100 lines&#34;] --&gt;|points to| A2[&#34;docs/design-docs/&#34;]
+        A1 --&gt;|points to| A3[&#34;docs/exec-plans/&#34;]
+        A2 --&gt;|deep dive| A4[&#34;core-beliefs.md&#34;]
+    end
+    subgraph claude [&#34;Claude: CLAUDE.md + .claude/&#34;]
+        C1[&#34;CLAUDE.md 50-120 lines&#34;] --&gt;|delegates to| C2[&#34;.claude/agents/&#34;]
+        C1 --&gt;|links to| C3[&#34;docs/architecture/&#34;]
+        C2 --&gt;|runs| C4[&#34;reviewer.md security.md&#34;]
+    end
+    style openai fill: #d4edda, stroke: #28a745
+    style claude fill: #e8f4fd, stroke: #0d6efd
+</pre><p>The agent reads the index file first (AGENTS.md or CLAUDE.md). From there, it follows links to whichever deep doc is
+relevant to the current task. It never loads the whole tree at once.</p>
+<h3 id="mechanical-enforcement">Mechanical enforcement</h3>
+<p><strong>OpenAI:</strong> Dedicated linters and CI jobs validate that the knowledge base is up to date, cross-linked, and structured
+correctly. A recurring &ldquo;doc-gardening&rdquo; agent scans for stale or obsolete documentation and opens fix-up pull requests.</p>
+<p><strong>Claude code:</strong> <a href="https://aiorg.dev/blog/claude-code-hooks" rel="noopener external" target="_blank">Hooks provide deterministic enforcement</a>
+. PreToolUse hooks
+block dangerous operations before they run. PostToolUse hooks enforce formatting immediately after code changes.
+AfterCompaction hooks inject critical context back after summarization.</p>
+<p>The key distinction from <a href="https://code.claude.com/docs/en/best-practices" rel="noopener external" target="_blank">Claude Code best practices</a>
+: <strong>If it&rsquo;s a
+suggestion, use CLAUDE.md. If it&rsquo;s a requirement, use hooks.</strong></p>
+<div class="admonition tip">
+  <div class="admonition-title">How to implement this yourself</div>
+  <div class="admonition-content">
+    <p><strong>For OpenAI codex:</strong></p>
+<ol>
+<li>Start with <code>AGENTS.md</code> as an index (under 120 lines)</li>
+<li>Split docs by concern into <code>docs/</code> subdirectories</li>
+<li>Add ADRs for decisions with dated, status-marked records</li>
+<li>Create evidence docs with file paths and quantified claims</li>
+<li>Enforce mechanically with CI jobs for freshness and cross-links</li>
+<li>Run a doc-gardening agent on a schedule</li>
+</ol>
+<p><strong>For Claude code:</strong></p>
+<ol>
+<li>Create <code>CLAUDE.md</code> in repo root (50-120 lines, project-specific instructions only)</li>
+<li>Structure <code>.claude/agents/</code> for specialized subagents (review, security, test-writing)</li>
+<li>Define <code>.claude/hooks/</code> for enforcement (PreToolUse blocks, PostToolUse formats)</li>
+<li>Link from CLAUDE.md to <code>docs/architecture/</code> for deep dives</li>
+<li>Use <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers</a>
+ for external tool access</li>
+<li>Let <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+ manage context with
+AfterCompaction hooks to pin critical state</li>
+</ol>
+<p><strong>Universal patterns (both ecosystems):</strong></p>
+<ul>
+<li>Keep the index file minimal (suggestions only)</li>
+<li>Use deep-linked docs for detailed context</li>
+<li>Enforce quality mechanically (linters/hooks, not prose)</li>
+<li>Version all decisions and plans in the repo</li>
+</ul>
+
+  </div>
+</div>
+<blockquote>
+  <p><strong>In flowforge</strong>, I use both patterns: <code>AGENTS.md</code> for Codex compatibility with links to <code>docs/adr/INDEX.md</code> (25+
+decisions), and <code>.claude/hooks/PostToolUse.sh</code> that runs scalafix after every code change, ensuring golden principles
+are enforced regardless of which agent I&rsquo;m using.</p>
+
+</blockquote><hr>
+<h2 id="lesson-2-automate-cleanup-or-drown-in-it">Lesson 2: automate cleanup, or drown in it</h2>
+<p>Full agent autonomy introduces a specific failure mode. Agents replicate patterns that already exist in the
+repository - even uneven or suboptimal ones. Over time, this inevitably leads to drift.</p>
+<div class="admonition danger">
+  <div class="admonition-title">The cost of skipping this</div>
+  <div class="admonition-content">
+    <strong>OpenAI&rsquo;s team spent every Friday - 20% of their week - cleaning up &ldquo;AI slop.&rdquo;</strong> That didn&rsquo;t scale. If you don&rsquo;t
+encode cleanup rules mechanically, you&rsquo;ll spend a fifth of your week doing it by hand.
+  </div>
+</div>
+<h3 id="golden-principles-encoding-taste-as-enforcement">Golden principles: encoding taste as enforcement</h3>
+<p>Both ecosystems learned to encode &ldquo;golden principles&rdquo; - opinionated, mechanical rules that keep the codebase legible
+and consistent for future agent runs.</p>
+<p><strong>OpenAI&rsquo;s production examples:</strong></p>
+<ol>
+<li><strong>Prefer shared utility packages</strong> over hand-rolled helpers to keep invariants centralized.</li>
+<li><strong>Parse data shapes at the boundary.</strong> Don&rsquo;t probe data &ldquo;YOLO-style&rdquo; - validate boundaries or rely on typed SDKs.
+Follow the <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/" rel="noopener external" target="_blank">&ldquo;parse, don&rsquo;t validate&rdquo;</a>
+ principle.</li>
+<li><strong>Statically enforce structured logging</strong>, naming conventions for schemas and types, file size limits, and
+platform-specific reliability requirements with custom lints.</li>
+<li><strong>Custom lint error messages inject remediation instructions into agent context.</strong> When a lint fails, the error
+message tells the agent <em>how</em> to fix it.</li>
+</ol>
+<p>On a regular cadence, background Codex tasks scan for deviations, update quality grades, and open targeted refactoring
+PRs. Most can be reviewed in under a minute and automerged.</p>
+<p><strong>Community validation: Karpathy&rsquo;s four principles</strong></p>
+<p>When Karpathy published his <a href="https://x.com/karpathy/status/2015883857489522876" rel="noopener external" target="_blank">LLM coding pitfalls</a>
+ in January 2026, the community responded with <code>andrej-karpathy-skills</code> - a single <code>CLAUDE.md</code> encoding four principles, now over 143,000 stars. It&rsquo;s installable from the Claude Code marketplace. They map directly onto what golden-principle engineering requires:</p>
+<ol>
+<li><strong>Think before coding.</strong> Ask clarifying questions. Surface assumptions. Don&rsquo;t let the model run with the wrong premise.</li>
+<li><strong>Simplicity first.</strong> The model&rsquo;s default instinct is overcomplication. Golden principles push back against that mechanically.</li>
+<li><strong>Surgical changes.</strong> Minimal diffs. Localized edits. &ldquo;Don&rsquo;t touch what isn&rsquo;t broken&rdquo; encoded as a rule.</li>
+<li><strong>Goal-driven execution.</strong> Give the agent success criteria, not a prescription. Let it find the path.</li>
+</ol>
+<p>The repo&rsquo;s popularity isn&rsquo;t about the principles being novel. It&rsquo;s about them being installable. That&rsquo;s the harness insight: good engineering taste is worthless unless it&rsquo;s enforced.</p>
+<p><strong>Claude code&rsquo;s approach: hooks for deterministic enforcement</strong></p>
+<p>Claude Code uses <a href="https://docs.anthropic.com/en/docs/claude-code/hooks" rel="noopener external" target="_blank">hooks at 15 lifecycle events</a>
+ to enforce golden principles.
+The critical insight
+from <a href="https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns" rel="noopener external" target="_blank">production engineering teams</a>
+:</p>
+<blockquote>
+  <p><strong>CLAUDE.md rules are suggestions. Hooks are enforcement.</strong> CLAUDE.md saying &ldquo;don&rsquo;t edit .env&rdquo; → parsed by LLM →
+weighed against other context → maybe followed. PreToolUse hook blocking .env edits → always runs → returns exit code
+2 → operation blocked.</p>
+
+</blockquote><p>Example <code>.claude/hooks/PostToolUse.sh</code> enforcing golden principles:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="c1"># Runs after every file write</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Golden principle 1: no raw console.log in production code</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$TOOL_OUTPUT</span><span class="s2">&#34;</span> <span class="p">|</span> grep -q <span class="s2">&#34;console\.log&#34;</span> <span class="o">&amp;&amp;</span> <span class="o">[[</span> ! <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">=</span>~ <span class="nb">test</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;❌ Blocked: Use structured logging (logger.info) instead of console.log&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">exit</span> <span class="m">2</span>  <span class="c1"># Block the operation</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Golden principle 2: auto-format all code changes</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[[</span> <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">=</span>~ <span class="se">\.</span><span class="o">(</span>ts<span class="p">|</span>js<span class="p">|</span>tsx<span class="p">|</span>jsx<span class="o">)</span>$ <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  npx prettier --write <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> &gt; /dev/null 2&gt;<span class="p">&amp;</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Golden principle 3: run linter with auto-fix</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[[</span> <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">=</span>~ <span class="se">\.</span><span class="o">(</span>ts<span class="p">|</span>tsx<span class="o">)</span>$ <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  npx eslint --fix <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> &gt; /dev/null 2&gt;<span class="p">&amp;</span><span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">exit</span> <span class="m">0</span>  <span class="c1"># Allow operation after enforcement</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Additional Claude code patterns from <a href="https://github.com/affaan-m/everything-claude-code" rel="noopener external" target="_blank">production repos</a>
+:</p>
+<ul>
+<li><strong>PreToolUse</strong> hooks prevent dangerous operations (deleting production DBs, exposing secrets)</li>
+<li><strong>AfterCompaction</strong> hooks inject critical context back (active plans, golden principles)</li>
+<li><strong>SessionEnd</strong> hooks generate summaries and cleanup artifacts</li>
+</ul>
+<h3 id="agents-favor-boring-technology">Agents favor boring technology</h3>
+<p>Both OpenAI and Anthropic teams favored dependencies and abstractions that could be fully internalized and reasoned
+about in-repo. Technologies often described as &ldquo;boring&rdquo; tend to be easier for agents to model due to composability, API
+stability, and representation in the training set.</p>
+<p>OpenAI&rsquo;s example: rather than pulling in a generic <code>p-limit</code>-style package, they implemented their own
+map-with-concurrency helper - tightly integrated with their OpenTelemetry instrumentation, with 100% test coverage,
+behaving exactly the way their runtime expected.</p>
+<h3 id="the-feedback-loop">The feedback loop</h3>
+<pre class="mermaid">flowchart LR
+    A[Agent output] --&gt; B[Golden principles scanner]
+    B --&gt;|pass| C[merge]
+    B --&gt;|fixable| D[auto-fix PR]
+    B --&gt;|not fixable| E[human escalation]
+    E --&gt; F[update golden principles]
+    F --&gt; B
+    D --&gt; G[quality grade updated]
+    G --&gt; B
+</pre><p><strong>OpenAI:</strong> Review comments, refactoring PRs, and user-facing bugs are captured as documentation updates or encoded
+directly into tooling. When documentation falls short, the rule gets promoted into code.</p>
+<p><strong>Claude code:</strong> Failed hook enforcement triggers human escalation. The fix becomes a new hook or updated CLAUDE.md
+rule. Over time, the harness learns from failures.
+This is what turns it into a <a href="/code-review-system/">code review operating system</a>
+, not just a linter.</p>
+<div class="admonition tip">
+  <div class="admonition-title">How to implement this yourself</div>
+  <div class="admonition-content">
+    <p><strong>For OpenAI codex:</strong></p>
+<ol>
+<li>Define 5-10 golden principles (mechanical rules your team enforces manually today)</li>
+<li>Encode them as custom linters or structural tests</li>
+<li>Make lint errors prescriptive (tell agents <em>how</em> to fix violations)</li>
+<li>Run drift scans daily, auto-open PRs for low-risk violations</li>
+<li>Track manual cleanup time (goal: trending to zero)</li>
+</ol>
+<p><strong>For Claude code:</strong></p>
+<ol>
+<li>Define golden principles in <code>.claude/hooks/PostToolUse.sh</code></li>
+<li>Use exit code 2 to block violations, exit 0 after auto-fixes</li>
+<li>Add AfterCompaction hooks to preserve principles across compaction</li>
+<li>Use PreToolUse hooks to prevent dangerous operations</li>
+<li>Track hook trigger rate and human escalations as metrics</li>
+</ol>
+<p><strong>Universal patterns:</strong></p>
+<ul>
+<li>Start with 5-10 rules, expand as patterns emerge</li>
+<li>Favor boring, composable technology (agents model it reliably)</li>
+<li>Make error messages prescriptive (not just &ldquo;what&rdquo; but &ldquo;how&rdquo;)</li>
+<li>Update principles based on real failures, not hypothetical risks</li>
+</ul>
+
+  </div>
+</div>
+<blockquote>
+  <p><strong>In flowforge</strong>, I use <code>.scalafix.conf</code> (banning <code>var</code>, <code>asInstanceOf</code>, wildcard imports) for Codex compatibility,
+plus <code>.claude/hooks/PostToolUse.sh</code> that runs scalafix automatically. I also maintain compile-fail tests that <strong>must
+fail</strong> to compile - proving the core promise that pipelines won&rsquo;t compile when contracts drift. These work identically
+across both ecosystems.</p>
+
+</blockquote><hr>
+<h2 id="lesson-3-context-is-infrastructure-not-documentation">Lesson 3: context is infrastructure, not documentation</h2>
+<p>From OpenAI&rsquo;s harness engineering post:</p>
+<blockquote>
+  <p>From the agent&rsquo;s point of view, anything it can&rsquo;t access in-context while running effectively doesn&rsquo;t exist.</p>
+
+</blockquote><p>Knowledge that lives in Google Docs, chat threads, or people&rsquo;s heads is not accessible to the system. Repository-local,
+versioned artifacts (code, markdown, schemas, executable plans) are all the agent can see.</p>
+<p><strong>This is equally true for Claude Code.</strong> <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">Claude&rsquo;s automatic compaction</a>
+ shows the same constraint: if context isn&rsquo;t in the conversation, repo files, or MCP-accessible sources, it doesn&rsquo;t exist.</p>
+<pre class="mermaid">flowchart LR
+    subgraph visible [&#34;What agents CAN see&#34;]
+        direction TB
+        A[&#34;Code + tests&#34;]
+        B[&#34;Markdown docs ADRs, specs, plans&#34;]
+        C[&#34;Schemas + configs&#34;]
+        D[&#34;Exec plans with decision logs&#34;]
+        E[&#34;Logs, metrics (via tools/MCP)&#34;]
+    end
+    subgraph invisible [&#34;What agents CANNOT see&#34;]
+        direction TB
+        F[&#34;Slack threads&#34;]
+        G[&#34;Google Docs&#34;]
+        H[&#34;People&#39;s heads&#34;]
+        I[&#34;Verbal agreements&#34;]
+        J[&#34;Undocumented conventions&#34;]
+    end
+    visible --&gt;|&#34; agent works here &#34;| K[&#34;Reliable output&#34;]
+    invisible --&gt;|&#34; effectively doesn&#39;t exist &#34;| L[&#34;Missed constraints wrong assumptions&#34;]
+    style visible fill: #d4edda, stroke: #28a745
+    style invisible fill: #f8d7da, stroke: #dc3545
+</pre><p>If a decision isn&rsquo;t in the repo, it doesn&rsquo;t exist for the agent. That Slack discussion that aligned the team on an
+architectural pattern? Same as telling a new hire who joins three months later - they&rsquo;ll never know unless you write it
+down.</p>
+<h3 id="agent-legibility-is-the-goal">Agent legibility is the goal</h3>
+<p><strong>OpenAI&rsquo;s approach:</strong> Because the repository is entirely agent-generated, it&rsquo;s optimized first for <strong>Codex&rsquo;s legibility</strong>.
+In the same way teams aim to improve navigability of their code for new engineering hires, the human engineers&rsquo; goal
+was making it possible for an agent to reason about the full business domain <strong>directly from the repository itself</strong>.</p>
+<p><strong>Claude code&rsquo;s equivalent:</strong> <a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026" rel="noopener external" target="_blank">As software engineering shifts to agent orchestration</a>
+, the folder and file structure becomes a form of context engineering.
+The <a href="https://code.claude.com/docs/en/best-practices" rel="noopener external" target="_blank">best practices for Claude Code</a>
+ emphasize treating repository
+structure as the agent&rsquo;s primary navigation system.</p>
+<h3 id="making-the-application-itself-legible-to-agents">Making the application itself legible to agents</h3>
+<p><strong>OpenAI&rsquo;s production setup:</strong></p>
+<ul>
+<li><strong>Per-worktree app instances</strong>: app bootable per git worktree, so Codex can launch and drive one instance per change.</li>
+<li><strong>Chrome DevTools Protocol</strong>: wired into the agent runtime with skills for working with DOM snapshots, screenshots,
+and navigation.</li>
+<li><strong>Ephemeral observability per worktree</strong>: logs, metrics, and traces exposed via a local observability stack that&rsquo;s
+ephemeral for any given worktree.</li>
+<li><strong>Agents can query logs with LogQL and metrics with PromQL.</strong> With this context available, prompts like &ldquo;ensure
+service startup completes in under 800ms&rdquo; become tractable.</li>
+</ul>
+<pre class="mermaid">flowchart TD
+    A[&#34;Agent gets task&#34;] --&gt; B[&#34;git worktree created&#34;]
+    B --&gt; C[&#34;App boots in isolated instance&#34;]
+    C --&gt; D[&#34;Agent drives app (CDP for Codex, MCP for Claude)&#34;]
+    D --&gt; E{&#34;Bug reproduced?&#34;}
+    E --&gt;|yes| F[&#34;Implement fix&#34;]
+    E --&gt;|no| G[&#34;Query logs/metrics (LogQL/PromQL for Codex, MCP server for Claude)&#34;]
+    G --&gt; D
+    F --&gt; H[&#34;Validate fix by driving app again&#34;]
+    H --&gt; I[&#34;Ephemeral observability torn down&#34;]
+    style C fill: #d4edda, stroke: #28a745
+    style G fill: #fff3cd, stroke: #ffc107
+</pre><p><strong>Claude code&rsquo;s equivalent:</strong></p>
+<ul>
+<li><strong>MCP servers for observability</strong>: <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">Claude Code connects to tools via MCP</a>
+ - the
+Model Context Protocol is an open standard for AI-tool integrations. Instead of baking observability into Codex&rsquo;s
+runtime, you expose it via MCP servers.</li>
+<li><strong>Example MCP servers</strong> from the <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">Claude Code ecosystem</a>
+: filesystem access, Git
+operations, database queries, HTTP APIs, browser automation.</li>
+<li><strong>Per-worktree isolation</strong>: Same pattern works with Claude Code. The agent creates a worktree, boots the app, drives
+tests via MCP-connected tools, validates, tears down.</li>
+<li><strong>Artifacts for state tracking</strong>: <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (up to 20MB) store structured data across sessions
+useful for test results, metrics history, and multi-session workflows.</li>
+</ul>
+<p>They regularly see single Codex runs work on a single task for <strong>upwards of six hours</strong> - often while the humans are
+sleeping. With <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">Claude Code&rsquo;s conversation compacting</a>
+, long-running sessions stay coherent through automatic summarization at token thresholds.</p>
+<h3 id="technology-choices-favor-agent-comprehension">Technology choices favor agent comprehension</h3>
+<p>Both OpenAI and Anthropic teams favored dependencies and abstractions that could be fully internalized and reasoned
+about in-repo. Pulling more of the system into a form the agent can inspect, validate, and modify directly multiplies
+your output - not just for Codex, but for other agents (like <a href="https://openai.com/index/introducing-aardvark/" rel="noopener external" target="_blank">Aardvark</a>
+
+for OpenAI, or <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">Claude Code subagents</a>
+ for Anthropic) working on the codebase.</p>
+<p>This is the same mental model in practical form: choices that improve human legibility and maintainability usually
+improve agent outcomes too. Chasing assembly-level generation over useful abstractions isn&rsquo;t acceleration; it&rsquo;s
+throwing away leverage we already spent years building.</p>
+<div class="admonition tip">
+  <div class="admonition-title">How to implement this yourself</div>
+  <div class="admonition-content">
+    <p><strong>Universal patterns (both ecosystems):</strong></p>
+<ol>
+<li><strong>Push decisions from chat to repo.</strong> Every Slack alignment discussion becomes an ADR.</li>
+<li><strong>Create evidence docs, not aspirational docs.</strong> Document current state with file paths and line numbers.</li>
+<li><strong>Write unvarnished reviews.</strong> Brutal honesty about gaps. Agents work better with truth than marketing.</li>
+<li><strong>Define acceptance criteria as measurable checks.</strong> If an agent can&rsquo;t verify it, it&rsquo;s not a criterion.</li>
+<li><strong>Make the app bootable per worktree.</strong> Each agent task gets an isolated instance.</li>
+</ol>
+<p><strong>For OpenAI codex:</strong></p>
+<ul>
+<li>Wire Chrome DevTools Protocol into Codex runtime</li>
+<li>Expose logs/metrics via ephemeral per-worktree observability</li>
+<li>Enable LogQL/PromQL query access for agents</li>
+</ul>
+<p><strong>For Claude code:</strong></p>
+<ul>
+<li>Build <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP servers</a>
+ for observability
+access (logs, metrics, traces)</li>
+<li>Use <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (up to
+20MB) to store test results and metrics history across sessions</li>
+<li>Enable <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+ with AfterCompaction
+hooks to preserve critical context</li>
+<li>Connect Claude Code to your observability stack via MCP (Datadog, Grafana, CloudWatch)</li>
+</ul>
+
+  </div>
+</div>
+<blockquote>
+  <p><strong>In flowforge</strong>, I maintain <code>docs/evidence/unvarnished-review.md</code> - quotes like &ldquo;Hand-rolled codegen JSON parser&hellip;
+will explode on unions, nested records&rdquo; - and 25 measurable acceptance criteria for v1.0 in
+<code>docs/plan/v1.0-readiness.md</code>. These work identically for both Codex and Claude code because they&rsquo;re plain markdown in
+the repo.</p>
+
+</blockquote><hr>
+<h2 id="knowledge-as-infrastructure-the-llm-wiki-pattern">Knowledge as infrastructure: the LLM wiki pattern</h2>
+<p>The three lessons above frame harness engineering around code. In April 2026, Karpathy&rsquo;s <a href="https://x.com/karpathy/status/2039805659525644595" rel="noopener external" target="_blank">LLM Knowledge Bases post</a>
+ pointed at the same infrastructure problem from a different angle.</p>
+<p>His observation: a large fraction of productive agent work isn&rsquo;t code manipulation. It&rsquo;s knowledge manipulation - reading source documents, building structured summaries, answering complex questions across a growing corpus. The same harness discipline that makes code agents reliable applies directly here.</p>
+<p>The pattern:</p>
+<pre class="mermaid">flowchart LR
+    A[&#34;raw/\n(immutable sources)&#34;] --&gt; B[&#34;LLM compiler&#34;]
+    B --&gt; C[&#34;wiki/\n(agent-maintained .md)&#34;]
+    C --&gt; D[&#34;query / lint / ingest&#34;]
+    D --&gt; C
+    style A fill:#fff3cd,stroke:#ffc107
+    style C fill:#d4edda,stroke:#28a745
+    style B fill:#e8f4fd,stroke:#0d6efd
+</pre><p><strong>Raw:</strong> source documents go into <code>raw/</code> unchanged - articles, papers, repos, datasets. Immutable, like your git history.</p>
+<p><strong>Wiki:</strong> the LLM compiles sources into structured <code>.md</code> files: summaries, backlinks, concept articles, cross-links. The agent writes and maintains all of it. You rarely touch it directly.</p>
+<p><strong>Operations:</strong> once the wiki reaches roughly 100 articles, three operations become practical:</p>
+<ul>
+<li><strong>Ingest:</strong> <code>&quot;file this new doc to our wiki: (path)&quot;</code>. After the early bootstrap phase, the LLM gets the pattern and each addition is incremental.</li>
+<li><strong>Query:</strong> ask complex questions across the full corpus. The LLM auto-maintains index files and brief per-document summaries, so you don&rsquo;t need RAG at this scale.</li>
+<li><strong>Lint:</strong> health checks that find inconsistent data, impute missing values via web search, surface new article candidates.</li>
+</ul>
+<p>Output goes back into Obsidian - formatted files, Marp slides, matplotlib plots - viewable alongside the raw sources that produced them.</p>
+<p>The harness parallels are direct. Raw is your immutable source of truth. Wiki is agent-owned state - like <code>.claude/</code>, maintained by the agent, not manually edited. Operations are golden principles for knowledge work: defined, repeatable procedures applied consistently.</p>
+<p>Vannevar Bush described the Memex in 1945: a desk that stored and linked all your documents, let you trace associative trails, and built a record of your thinking over time. His unsolved problem was maintenance - who keeps the index current, who updates the cross-links as the corpus grows? The LLM handles that. The harness is what makes it reliable.</p>
+<p>The harness isn&rsquo;t specific to code.</p>
+<hr>
+<h2 id="the-three-operational-primitives-skills-shell-compaction">The three operational primitives: skills, shell, compaction</h2>
+<p>We&rsquo;re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large
+datasets, updating files, and writing apps. Based on developer feedback and their own experience building internal
+agents, both OpenAI and Anthropic released three primitives that make long-horizon work practical.</p>
+<p><strong>The pattern is identical across ecosystems. The implementations differ.</strong></p>
+<h3 id="skills-procedures-agents-load-on-demand">Skills: procedures agents load on demand</h3>
+<p><strong>OpenAI&rsquo;s approach:</strong></p>
+<p>A skill is a bundle of files plus a <code>SKILL.md</code> manifest containing frontmatter and instructions. Think: a versioned
+playbook the model can consult when it&rsquo;s time to do real work. Skills are aligned with the Agent Skills open standard.</p>
+<p>When skills are available, the platform exposes each skill&rsquo;s <code>name</code>, <code>description</code>, and <code>path</code> to the model. The model
+uses that metadata to decide whether to invoke a skill. If it does, it reads <code>SKILL.md</code> for the full workflow.</p>
+<p><strong>Claude code&rsquo;s approach:</strong></p>
+<p><a href="https://code.claude.com/docs/en/skills" rel="noopener external" target="_blank">Claude code skills</a>
+ work identically. A skill is a markdown file with
+frontmatter (name, description, version) plus step-by-step instructions. Store skills in <code>.claude/skills/</code> or install
+community skills via the <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">Claude Skills Library</a>
+.</p>
+<p>Key difference: Claude code&rsquo;s <a href="https://claude.com/blog/skills-explained" rel="noopener external" target="_blank">skills ecosystem</a>
+ integrates with MCP servers
+for external tool access, while OpenAI&rsquo;s skills use the shell tool for execution.</p>
+<p>The <a href="https://github.com/multica-ai/andrej-karpathy-skills" rel="noopener external" target="_blank"><code>andrej-karpathy-skills</code> repo</a>
+ - 143,000+ stars, installable
+from the Claude Code marketplace - shows what this looks like at its simplest: four engineering principles in a single
+<code>CLAUDE.md</code>, available as a per-project copy or an installable plugin.</p>
+<pre class="mermaid">flowchart LR
+    subgraph openai [&#34;OpenAI Skills&#34;]
+        O1[&#34;SKILL.md manifest&#34;] --&gt; O2[&#34;Agent reads procedure&#34;]
+        O2 --&gt; O3[&#34;Executes via shell tool&#34;]
+    end
+    subgraph claude [&#34;Claude Code Skills&#34;]
+        C1[&#34;.claude/skills/ manifest&#34;] --&gt; C2[&#34;Agent reads procedure&#34;]
+        C2 --&gt; C3[&#34;Executes via MCP servers&#34;]
+    end
+    style openai fill: #d4edda, stroke: #28a745
+    style claude fill: #e8f4fd, stroke: #0d6efd
+</pre><h3 id="shell-execution-for-agents">Shell: execution for agents</h3>
+<p><strong>OpenAI&rsquo;s approach:</strong></p>
+<p>The shell tool lets models work inside a real terminal environment - either hosted containers managed by OpenAI, or a
+local shell runtime you execute yourself (same tool semantics, but you control the machine). Hosted shell runs through
+the Responses API, which means your requests come with stateful work, tool calls, multi-turn continuation, and
+artifacts.</p>
+<p><strong>Claude code&rsquo;s approach:</strong></p>
+<p><a href="https://code.claude.com/docs/en/desktop" rel="noopener external" target="_blank">Claude code runs in your local terminal</a>
+ by default - no hosted containers.
+You control the machine. The CLI integrates directly with your development environment, maintaining persistent awareness
+of your entire project.</p>
+<p>For remote/cloud execution, you can:</p>
+<ul>
+<li>Run Claude code CLI in CI/CD pipelines</li>
+<li>Use <a href="https://www.producttalk.org/claude-code-what-it-is-and-how-its-different/" rel="noopener external" target="_blank">Claude Desktop</a>
+ for GUI-based
+workflows</li>
+<li>Connect to remote machines via SSH + Claude code CLI</li>
+</ul>
+<h3 id="compaction-keep-long-runs-moving">Compaction: keep long runs moving</h3>
+<p><strong>OpenAI&rsquo;s approach:</strong></p>
+<p>As workflows get longer, they run into context window limits. Server-side compaction keeps long runs moving by managing
+the context window and compressing conversation history automatically.</p>
+<p>Two modes:</p>
+<ul>
+<li><strong>Server-side compaction</strong>: when context crosses the threshold, compaction runs automatically in-stream.</li>
+<li><strong>Standalone <code>/responses/compact</code> endpoint</strong>: use when you want explicit control over when compaction happens.</li>
+</ul>
+<p><strong>Claude code&rsquo;s approach:</strong></p>
+<p><a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">Automatic conversation compacting</a>
+ works identically.
+When a conversation approaches the token limit (configurable threshold), Claude automatically summarizes the
+conversation, creates a compaction block, and continues with the compacted context.</p>
+<p>Key additions for Claude code:</p>
+<ul>
+<li><strong>Customize compaction in CLAUDE.md</strong>: &ldquo;When compacting, always preserve the full list of modified files and any test
+commands&rdquo;</li>
+<li><strong>AfterCompaction hooks</strong>: inject critical context back after summarization (active plans, golden principles)</li>
+<li>**Artifacts don&rsquo;t count against token limits
+**: <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (up to
+20MB) store code and outputs separately from conversation context</li>
+<li><strong>Manual trigger</strong>: <code>/compact Focus on the API changes</code> for explicit control</li>
+</ul>
+<p>Claude code&rsquo;s <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+ continues to improve memory usage in long sessions and preservation of critical state.</p>
+<h3 id="why-theyre-better-together">Why they&rsquo;re better together</h3>
+<pre class="mermaid">flowchart LR
+    subgraph skills [&#34;Skills = the HOW&#34;]
+        S1[&#34;SKILL.md manifest&#34;]
+        S2[&#34;Templates + examples&#34;]
+        S3[&#34;Guardrails + routing&#34;]
+    end
+    subgraph shell [&#34;Shell/MCP = the DO&#34;]
+        SH1[&#34;Install dependencies&#34;]
+        SH2[&#34;Run scripts + tools&#34;]
+        SH3[&#34;Write artifacts&#34;]
+    end
+    subgraph compaction [&#34;Compaction = the CONTINUITY&#34;]
+        C1[&#34;Auto-compress when context fills&#34;]
+        C2[&#34;Pin immutable constraints&#34;]
+        C3[&#34;Multi-hour runs stay coherent&#34;]
+    end
+    skills --&gt;|&#34; model loads procedure &#34;| shell
+    shell --&gt;|&#34; long run hits limit &#34;| compaction
+    compaction --&gt;|&#34; resumes with full context &#34;| shell
+    style skills fill: #e8f4fd, stroke: #0d6efd
+    style shell fill: #d4edda, stroke: #28a745
+    style compaction fill: #fff3cd, stroke: #ffc107
+</pre><ul>
+<li>Skills reduce prompt spaghetti by moving stable procedures and examples into a reusable bundle.</li>
+<li>Shell/MCP provides a full execution environment, letting you install code, run scripts, and write outputs.</li>
+<li>Compaction preserves continuity on long runs, so the same workflow can keep executing without manual context surgery.</li>
+</ul>
+<p><strong>The philosophy, summarized:</strong> Use skills to encode the <em>how</em> (procedures, templates, guardrails). Use shell/MCP to
+execute the <em>do</em> (install, run, write artifacts). Use compaction to keep long runs coherent (without hand-managing
+context).</p>
+<h3 id="the-10-tips-that-actually-matter">The 10 tips that actually matter</h3>
+<p>These come from OpenAI&rsquo;s developer blog, informed by their work building Codex and production experience from Glean. Each tip below shows OpenAI implementation patterns and Claude Code adaptations where they differ.</p>
+<p><strong>Applicability to Claude Code:</strong> Tips 1-5 (skill design) and Tip 10 (local/cloud parity) apply directly with same patterns. Tips 6-9 (security, networking, credentials) use different mechanisms (MCP permission tiers vs OpenAI allowlists) but same principles.</p>
+<details class="details" open>
+  <summary>Tips 1-5: skill design and routing</summary>
+  <div class="details__body"><p><strong>Tip 1: Write skill descriptions like routing logic, not marketing copy.</strong></p>
+<p>Your skill&rsquo;s description is effectively the model&rsquo;s decision boundary. It should answer: when should I use this? When
+should I <em>not</em>? What are the outputs and success criteria?</p>
+<p><strong>OpenAI + Claude:</strong> Include a short &ldquo;Use when vs. don&rsquo;t use when&rdquo; block directly in the front matter description.</p>
+<hr>
+<p><strong>Tip 2: Add negative examples and edge cases to reduce misfires.</strong></p>
+<p>A surprising failure mode is that making skills available can initially <em>reduce</em> correct triggering. Glean saw
+skill-based routing <strong>drop by about 20%</strong> in targeted evals, then recovered after they added negative examples and edge
+case coverage.</p>
+<p><strong>OpenAI + Claude:</strong> Write explicit &ldquo;Don&rsquo;t call this skill when..&rdquo; cases in the skill body and suggest what to do
+instead.</p>
+<hr>
+<p><strong>Tip 3: Put templates and examples inside the skill, not the system prompt.</strong></p>
+<p>Templates inside skills have two advantages: they&rsquo;re available exactly when needed (when the skill is invoked), and they
+don&rsquo;t inflate tokens for unrelated queries. Glean reported this pattern drove some of their <strong>biggest quality and
+latency gains</strong> in production.</p>
+<p><strong>OpenAI:</strong> Include templates in <code>SKILL.md</code> under &ldquo;Examples&rdquo; section.
+<strong>Claude:</strong> Include templates in <code>.claude/skills/*.md</code> with concrete examples inline.</p>
+<hr>
+<p><strong>Tip 4: Design for long runs early with container reuse and compaction.</strong></p>
+<p>Long-horizon agents rarely succeed as one-shot prompts. Plan for continuity from the start:</p>
+<ul>
+<li>Reuse the same container/session across steps when you want stable dependencies, cached files, and intermediate
+outputs.</li>
+<li>Pass <code>previous_response_id</code> (OpenAI) or maintain conversation thread (Claude) so the model can continue work.</li>
+<li>Use compaction as a default long-run primitive, not an emergency fallback.</li>
+</ul>
+<p><strong>Claude-specific:</strong>
+Use <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">artifacts</a>
+ (up to 20MB) to
+persist structured data across compaction events.</p>
+<hr>
+<p><strong>Tip 5: For determinism, just tell the model to use the skill.</strong></p>
+<p>&ldquo;Use the <code>&amp;lt;skill-name&amp;gt;</code> skill.&rdquo; That&rsquo;s it. Simplest reliability lever you can pull. Turns fuzzy routing into an explicit contract.</p>
+<p><strong>OpenAI + Claude:</strong> Works identically in both ecosystems.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Tips 6-10: security, networking, and portability</summary>
+  <div class="details__body"><p><strong>Tip 6: Treat skills plus networking as a high-risk combo.</strong></p>
+<p><strong>Security posture</strong></p>
+<p><strong>Combining skills with open network access creates a high-risk path for data exfiltration.</strong> If you use networking,
+keep network allowlists strict, assume tool output is untrusted, and avoid open internet plus unrestricted procedures in
+consumer-facing flows.</p>
+<p><strong>OpenAI:</strong> Use org-level and request-level <code>network_policy</code> allowlists.<br>
+<strong>Claude:</strong> Use <a href="https://www.mintmcp.com/blog/claude-code-security" rel="noopener external" target="_blank">MCP server vetting</a>
+ and permission tiers
+(Deny/Ask/Allow rules).</p>
+<p>Strong default posture for both:</p>
+<ul>
+<li>Skills: <strong>allowed</strong></li>
+<li>Shell/MCP: <strong>allowed</strong></li>
+<li>Network: <strong>enabled only with a minimal allowlist</strong>, per request, for narrowly scoped tasks</li>
+</ul>
+<hr>
+<p><strong>Tip 7: Make a standard handoff boundary for artifacts.</strong></p>
+<p><strong>OpenAI:</strong> Treat <code>/mnt/data</code> as the standard place to write outputs you&rsquo;ll retrieve, review, or pass back into
+subsequent steps.</p>
+<p><strong>Claude:</strong>
+Use <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ for structured outputs that persist across sessions.
+For file-based outputs, define a standard path like <code>./artifacts/</code> in CLAUDE.md.</p>
+<p>Mental model: tools write to disk, models reason over disk, developers retrieve from disk.</p>
+<hr>
+<p><strong>Tip 8: Understand allowlists as a two-layer system.</strong></p>
+<p><strong>OpenAI:</strong> Networking is controlled via org-level allowlist (admin-configured) and request-level <code>network_policy</code> (must
+be subset of org allowlist).</p>
+<p><strong>Claude:</strong> <a href="https://www.mintmcp.com/blog/claude-code-security" rel="noopener external" target="_blank">MCP security uses permission tiers</a>
+: Deny rules block
+operations, Ask rules require user approval, Allow rules auto-approve. Hook controls let you disable all hooks between
+sessions to prevent persistent malicious code.</p>
+<pre class="mermaid">flowchart TD
+    A[&#34;Agent request with network/tool access&#34;] --&gt; B{&#34;In allowlist (OpenAI) or permission tier(Claude)?&#34;}
+    B --&gt;|no| C[&#34;Blocked&#34;]
+    B --&gt;|yes| D{&#34;Needs auth?&#34;}
+    D --&gt;|no| E[&#34;Request proceeds&#34;]
+    D --&gt;|yes| F[&#34;Inject credentials (domain_secrets for OpenAI, MCP auth for Claude)&#34;]
+    F --&gt; E
+    style C fill: #f8d7da, stroke: #dc3545
+    style E fill: #d4edda, stroke: #28a745
+</pre><hr>
+<p><strong>Tip 9: Use secure credential injection for authenticated calls.</strong></p>
+<p><strong>OpenAI:</strong> Use <code>domain_secrets</code> so the model never sees raw credentials. At runtime, the model sees placeholders (e.g., <code>$API_KEY</code>), and a sidecar injects real values only for approved destinations.</p>
+<p><strong>Claude:</strong> <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP servers handle authentication</a>
+ separately from the model. Credentials live in MCP server config, never in conversation context.</p>
+<hr>
+<p><strong>Tip 10: Use the same APIs in the cloud and locally.</strong></p>
+<p><strong>OpenAI:</strong> Skills work with hosted shell and local shell mode. Shell has a local execution mode where you execute
+<code>shell_call</code> yourself and return <code>shell_call_output</code> back to the model.</p>
+<p><strong>Claude:</strong> <a href="https://code.claude.com/docs/en/desktop" rel="noopener external" target="_blank">Claude code runs locally by default</a>
+. For cloud execution, run
+Claude Code CLI in CI/CD or use Claude Desktop for GUI workflows. Skills and MCP servers work identically across
+local/remote.</p>
+<p>Practical dev loop (both ecosystems):</p>
+<ol>
+<li>Start local (fast iteration, access to internal tooling, easy debugging).</li>
+<li>Move to hosted/CI when you want repeatability, isolation, and deployment consistency.</li>
+<li>Keep skills the same across both modes (the workflow stays stable even when execution moves).</li>
+</ol>
+</div>
+</details>
+
+<h3 id="three-build-patterns">Three build patterns</h3>
+<pre class="mermaid">flowchart LR
+    subgraph A [&#34;Pattern A: Artifact&#34;]
+        direction TB
+        A1[&#34;Install libs&#34;] --&gt; A2[&#34;Fetch data / call API&#34;] --&gt; A3[&#34;Write to standard path (/mnt/data or ./artifacts/)&#34;]
+    end
+    subgraph B [&#34;Pattern B: Repeatable&#34;]
+        direction TB
+        B1[&#34;Load skill&#34;] --&gt; B2[&#34;Execute in shell/MCP&#34;] --&gt; B3[&#34;Produce artifact deterministically&#34;]
+    end
+    subgraph C [&#34;Pattern C: Enterprise&#34;]
+        direction TB
+        C1[&#34;Skill = living SOP&#34;] --&gt; C2[&#34;Multi-tool orchestration&#34;] --&gt; C3[&#34;Consistent execution across org&#34;]
+    end
+    A --&gt;|&#34; add skills for consistency &#34;| B
+    B --&gt;|&#34; scale across teams &#34;| C
+    style A fill: #d4edda, stroke: #28a745
+    style B fill: #e8f4fd, stroke: #0d6efd
+    style C fill: #fff3cd, stroke: #ffc107
+</pre><p>Each pattern builds on the previous one. Start with A for quick wins, graduate to B for repeatable workflows, scale to C
+across the org.</p>
+<p><strong>Pattern A: Install, fetch, write artifact.</strong></p>
+<p><strong>OpenAI:</strong> Install libraries, call API, write report to <code>/mnt/data/report.md</code>.
+<strong>Claude:</strong> Install libraries, call API via MCP server, write to Claude artifact or <code>./artifacts/report.md</code>.</p>
+<p>This creates a clean review boundary - your app can show the artifact to the user, log it, diff it, or feed it into a
+later step.</p>
+<p><strong>Pattern B: Skills + shell/MCP for repeatable workflows.</strong></p>
+<p><strong>OpenAI:</strong> Encode workflow in <code>SKILL.md</code>, mount into shell environment, execute deterministically.
+<strong>Claude:</strong> Encode workflow in <code>.claude/skills/*.md</code>, execute via MCP servers for external tool access.</p>
+<p>Particularly effective for spreadsheet analysis, dataset cleaning, and standardized report generation.</p>
+<p><strong>Pattern C: Skills as enterprise workflow carriers.</strong></p>
+<p>One early pattern is a loss of accuracy in the gap between single tool invocation and multi-tool orchestration. Skills
+close that gap.</p>
+<p>Glean&rsquo;s Salesforce-oriented skill (works for both OpenAI and Claude): increased eval accuracy from <strong>73% to 85%</strong> and
+reduced <strong>time-to-first-token by 18.1%</strong>. Practical tactics: careful routing, negative examples, embedding templates
+inside the skill.</p>
+<p>Skills become living SOPs (standard operating procedures): updated as your org evolves, executed consistently by agents
+across both ecosystems.</p>
+<hr>
+<h2 id="architecture-enforcement-boundaries-not-micromanagement">Architecture enforcement: boundaries, not micromanagement</h2>
+<p>Agents are most effective in environments
+with <a href="https://bits.logic.inc/p/ai-is-forcing-us-to-write-good-code" rel="noopener external" target="_blank">strict boundaries and predictable structure</a>
+. OpenAI
+built their application around a rigid architectural model. Each business domain is divided into a fixed set of layers,
+with strictly validated dependency directions.</p>
+<p><strong>Claude Code teams are doing the same thing.</strong> <a href="https://www.teamday.ai/blog/complete-guide-agentic-coding-2026" rel="noopener external" target="_blank">As agentic coding becomes standard in 2026</a>
+, the consensus is clear: <strong>constraints enable speed without decay</strong>.</p>
+<p><strong>The rule (enforced mechanically):</strong></p>
+<p>Within each business domain (for example, App Settings), code can only depend &ldquo;forward&rdquo; through a fixed set of layers.
+Cross-cutting concerns (auth, connectors, telemetry, feature flags) enter through a single explicit interface: *
+<em>Providers</em>*. Anything else is disallowed and enforced mechanically.</p>
+<pre class="mermaid">flowchart LR
+    subgraph domain [&#34;Business domain (e.g. App Settings)&#34;]
+        direction LR
+        T[&#34;Types&#34;] --&gt; CF[&#34;Config&#34;] --&gt; R[&#34;Repo&#34;] --&gt; S[&#34;Service&#34;] --&gt; RT[&#34;Runtime&#34;] --&gt; U[&#34;UI&#34;]
+    end
+    subgraph providers [&#34;Providers (single entry point)&#34;]
+        direction TB
+        P1[&#34;Auth&#34;]
+        P2[&#34;Connectors&#34;]
+        P3[&#34;Telemetry&#34;]
+        P4[&#34;Feature flags&#34;]
+    end
+    providers --&gt;|&#34; only allowed cross-cutting edge &#34;| S
+    T -.-&gt;|&#34; backward dependency BLOCKED by linter &#34;| U
+    style domain fill: #e8f4fd, stroke: #0d6efd
+    style providers fill: #fff3cd, stroke: #ffc107
+    style T fill: #d4edda, stroke: #28a745
+</pre><p>Dependencies flow left to right only. The linter blocks any backward edge. Providers are the only way cross-cutting
+concerns get in.</p>
+<div class="admonition info">
+  <div class="admonition-title">Why this matters early</div>
+  <div class="admonition-content">
+    This is the kind of architecture you usually postpone until you have hundreds of engineers. With coding agents, it&rsquo;s an
+early prerequisite: <strong>the constraints are what allows speed without decay or architectural drift</strong>.
+  </div>
+</div>
+<h3 id="enforcement-through-custom-lints-and-structural-tests">Enforcement through custom lints and structural tests</h3>
+<p><strong>OpenAI:</strong> Custom linters and structural tests (Codex-generated), plus &ldquo;taste invariants.&rdquo; They statically enforce
+structured logging, naming conventions, file size limits. Because the lints are custom, they write error messages that
+inject remediation instructions into agent context.</p>
+<p><strong>Claude code:</strong> <a href="https://github.com/affaan-m/everything-claude-code" rel="noopener external" target="_blank">Hooks provide deterministic enforcement</a>
+.
+PostToolUse hooks run linters immediately after code changes. PreToolUse hooks block violations before they happen.
+Example from production repos:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="c1"># .claude/hooks/PostToolUse.sh</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Enforce layered architecture</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[[</span> <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">=</span>~ ^src/<span class="o">(</span>.+<span class="o">)</span>/types/ <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">LAYER</span><span class="o">=</span><span class="s2">&#34;types&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="k">elif</span> <span class="o">[[</span> <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">=</span>~ ^src/<span class="o">(</span>.+<span class="o">)</span>/service/ <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">LAYER</span><span class="o">=</span><span class="s2">&#34;service&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[[</span> -n <span class="s2">&#34;</span><span class="nv">$LAYER</span><span class="s2">&#34;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="c1"># Check for backward dependencies (service importing from UI, etc.)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> grep -q <span class="s2">&#34;from.*UI&#34;</span> <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span> <span class="o">&amp;&amp;</span> <span class="o">[[</span> <span class="s2">&#34;</span><span class="nv">$LAYER</span><span class="s2">&#34;</span> <span class="o">==</span> <span class="s2">&#34;service&#34;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;❌ Blocked: Service layer cannot import from UI layer&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;Fix: Move shared logic to Types or create a Provider&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">2</span>
+</span></span><span class="line"><span class="cl">  <span class="k">fi</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Run language-specific linter</span>
+</span></span><span class="line"><span class="cl">npx eslint --fix <span class="s2">&#34;</span><span class="nv">$FILE_PATH</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">exit</span> <span class="m">0</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The philosophy</strong>: enforce boundaries centrally, allow autonomy locally. You care deeply about boundaries, correctness,
+and reproducibility. Within those boundaries, you allow teams - or agents - significant freedom in how solutions are
+expressed.</p>
+<p>The resulting code doesn&rsquo;t always match human stylistic preferences, and that&rsquo;s okay. As long as the output is correct,
+maintainable, and legible to future agent runs, it meets the bar.</p>
+<blockquote>
+  <p><strong>In FlowForge</strong>, I enforce this through sbt module definitions (dependencies only flow one direction),
+<code>.scalafix.conf</code> rules (no <code>var</code>, no <code>asInstanceOf</code>, no <code>println</code>), and per-module coverage thresholds (core 90%,
+connectors 80%). These rules work identically for both Codex and Claude Code because they&rsquo;re language-level enforcement,
+not agent-specific.</p>
+
+</blockquote><hr>
+<h2 id="the-autonomy-ladder-from-drafting-code-to-merging-prs">The autonomy ladder: from drafting code to merging PRs</h2>
+<p>As more of the development loop was encoded directly into the system - testing, validation, review, feedback handling,
+and recovery - OpenAI&rsquo;s repository crossed a meaningful threshold where Codex can end-to-end drive a new feature.</p>
+<p><strong>Claude Code teams are reaching the same milestone.</strong> <a href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk" rel="noopener external" target="_blank">Building agents with the Claude Agent SDK</a>
+
+shows similar autonomous workflows becoming production-ready.</p>
+<p>Given a single prompt, the agent can now drive a feature end-to-end:</p>
+<pre class="mermaid">flowchart TD
+    A[&#34;1. Validate codebase state&#34;] --&gt; B[&#34;2. Reproduce reported bug&#34;]
+    B --&gt; C[&#34;3. Record evidence\n(video for Codex, artifact for Claude)&#34;]
+    C --&gt; D[&#34;4. Implement fix&#34;]
+    D --&gt; E[&#34;5. Validate fix by driving app&#34;]
+    E --&gt; F[&#34;6. Record verification (video/artifact)&#34;]
+    F --&gt; G[&#34;7. Open PR&#34;]
+    G --&gt; H[&#34;8. Respond to agent + human feedback&#34;]
+    H --&gt; I{&#34;9. Build passes?&#34;}
+    I --&gt;|no| J[&#34;Remediate build failure&#34;]
+    J --&gt; H
+    I --&gt;|yes| K{&#34;10. Judgment required?&#34;}
+    K --&gt;|yes| L[&#34;Escalate to human&#34;]
+    K --&gt;|no| M[&#34;11. Merge&#34;]
+    style A fill: #e8f4fd, stroke: #0d6efd
+    style M fill: #d4edda, stroke: #28a745
+    style L fill: #fff3cd, stroke: #ffc107
+</pre><p>That&rsquo;s 11 steps from a single prompt. The agent loops on feedback until reviewers are satisfied (
+the <a href="https://ghuntley.com/loop/" rel="noopener external" target="_blank">Ralph Wiggum Loop</a>
+ - agent-to-agent review iteration). Humans only step in when actual
+judgment is needed.</p>
+<p><strong>Implementation differences:</strong></p>
+<p><strong>OpenAI codex:</strong></p>
+<ul>
+<li>Uses Chrome DevTools Protocol for step 2 (reproduce bug) and step 5 (validate fix)</li>
+<li>Records videos as evidence artifacts</li>
+<li>Reviews own changes locally, requests agent reviews in cloud</li>
+<li>Uses <code>gh</code> CLI for PR operations</li>
+</ul>
+<p><strong>Claude code:</strong></p>
+<ul>
+<li>Uses <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers for app interaction</a>
+ (browser automation, API testing)</li>
+<li>Records evidence
+in <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (
+structured test results, screenshots)</li>
+<li><a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">Subagents handle specialized review</a>
+ (security, test coverage,
+performance)</li>
+<li>Uses <code>gh</code> CLI for PR operations (identical to Codex)</li>
+</ul>
+<div class="admonition caution">
+  <div class="admonition-title">Caveat</div>
+  <div class="admonition-content">
+    This behavior depends heavily on the specific structure and tooling of the repository and should not be assumed to
+generalize without similar investment - at least, not yet. Both OpenAI and Anthropic teams spent months building the
+harness infrastructure.
+  </div>
+</div>
+<h3 id="how-agents-interact-with-the-system">How agents interact with the system</h3>
+<p><strong>OpenAI:</strong> Humans interact almost entirely through prompts: describe a task, run the agent, allow it to open a pull
+request. To drive a PR to completion, Codex reviews its own changes locally, requests additional agent reviews, responds
+to feedback, and iterates until all reviewers are satisfied. Codex uses standard development tools directly (<code>gh</code>, local
+scripts, repository-embedded skills).</p>
+<p><strong>Claude code:</strong> <a href="https://medium.com/@billcockerill/coding-with-claude-code-and-claude-desktop-two-ai-workflows-compared-2c70dac52b47" rel="noopener external" target="_blank">The workflow is iterative and conversational</a>
+,
+feeling like you have a junior developer sitting next to you. Claude Code integrates directly with your development
+environment, maintaining persistent awareness of your entire project. For
+review, <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">specialized subagents</a>
+ handle security scans, test coverage, and
+code quality checks.</p>
+<p><strong>Human review is optional, not required.</strong> Over time, both teams have pushed almost all review effort towards being
+handled agent-to-agent.</p>
+<h3 id="throughput-changes-the-merge-philosophy">Throughput changes the merge philosophy</h3>
+<p>As agent throughput increased, many conventional engineering norms became counterproductive. Both OpenAI and Claude Code
+teams operate with <strong>minimal blocking merge gates</strong>. Pull requests are short-lived. Test flakes are often addressed with
+follow-up runs rather than blocking progress indefinitely.</p>
+<p>In a system where agent throughput far exceeds human attention, <strong>corrections are cheap, and waiting is expensive</strong>.</p>
+<p>This would be irresponsible in a low-throughput environment. Here, it&rsquo;s often the right tradeoff.</p>
+<h3 id="what-agent-generated-actually-means">What &ldquo;agent-generated&rdquo; actually means</h3>
+<p>When they say the codebase is generated by agents, they mean everything: product code and tests, CI configuration and
+release tooling, internal developer tools, documentation and design history, evaluation harnesses, review comments and
+responses, scripts that manage the repository itself, and production dashboard definition files.</p>
+<p>Humans always remain in the loop, but work at a different layer of abstraction. They prioritize work, translate user
+feedback into acceptance criteria, and validate outcomes. When the agent struggles, they treat it as a signal: identify
+what is missing - tools, guardrails, documentation - and feed it back into the repository, <strong>always by having the
+agent itself write the fix</strong>.</p>
+<hr>
+<h2 id="15-lessons-from-building-chatgpt-apps-adapted-for-claude-ecosystem">15 lessons from building ChatGPT apps (adapted for Claude ecosystem)</h2>
+<p>Alpic built two dozen ChatGPT apps over three months. Their core insight is what they call <strong>the three body problem</strong>:
+traditional web apps have two actors (user, UI), but AI apps add a third (model). The hard part is managing <strong>context
+asymmetry</strong> - each body has partial knowledge, and no single one has the full picture.</p>
+<p><strong>These patterns apply to <a href="https://www.arsturn.com/blog/claude-desktop-vs-claude-code-should-you-switch-for-mcp-features" rel="noopener external" target="_blank">Claude Desktop apps and MCP servers</a>
+.</strong> The three-body problem exists whether you&rsquo;re building for ChatGPT or Claude.</p>
+<pre class="mermaid">flowchart TD
+    subgraph traditional [&#34;Traditional web app&#34;]
+        direction LR
+        U1[&#34;User&#34;] &lt;--&gt;|&#34; clicks, sees &#34;| UI1[&#34;UI&#34;]
+    end
+    subgraph ai [&#34;AI app (ChatGPT or Claude)&#34;]
+        direction TB
+        U2[&#34;User&#34;] &lt;--&gt;|&#34; types, sees &#34;| UI2[&#34;Widget/UI/Desktop&#34;]
+        UI2 &lt;--&gt;|&#34; tools/MCP &#34;| M[&#34;Model&#34;]
+        M &lt;--&gt;|&#34; tool results &#34;| U2
+    end
+    style traditional fill: #f0f0f0, stroke: #999
+    style ai fill: #e8f4fd, stroke: #0d6efd
+</pre><p>Three actors, each with partial knowledge. The user sees the chat and the UI. The UI sees its own state and can push
+context to the model. The model sees tool outputs but not UI internals unless you explicitly expose them. Managing who
+knows what - that&rsquo;s the whole game.</p>
+<details class="details" open>
+  <summary>Lessons 1-4: system and architecture (ChatGPT &#43; Claude adaptations)</summary>
+  <div class="details__body"><p><strong>Lesson 1: Not all context should be shared.</strong></p>
+<p>Different parts need intentionally different views of state. In a murder mystery game, the model needs to know who the
+killer is to roleplay correctly, while the UI and user must not. In a Time&rsquo;s Up game, reversed: the UI shows the secret
+word, the model must stay unaware.</p>
+<p><strong>ChatGPT:</strong> Use <code>structuredContent</code> for data both model and widget need. Use <code>_meta</code> for response metadata visible only
+to the widget, hidden from the model.</p>
+<p><strong>Claude:</strong> Use <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP resources</a>
+ to
+expose only what the model needs.
+Use <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ for
+client-side state that stays hidden from the model.</p>
+<hr>
+<p><strong>Lesson 2: Lazy-loading doesn&rsquo;t translate well to AI apps.</strong></p>
+<p>In AI apps, tool calls imply delays - often several seconds due to security sandboxing and model reasoning. Front-load
+aggressively: send as much data as possible into the initial tool response.</p>
+<p><strong>ChatGPT:</strong> Hydrate the widget via <code>window.openai.toolOutput</code>. If the widget can safely fetch from a public API without
+sharing info with the model, classic XHR calls work.</p>
+<p><strong>Claude:</strong> Use <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers for data fetching</a>
+. Pre-load data
+into <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">artifacts</a>
+ or MCP
+resources. For public APIs, direct HTTP works (model doesn&rsquo;t see the internals).</p>
+<hr>
+<p><strong>Lesson 3: The model needs visibility.</strong></p>
+<p>When a user interacts with a widget (selecting a product) then asks a question in chat, the model has no idea what
+they&rsquo;re referring to.</p>
+<p><strong>ChatGPT:</strong> Use <code>window.openai.setWidgetState(state)</code> for imperative updates. Attach <code>data-llm</code> attributes directly to
+components for declarative context. Alpic built a Vite plugin that scrapes these attributes and automatically updates
+widgetState.</p>
+<p><strong>Claude:</strong> For Claude Desktop, push state updates via <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP tools</a>
+. For Claude
+Code, maintain state
+in <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">artifacts</a>
+ (up to 20MB) or
+<code>.claude/context/</code> files that persist across sessions.</p>
+<hr>
+<p><strong>Lesson 4: Different interactions require different APIs.</strong></p>
+<p>Widget-to-server, model-to-server, widget-to-model - each path exists to support a different kind of interaction. Make
+these communication paths explicit and be intentional about which mechanism handles which part of the experience.</p>
+<p><strong>ChatGPT + Claude:</strong> Identical principle. Define clear boundaries: what&rsquo;s HTTP (widget ↔ server), what&rsquo;s tool calls (
+model ↔ server), what&rsquo;s state updates (widget → model via MCP or widgetState).</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Lessons 5-8: UI and product behavior (ChatGPT &#43; Claude adaptations)</summary>
+  <div class="details__body"><p><strong>Lesson 5: UI must adapt to multiple display modes.</strong></p>
+<p><strong>ChatGPT:</strong> Apps can appear inline (stays in conversation history), fullscreen (takes entire screen with chat bar at
+bottom), or picture-in-picture (floats on top). Account for device-specific safe zones.</p>
+<p><strong>Claude Desktop:</strong> Similar modes
+exist. <a href="https://medium.com/@billcockerill/coding-with-claude-code-and-claude-desktop-two-ai-workflows-compared-2c70dac52b47" rel="noopener external" target="_blank">Claude Desktop&rsquo;s visual diffs</a>
+
+show side-by-side comparisons. Artifacts can display inline or in separate pane. Design for both.</p>
+<p><strong>Claude code CLI:</strong> No UI modes (terminal-only), but artifacts can be opened in external viewers. Design for text-first
+presentation.</p>
+<hr>
+<p><strong>Lesson 6: UI consistency matters in an embedded environment.</strong></p>
+<p><strong>ChatGPT:</strong> Use the <a href="https://github.com/openai/apps-sdk-ui" rel="noopener external" target="_blank">OpenAI Apps SDK UI Kit</a>
+ for ready-to-use components that
+align with ChatGPT&rsquo;s design system.</p>
+<p><strong>Claude Desktop:</strong> No official UI kit yet, but <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">MCP-connected apps</a>
+ should follow
+system UI conventions (match macOS/Windows design language). Use native components where possible.</p>
+<hr>
+<p><strong>Lesson 7: Language-first filtering beats traditional UI controls.</strong></p>
+<p>When users can say &ldquo;Sunny destinations in Europe for under $200,&rdquo; forcing them through checkboxes and range sliders adds
+friction. Provide the model with a <strong>List of Values (LOV)</strong> for tool parameters so it maps natural language directly to
+backend API requirements.</p>
+<p><strong>ChatGPT + Claude:</strong> Identical pattern. Define LOVs in tool/MCP schemas. Let the model do natural language → structured
+parameters mapping.</p>
+<hr>
+<p><strong>Lesson 8: Files unlock richer interactions.</strong></p>
+<p>Users upload a photo of a product, model identifies it, widget continues into product matching and discovery.</p>
+<p><strong>ChatGPT:</strong> Tools consume files via <code>openai/fileParams</code>. Widgets handle files via <code>window.openai.uploadFile</code> and
+<code>window.openai.getFileDownloadUrl</code>.</p>
+<p><strong>Claude:</strong> <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude Desktop handles files natively</a>
+. MCP servers can expose file upload endpoints. <a href="https://amitkoth.com/claude-artifacts-guide/" rel="noopener external" target="_blank">Artifacts store up to 20MB</a>
+ including images, PDFs, and structured data.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Lessons 9-10: production readiness (ChatGPT &#43; Claude adaptations)</summary>
+  <div class="details__body"><p><strong>Lesson 9: CSPs are the new CORS.</strong></p>
+<p><strong>ChatGPT:</strong> OpenAI renders Apps inside a double-nested iframe. Content Security Policies are strictly enforced. Declare
+<code>connectDomains</code>, <code>resourceDomains</code>, <code>frameDomains</code>, <code>redirectDomains</code> in app manifest.</p>
+<p><strong>Claude Desktop:</strong> <a href="https://www.mintmcp.com/blog/claude-code-security" rel="noopener external" target="_blank">MCP servers run with permission tiers</a>
+. Define
+allowed operations in MCP manifest. Deny rules block dangerous operations, Ask rules require user approval, Allow rules
+auto-approve.</p>
+<p>Security considerations:</p>
+<ul>
+<li>ChatGPT: CSP violations = blocked iframe operations</li>
+<li>Claude: MCP permission violations = blocked tool calls</li>
+</ul>
+<p>Both require explicit allowlisting of external domains/operations.</p>
+<hr>
+<p><strong>Lesson 10: Small flags have outsized impact.</strong></p>
+<p><strong>ChatGPT:</strong> <code>widgetDomain</code> is required for submission. <code>widgetAccessible</code> controls whether widget can call tools on its
+own via <code>callTool</code>. Tool annotations (<code>readOnly</code>, <code>destructiveHint</code>, <code>openWorldHint</code>) are required.</p>
+<p><strong>Claude:</strong> <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP tool definitions</a>
+
+require similar metadata: operation safety level, required parameters, auth
+requirements. <a href="https://aiorg.dev/blog/claude-code-hooks" rel="noopener external" target="_blank">Hook configurations</a>
+ define which lifecycle events trigger
+which automation.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Lessons 11-14: iteration velocity (ChatGPT &#43; Claude adaptations)</summary>
+  <div class="details__body"><p><strong>Lesson 11: Fast iteration requires hot reload.</strong></p>
+<p><strong>ChatGPT:</strong> Long-TTL resource caching makes standard HMR incompatible. Alpic built a Vite plugin that intercepts
+resource requests and injects real-time updates into the ChatGPT iframe.</p>
+<p><strong>Claude Desktop:</strong> <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP servers support hot reload</a>
+ via server restart. Use file watchers to auto-reload MCP configs on change.</p>
+<p><strong>Claude code CLI:</strong> Supports live file watching. Changes to <code>.claude/</code> directory (skills, hooks, agents) take effect
+immediately or on next session start.</p>
+<hr>
+<p><strong>Lesson 12: Not every test belongs in production environment.</strong></p>
+<p><strong>ChatGPT:</strong> Build a lightweight local emulator mocking the ChatGPT host environment. Reserve real ChatGPT tests for
+validating model interactions.</p>
+<p><strong>Claude:</strong> <a href="https://code.claude.com/docs/en/desktop" rel="noopener external" target="_blank">Claude Code runs locally by default</a>
+ - your dev environment IS
+the test environment.
+Use <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP server mocks</a>
+ for integration
+tests. Reserve Claude Desktop tests for end-to-end workflows.</p>
+<hr>
+<p><strong>Lesson 13: Mobile testing requires explicit support.</strong></p>
+<p><strong>ChatGPT:</strong> Vite&rsquo;s default localhost makes tunnelled URLs inaccessible from other devices. Extend with domain
+forwarding on tunnelled ports.</p>
+<p><strong>Claude Desktop:</strong> Desktop app is macOS/Windows only (no mobile). <a href="https://www.anthropic.com/news/claude-3-5-sonnet" rel="noopener external" target="_blank">Claude mobile apps</a>
+ exist but focus on conversational use cases. Design for desktop-first, mobile web as fallback.</p>
+<hr>
+<p><strong>Lesson 14: Familiar abstractions speed delivery.</strong></p>
+<p><strong>ChatGPT:</strong> The Apps SDK exposes low-level JavaScript APIs. Introduce React-friendly abstractions - hooks like
+<code>useCallTool</code>, <code>useWidgetState</code>, <code>useLocale</code>.</p>
+<p><strong>Claude:</strong> <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP SDKs exist for Python and TypeScript</a>
+. Build higher-level abstractions around common patterns (auth, caching, rate limiting). Reuse across projects.</p>
+</div>
+</details>
+
+<h3 id="codification-and-reuse-lesson-15">Codification and reuse (lesson 15)</h3>
+<p><strong>Lesson 15: Turn lessons into reusable tooling.</strong></p>
+<p><strong>ChatGPT ecosystem:</strong> Alpic created the <a href="https://github.com/alpic-ai/skybridge" rel="noopener external" target="_blank">Skybridge Framework</a>
+ (open-source React
+framework with hooks, dev tools, <code>data-llm</code> attribute) and
+a <a href="https://github.com/alpic-ai/skybridge/tree/main/skills/chatgpt-app-builder" rel="noopener external" target="_blank">Codex Skill</a>
+ covering the full lifecycle.</p>
+<p><strong>Claude ecosystem:</strong> <a href="https://github.com/hesreallyhim/awesome-claude-code" rel="noopener external" target="_blank">Community is building similar patterns</a>
+.
+Production-tested configs from <a href="https://github.com/affaan-m/everything-claude-code" rel="noopener external" target="_blank">everything-claude-code</a>
+,
+comprehensive examples
+from <a href="https://github.com/ChrisWiles/claude-code-showcase" rel="noopener external" target="_blank">claude-code-showcase</a>
+. <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">Claude Skills Library</a>
+
+has 50+ ready-to-use MCP servers and skills.</p>
+<div class="admonition success">
+  <div class="admonition-title">The pattern</div>
+  <div class="admonition-content">
+    That&rsquo;s harness engineering applied to app development. Don&rsquo;t keep rediscovering the same issues - encode them into
+reusable skills, MCP servers, and hooks. Share across the ecosystem.
+  </div>
+</div>
+<hr>
+<h2 id="your-operating-model-staff-vs-principal-split">Your operating model: staff vs principal split</h2>
+<p><strong>Operating principle</strong>: engineers should optimize the <strong>agentic system</strong> (instructions + tools + checks + context), not
+only the immediate code artifact.</p>
+<p><strong>This is tool-agnostic.</strong> Whether you&rsquo;re using Codex or Claude Code, the split stays the same.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Level</th>
+					<th>Primary ownership</th>
+					<th>Success signal</th>
+					<th>Failure signal</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Staff engineer</td>
+					<td>Team harness implementation</td>
+					<td>Agent tasks reliable for team workflows</td>
+					<td>Repeated manual cleanup, inconsistent outputs</td>
+			</tr>
+			<tr>
+					<td>Principal engineer</td>
+					<td>Org-wide harness standards</td>
+					<td>Cross-team reuse, fewer regressions, faster onboarding</td>
+					<td>Fragmented conventions, model-specific drift</td>
+			</tr>
+	</tbody>
+</table>
+<details class="details">
+  <summary>Software engineering track</summary>
+  <div class="details__body"><ul>
+<li>Architecture maps (AGENTS.md or CLAUDE.md + deep docs)</li>
+<li>Typed contracts and policy checks</li>
+<li>CI-integrated drift scanners (or hooks for Claude)</li>
+<li>Tool traces and remediation loops</li>
+</ul>
+</div>
+</details>
+
+<details class="details">
+  <summary>Data engineering track</summary>
+  <div class="details__body"><ul>
+<li>Data contracts and schema policies (compile-time or CI-time)</li>
+<li>Deterministic transformation runbooks (purity enforcement)</li>
+<li>Data quality and lineage checks in harness</li>
+<li>Incident playbooks for failed pipelines and late data</li>
+</ul>
+</div>
+</details>
+
+<hr>
+<h2 id="the-blueprint-you-can-implement-this-quarter">The blueprint you can implement this quarter</h2>
+<pre class="mermaid">gantt
+    title Harness implementation timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %b W%W
+    section Foundation
+        Instruction architecture: a1, 2026-03-02, 2w
+        Quality enforcement: a2, after a1, 2w
+    section Execution
+        Skills and procedures: a3, after a2, 2w
+        Shell/MCP and execution: a4, after a3, 2w
+    section Lifecycle
+        Compaction and context: a5, after a4, 4w
+</pre><p>Five layers, each building on the last. You can run layers 1-2 in parallel if you have the team.</p>
+<h3 id="layer-1-instruction-architecture-weeks-1-2">Layer 1: instruction architecture (weeks 1-2)</h3>
+<p><strong>For OpenAI codex:</strong></p>
+<ul>
+<li>Ship <code>AGENTS.md</code> as an index (under 120 lines)</li>
+<li>Structure <code>docs/</code> directory by concern</li>
+<li>Create ADR log in <code>docs/decisions/</code></li>
+</ul>
+<p><strong>For Claude code:</strong></p>
+<ul>
+<li>Create <code>CLAUDE.md</code> in repo root (50-120 lines, project-specific only)</li>
+<li>Structure <code>.claude/agents/</code> for specialized subagents</li>
+<li>Link from CLAUDE.md to <code>docs/architecture/</code> for deep dives</li>
+</ul>
+<p><strong>Universal:</strong></p>
+<ul>
+<li>Define evidence docs with file paths and line numbers</li>
+<li>Version all decisions and plans in the repo</li>
+</ul>
+<h3 id="layer-2-quality-enforcement-weeks-3-4">Layer 2: quality enforcement (weeks 3-4)</h3>
+<p><strong>For OpenAI codex:</strong></p>
+<ul>
+<li>Define golden principles (5-10 rules)</li>
+<li>Deploy daily drift scans</li>
+<li>Make lint errors prescriptive</li>
+</ul>
+<p><strong>For claude code:</strong></p>
+<ul>
+<li>Define <code>.claude/hooks/PostToolUse.sh</code> for auto-fixes</li>
+<li>Define <code>.claude/hooks/PreToolUse.sh</code> for blocking violations</li>
+<li>Track hook trigger rate as a metric</li>
+</ul>
+<p><strong>Universal:</strong></p>
+<ul>
+<li>Auto-fix low-risk violations</li>
+<li>Track manual cleanup time (goal: trending to zero)</li>
+</ul>
+<h3 id="layer-3-executable-procedures--skills-weeks-5-6">Layer 3: executable procedures / skills (weeks 5-6)</h3>
+<p><strong>For OpenAI Codex:</strong></p>
+<ul>
+<li>Convert top 3-5 workflows into <code>SKILL.md</code> files</li>
+<li>Add templates, examples, negative examples</li>
+<li>Store in <code>skills/</code> directory with versioning</li>
+</ul>
+<p><strong>For Claude Code:</strong></p>
+<ul>
+<li>Convert workflows into <code>.claude/skills/*.md</code> files</li>
+<li>Include routing logic (when to use, when not to use)</li>
+<li>Install community skills from <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">Claude skills library</a>
+</li>
+</ul>
+<p><strong>Universal:</strong></p>
+<ul>
+<li>Write skill descriptions like routing logic, not marketing copy</li>
+<li>Include negative examples to reduce misfires</li>
+<li>Test skill invocation accuracy (target &gt;= 90%)</li>
+</ul>
+<h3 id="layer-4-execution-substrate--shell-or-mcp-weeks-7-8">Layer 4: execution substrate / shell or MCP (weeks 7-8)</h3>
+<p><strong>For OpenAI Codex:</strong></p>
+<ul>
+<li>Enable shell-backed execution (hosted or local)</li>
+<li>Define standard artifact path (<code>/mnt/data</code>)</li>
+<li>Instrument traces and incident metrics</li>
+</ul>
+<p><strong>For Claude Code:</strong></p>
+<ul>
+<li>Build <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">MCP servers for external tools</a>
+</li>
+<li>Define standard artifact path (Claude artifacts or <code>./artifacts/</code>)</li>
+<li>Connect observability stack via MCP (logs, metrics, traces)</li>
+</ul>
+<p><strong>Universal:</strong></p>
+<ul>
+<li>Start with local mode (fast iteration)</li>
+<li>Move to hosted/CI when ready for repeatability</li>
+<li>Keep skills the same across local/remote</li>
+</ul>
+<h3 id="layer-5-context-lifecycle--compaction-ongoing">Layer 5: context lifecycle / compaction (ongoing)</h3>
+<p><strong>For OpenAI Codex:</strong></p>
+<ul>
+<li>Enable server-side compaction (auto or manual <code>/responses/compact</code>)</li>
+<li>Pass <code>previous_response_id</code> for multi-turn continuity</li>
+<li>Pin immutable constraints in system message</li>
+</ul>
+<p><strong>For Claude Code:</strong></p>
+<ul>
+<li>Enable <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+ with custom CLAUDE.md
+instructions</li>
+<li>Use <code>.claude/hooks/AfterCompaction.sh</code> to inject critical context after summarization</li>
+<li>Store long-lived state
+in <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (up to
+20MB)</li>
+</ul>
+<p><strong>Universal:</strong></p>
+<ul>
+<li>Implement periodic context hygiene</li>
+<li>Track context hit rate (target &gt;= 90%)</li>
+<li>Measure long-run coherence (target: 6+ hour sessions without drift)</li>
+</ul>
+<hr>
+<h2 id="metrics-that-actually-matter">Metrics that actually matter</h2>
+<p>The shift: from measuring lines of code written to measuring harness effectiveness.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Metric</th>
+					<th>Target</th>
+					<th>What it tells you</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Agent task success rate (successful runs / total)</td>
+					<td>&gt;= 85%</td>
+					<td>Harness is well-specified</td>
+			</tr>
+			<tr>
+					<td>Auto-remediation rate (auto-fixed / total issues)</td>
+					<td>&gt;= 60%</td>
+					<td>Quality enforcement is mechanical</td>
+			</tr>
+			<tr>
+					<td>Context hit rate (resolved lookups / total)</td>
+					<td>&gt;= 90%</td>
+					<td>Docs structure works</td>
+			</tr>
+			<tr>
+					<td>Manual cleanup time (weekly hours)</td>
+					<td>Trending to zero</td>
+					<td>Golden principles coverage</td>
+			</tr>
+			<tr>
+					<td>Skill invocation accuracy</td>
+					<td>&gt;= 90%</td>
+					<td>Descriptions + negative examples work</td>
+			</tr>
+			<tr>
+					<td>Human escalation rate</td>
+					<td>&lt; 15%</td>
+					<td>Boundaries are clear</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Leading indicators</strong> (measure first): context hit rate, skill invocation accuracy, manual cleanup time.</p>
+<p><strong>Lagging indicators</strong> (improve as harness matures): agent task success rate, auto-remediation rate, human escalation
+rate.</p>
+<p><strong>How to measure across ecosystems:</strong></p>
+<p><strong>OpenAI codex:</strong></p>
+<ul>
+<li>Task success: PR merge rate without human intervention</li>
+<li>Auto-remediation: drift scanner auto-fix rate</li>
+<li>Context hits: AGENTS.md link click-throughs (instrument in docs)</li>
+</ul>
+<p><strong>Claude code:</strong></p>
+<ul>
+<li>Task success: <code>/stats</code> command shows session metrics</li>
+<li>Auto-remediation: hook auto-fix vs. block rate</li>
+<li>Context hits: track <code>.claude/agents/</code> invocation frequency</li>
+</ul>
+<p><strong>How OpenAI measures effectiveness</strong>: not by volume (1M lines is impressive but not the point). By velocity (3.5
+PRs/engineer/day, increasing). By autonomy (end-to-end without human intervention). By amplification (humans one layer
+up from implementation).</p>
+<hr>
+<h2 id="when-things-go-wrong-failure-scenarios-and-fixes">When things go wrong: failure scenarios and fixes</h2>
+<details class="details">
+  <summary>Agent output quality regresses suddenly</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> PR quality drops, tests fail more often, manual cleanup time increases.</p>
+<p><strong>Check in order:</strong></p>
+<ol>
+<li>Did instruction file (AGENTS.md or CLAUDE.md) become too large or contradictory?</li>
+<li>Did a skill version change without tests?</li>
+<li>Did compaction remove critical constraints?</li>
+<li>Did evaluation thresholds change silently?</li>
+</ol>
+<p><strong>Fix (OpenAI):</strong> Audit AGENTS.md length and cross-links. Roll back skill version. Add compaction preservation rules in
+system message.</p>
+<p><strong>Fix (Claude):</strong> Check CLAUDE.md length (should be 50-120 lines). Review <code>.claude/hooks/AfterCompaction.sh</code> - is it
+injecting critical context back? Add preservation rules to CLAUDE.md.</p>
+<p><strong>Universal:</strong> Document findings in exec plans, have the agent implement the fix, update golden principles.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Agent keeps missing team conventions</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> Repeated style violations, inconsistent patterns, manual corrections needed.</p>
+<p><strong>Root cause:</strong> Knowledge lives in people&rsquo;s heads or chat threads.</p>
+<p><strong>Fix (OpenAI):</strong> Move conventions to <code>docs/conventions.md</code>, link from AGENTS.md, add machine checks (custom linters).</p>
+<p><strong>Fix (Claude):</strong> Encode conventions in <code>.claude/hooks/PostToolUse.sh</code> as auto-fixes. Add high-level guidance to
+CLAUDE.md. Use PreToolUse hooks to block severe violations.</p>
+<p><strong>Universal:</strong> If an agent keeps getting it wrong, the convention isn&rsquo;t in the repo. Make it mechanical.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Long workflows collapse after many turns</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> Agent loses context mid-task, forgets earlier decisions, loops on same issues.</p>
+<p><strong>Root cause:</strong> Compaction removed critical context, or no compaction enabled (hit hard limit).</p>
+<p><strong>Fix (OpenAI):</strong> Ensure server-side compaction is active. Pin immutable constraints in system message. Split long goals
+into checkpointed sub-runs with explicit handoff boundaries. Pass <code>previous_response_id</code> for continuation.</p>
+<p><strong>Fix (Claude):</strong> Enable <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+ in API
+settings. Add compaction preservation rules to CLAUDE.md: &ldquo;When compacting, always preserve the full list of modified
+files and any test commands.&rdquo; Use <code>.claude/hooks/AfterCompaction.sh</code> to inject critical state. Store long-lived context
+in <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ (up to
+20MB).</p>
+<p><strong>Universal:</strong> Track compaction events as a metric. Measure pre/post-compaction coherence.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Humans spend 20% of time cleaning up AI slop</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> Manual Friday cleanup sessions, inconsistent code style, repeated fixes.</p>
+<p><strong>Root cause:</strong> Golden principles are under-specified.</p>
+<p><strong>Fix (OpenAI):</strong> Define explicit principles (5-10 rules). Build daily drift scanner. Auto-open fix-up PRs. Track
+cleanup time as a metric (goal: zero).</p>
+<p><strong>Fix (Claude):</strong> Encode principles in <code>.claude/hooks/PostToolUse.sh</code> as deterministic enforcement. Use exit code 2 to
+block violations before they land. Track hook trigger rate and human override rate.</p>
+<p><strong>Universal:</strong> The goal is trending to zero manual cleanup. If it&rsquo;s not declining, your principles aren&rsquo;t specific
+enough.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Skill routing accuracy drops after adding new skills</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> Agent invokes wrong skill for task, skips relevant skills, lower eval scores.</p>
+<p><strong>Root cause:</strong> Model can&rsquo;t disambiguate between similar skills.</p>
+<p><strong>Fix (OpenAI + Claude):</strong> Add explicit negative examples (&ldquo;Don&rsquo;t call this skill when&hellip;&rdquo;) to each skill&rsquo;s description.
+Include edge case coverage. Add &ldquo;Use when vs. don&rsquo;t use when&rdquo; blocks in frontmatter.</p>
+<p><strong>Evidence from production:</strong> Glean recovered a 20% accuracy drop with this pattern alone.</p>
+<p><strong>Universal:</strong> Skill routing is a leading indicator. Monitor invocation accuracy (target &gt;= 90%). When you add a new
+skill, immediately add negative examples to existing skills.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Agent can&#39;t reproduce bug or validate fix</summary>
+  <div class="details__body"><p><strong>Symptoms:</strong> Agent reports &ldquo;can&rsquo;t verify&rdquo; or &ldquo;unable to test,&rdquo; relies on human to run app.</p>
+<p><strong>Root cause:</strong> Application behavior isn&rsquo;t legible to the agent.</p>
+<p><strong>Fix (OpenAI):</strong> Make app bootable per worktree. Wire Chrome DevTools Protocol into agent runtime. Expose logs and
+metrics via ephemeral observability stack (LogQL/PromQL access).</p>
+<p><strong>Fix (Claude):</strong> Build <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers for app interaction</a>
+: browser automation (
+Playwright/Puppeteer), API testing (HTTP client), log access (tail -f via MCP). Make app bootable per worktree.
+Use <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Claude artifacts</a>
+ to store
+test results and evidence.</p>
+<p><strong>Universal:</strong> The app must be drivable by the agent. If the agent can&rsquo;t boot it, query it, and observe its behavior, it
+can&rsquo;t validate fixes.</p>
+</div>
+</details>
+
+<hr>
+<h2 id="tool-agnostic-adaptation-openai-claude-gemini-grok">Tool-agnostic adaptation: OpenAI, Claude, Gemini, Grok</h2>
+<p>The patterns in this article work regardless of model.</p>
+<pre class="mermaid">flowchart TD
+    subgraph harness [&#34;Your harness (model-agnostic)&#34;]
+        I[&#34;Instruction contract AGENTS.md or CLAUDE.md&#34;]
+        SK[&#34;Skill contract versioned procedures&#34;]
+        EX[&#34;Execution contract shell or MCP&#34;]
+        V[&#34;Validation contract evals + policy checks&#34;]
+        CX[&#34;Context contract compaction + pinned state&#34;]
+    end
+    I --&gt; SK --&gt; EX --&gt; V --&gt; CX
+    harness --&gt; CO[&#34;OpenAI Codex&#34;]
+    harness --&gt; CL[&#34;Claude Code&#34;]
+    harness --&gt; GE[&#34;Gemini Code Assist&#34;]
+    harness --&gt; GR[&#34;Grok&#34;]
+    style harness fill: #e8f4fd, stroke: #0d6efd
+</pre><p>Build the harness once, swap the model underneath. Keep this normalized interface:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Contract</th>
+					<th>OpenAI implementation</th>
+					<th>Claude implementation</th>
+					<th>Universal pattern</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Instruction</strong></td>
+					<td>AGENTS.md (~100 lines) + docs/</td>
+					<td>CLAUDE.md (50-120 lines) + .claude/</td>
+					<td>Short index file + deep-linked docs</td>
+			</tr>
+			<tr>
+					<td><strong>Skill</strong></td>
+					<td>SKILL.md with frontmatter</td>
+					<td>.claude/skills/*.md with frontmatter</td>
+					<td>Versioned workflow packs with routing logic</td>
+			</tr>
+			<tr>
+					<td><strong>Execution</strong></td>
+					<td>Shell tool (hosted or local)</td>
+					<td>MCP servers (local by default)</td>
+					<td>Sandboxed execution with audit trail</td>
+			</tr>
+			<tr>
+					<td><strong>Validation</strong></td>
+					<td>Custom linters + structural tests</td>
+					<td>Hooks (Pre/PostToolUse)</td>
+					<td>Mechanical enforcement at lifecycle events</td>
+			</tr>
+			<tr>
+					<td><strong>Context</strong></td>
+					<td>Server-side compaction + previous_response_id</td>
+					<td>Auto compaction + AfterCompaction hooks + artifacts</td>
+					<td>Automatic summarization with critical context pinning</td>
+			</tr>
+	</tbody>
+</table>
+<h3 id="migration-paths">Migration paths</h3>
+<p><strong>Codex → Claude code:</strong></p>
+<ol>
+<li>Rename <code>AGENTS.md</code> → <code>CLAUDE.md</code> (trim to 50-120 lines)</li>
+<li>Convert custom linters → <code>.claude/hooks/PostToolUse.sh</code></li>
+<li>Convert shell workflows → MCP servers</li>
+<li>Keep <code>docs/</code> structure unchanged (works for both)</li>
+<li>Keep <code>skills/</code> intact (same format)</li>
+</ol>
+<p><strong>Claude code → codex:</strong></p>
+<ol>
+<li>Merge <code>CLAUDE.md</code> + <code>.claude/</code> context → <code>AGENTS.md</code> (~100 lines)</li>
+<li>Convert <code>.claude/hooks/</code> → CI-based enforcement</li>
+<li>Convert MCP servers → shell tool scripts</li>
+<li>Keep <code>docs/</code> structure unchanged</li>
+<li>Keep <code>.claude/skills/</code> as <code>skills/</code> (same format)</li>
+</ol>
+<p><strong>Universal patterns that port directly:</strong></p>
+<ul>
+<li>Architecture maps (docs/architecture/)</li>
+<li>ADRs (docs/decisions/)</li>
+<li>Evidence docs (docs/evidence/)</li>
+<li>Golden principles (encoded as enforcement, not prose)</li>
+<li>Skill routing patterns (negative examples, LOV, templates)</li>
+</ul>
+<p>The goal is convergence. As standards
+like <a href="https://aiengineerguide.com/blog/how-to-use-agents-md-in-claude-code/" rel="noopener external" target="_blank">AGENTS.md</a>
+, <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP</a>
+,
+and <a href="https://claude.com/blog/skills-explained" rel="noopener external" target="_blank">Skills</a>
+ mature through ecosystem collaboration, these patterns become
+more portable. For now, adapt to your platform&rsquo;s primitives but preserve the underlying principles.</p>
+<hr>
+<h2 id="platform-context-what-changed-in-2025">Platform context: what changed in 2025</h2>
+<div class="admonition info">
+  <div class="admonition-title">Background context</div>
+  <div class="admonition-content">
+    This section covers the platform shifts that make harness engineering possible. If you&rsquo;re already familiar with the 2025
+model landscape, you can skip ahead.
+  </div>
+</div>
+<div class="admonition note">
+  <div class="admonition-title">Note from May 2026</div>
+  <div class="admonition-content">
+    <p>A short addendum since this article first published in February. The platform picture moved in five directions worth
+noting, without changing any of the lessons above:</p>
+<ul>
+<li><strong>Data-engineering vendors made the harness their product.</strong> Google&rsquo;s BigQuery Data Engineering Agent went GA on
+22 April 2026. dbt&rsquo;s Coalesce 2025 conference shipped dbt Agents (Developer, Discovery, Observability, Analyst) and
+the dbt Fusion MCP server. Snowflake released Managed MCP Servers. Microsoft Fabric framed itself as an &ldquo;Agentic
+Fabric.&rdquo; The substrate question this article opens with is now a vendor category.</li>
+<li><strong>Type-system safety for agent code became a published research direction.</strong> Odersky&rsquo;s group released the OPAW
+framework (<em>Tracking Capabilities for Safer Agents</em>, March 2026), Scalar 2026 ran <em>How Can We Trust Our Agents?</em> in
+April, and ACL Anthology 2025&rsquo;s OMMM workshop published <em>TypePilot: Leveraging the Scala type system for secure
+LLM-generated code</em>. The harness frame in this article is general; the type-system version of it is now an active
+academic line.</li>
+<li><strong>Production telemetry now exists to back the failure-mode claims.</strong> Datadog&rsquo;s 2026 State of AI Engineering report
+(covering 1,000+ deployments) measured a 5 percent outright LLM-call failure rate and a 60 percent rate-limit share
+of agent errors. MIT-led research in April 2026 showed a hallucination-reasoning trade-off: stronger reasoning
+through RL increases tool-hallucination rates in lockstep with task gains. Numbers we previously inferred are now
+measured.</li>
+<li><strong>The community turned Karpathy&rsquo;s pitfall observations into an installable CLAUDE.md.</strong> His <a href="https://x.com/karpathy/status/2015883857489522876" rel="noopener external" target="_blank">LLM coding pitfalls tweet</a>
+ (January 2026) described agent failure modes; <code>andrej-karpathy-skills</code> distilled them into four principles - think before coding, simplicity first, surgical changes, goal-driven execution - packaged as a single <code>CLAUDE.md</code>. The repo has 143,000+ stars and is in the Claude Code marketplace.</li>
+<li><strong>Harness discipline extended to knowledge work.</strong> Karpathy&rsquo;s <a href="https://x.com/karpathy/status/2039805659525644595" rel="noopener external" target="_blank">LLM Knowledge Bases post</a>
+ (April 2026) described agents compiling and maintaining structured knowledge rather than code. The raw/wiki/operations pattern maps directly onto the same three lessons.</li>
+</ul>
+<p>The full citations are at the bottom of this article under <em>2026 platform developments</em>, <em>Adjacent work</em>, and <em>Karpathy: practitioner patterns</em>.</p>
+
+  </div>
+</div>
+<details class="details">
+  <summary>Reasoning: OpenAI and Anthropic approaches</summary>
+  <div class="details__body"><p><strong>OpenAI:</strong> Reasoning models evolved from o1/o3 research into production capabilities. By end of 2025, reasoning converged with general-purpose models in the GPT-5.2 family, with GPT-5.2 Pro for deeper reasoning workloads. &ldquo;Think harder vs. respond faster&rdquo; became a tunable developer decision - use Pro models for complex multi-step work, use standard models for fast iteration.</p>
+<p><strong>Anthropic:</strong> Claude 3 Opus and Claude 3.5 Sonnet prioritize extended reasoning through larger context windows (200K
+tokens) and <a href="https://www.anthropic.com/news/claude-3-5-sonnet" rel="noopener external" target="_blank">extended thinking capabilities</a>
+. Claude Desktop
+introduced <a href="https://code.claude.com/docs/en/thinking-mode" rel="noopener external" target="_blank">Thinking Mode</a>
+ (early 2026) - explicitly showing reasoning
+steps before answering. Control via system prompts: &ldquo;Think step-by-step&rdquo; or &ldquo;Show your reasoning.&rdquo;</p>
+<p><strong>Convergence:</strong> Both ecosystems now treat reasoning depth as a tunable parameter rather than a model-specific feature.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Multimodality: OpenAI and Anthropic</summary>
+  <div class="details__body"><p><strong>OpenAI:</strong> PDFs and documents directly in the API (including PDF-by-URL without upload). Whisper for speech-to-text, TTS models for controllable text-to-speech. GPT Image 1.5 for higher-fidelity image generation and editing. Sora for video generation with temporal coherence. gpt-realtime for low-latency voice conversations. Image generation integrated into multi-turn conversations via tool calls.</p>
+<p><strong>Anthropic:</strong> <a href="https://www.anthropic.com/news/claude-3-5-sonnet" rel="noopener external" target="_blank">Claude 3.5 Sonnet supports vision</a>
+ (images, PDFs,
+screenshots), with industry-leading OCR and chart comprehension. Claude Desktop supports drag-and-drop for images and
+PDFs. <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Artifacts support rich media up to 20MB</a>
+
+including images, interactive charts, and structured documents. Audio and video capabilities announced for 2026.</p>
+<p><strong>Key difference:</strong> OpenAI&rsquo;s multimodality is output-focused (generation via GPT Image 1.5, Sora). Claude&rsquo;s is input-focused (comprehension via vision, OCR). For generation, use GPT Image/Sora via API with Claude handling orchestration and reasoning.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Agent-native APIs: OpenAI and Anthropic</summary>
+  <div class="details__body"><p><strong>OpenAI:</strong> The Responses API supports multiple inputs/outputs including different modalities, reasoning controls, and
+tool calling during reasoning. Open-source Agents SDK for <a href="https://openai.github.io/openai-agents-python/" rel="noopener external" target="_blank">Python</a>
+
+and <a href="https://openai.github.io/openai-agents-js/" rel="noopener external" target="_blank">TypeScript</a>
+ - provider-agnostic, with documented paths for non-OpenAI
+models. <a href="https://openai.com/index/introducing-agentkit/" rel="noopener external" target="_blank">AgentKit</a>
+ added Agent Builder, ChatKit, Connector Registry, and
+evaluation loops. Conversation state + Conversations API for durable threads. Connectors and MCP servers for external
+context. The <a href="https://developers.openai.com/apps-sdk" rel="noopener external" target="_blank">Apps SDK</a>
+ extends MCP to let developers build UIs alongside MCP
+servers.</p>
+<p><strong>Anthropic:</strong> <a href="https://docs.anthropic.com/en/api/messages" rel="noopener external" target="_blank">Claude Messages API</a>
+ supports multi-turn conversations with
+tool use, vision, and system
+prompts. <a href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk" rel="noopener external" target="_blank">Claude Agent SDK</a>
+ provides
+higher-level abstractions for agentic workflows. <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP (Model Context Protocol)</a>
+ is
+an open standard for AI-tool integrations - 50+ community servers
+available. <a href="https://www.anthropic.com/news/claude-desktop" rel="noopener external" target="_blank">Claude Desktop</a>
+ provides native GUI for agent
+workflows. <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" rel="noopener external" target="_blank">Prompt caching</a>
+ reduces costs for
+repetitive prefixes by 90%.</p>
+<p><strong>Convergence:</strong> Both adopted MCP as the standard integration protocol. Both provide multi-turn conversation APIs with
+tool use. OpenAI&rsquo;s Agents SDK is provider-agnostic and works with Claude.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Coding assistants: Codex and Claude Code</summary>
+  <div class="details__body"><p><strong>OpenAI codex:</strong> The open-source <a href="https://github.com/openai/codex" rel="noopener external" target="_blank">CLI</a>
+ brought agent-style coding into local
+environments. AGENTS.md support, MCP integration, sandboxing, and approval modes made it production-ready. Codex can be
+orchestrated via the Agents SDK by running the CLI as an MCP server. Codex Autofix in CI tightened the loop.</p>
+<p><strong>Claude code:</strong> <a href="https://code.claude.com/" rel="noopener external" target="_blank">Production-ready AI coding assistant</a>
+ that understands entire codebases. Key
+features: CLAUDE.md
+auto-loading, <a href="https://docs.anthropic.com/en/docs/claude-code/hooks" rel="noopener external" target="_blank">hooks at 15 lifecycle events</a>
+, <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">specialized subagents</a>
+, <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP server integration</a>
+, <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">automatic compaction</a>
+
+for long sessions. Both <a href="https://code.claude.com/docs/en/cli" rel="noopener external" target="_blank">CLI</a>
+ (terminal-first)
+and <a href="https://code.claude.com/docs/en/desktop" rel="noopener external" target="_blank">Desktop</a>
+ (GUI) modes available.</p>
+<p><strong>Key difference:</strong> Codex focuses on hosted/cloud-first execution with local fallback. Claude Code focuses on
+local-first execution with persistent project awareness. Both support MCP, both integrate with CI/CD, both provide
+approval modes.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Anthropic: Claude Code ecosystem matured</summary>
+  <div class="details__body"><p><a href="https://code.claude.com/" rel="noopener external" target="_blank">Claude code launched</a>
+ as a production-ready AI coding assistant that understands entire codebases. Key milestones in 2025/early 2026:</p>
+<ul>
+<li><strong>CLAUDE.md specification:</strong> <a href="https://code.claude.com/docs/en/best-practices" rel="noopener external" target="_blank">Automatic loading of repo-specific instructions</a>
+ at session start</li>
+<li><strong>MCP standardization:</strong> <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">Model Context Protocol became the standard for AI-tool integrations</a>
+, with growing community ecosystem</li>
+<li><strong>Hooks launched:</strong> <a href="https://docs.anthropic.com/en/docs/claude-code/hooks" rel="noopener external" target="_blank">15 lifecycle events for deterministic automation</a>
+ (early 2026)</li>
+<li><strong>Subagents:</strong> <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">Specialized agents for security, testing, review</a>
+</li>
+<li><strong>Artifacts expanded:</strong> <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">Up to 20MB storage per artifact</a>
+, enabling stateful apps</li>
+<li><strong>Desktop + CLI convergence:</strong> Both modes share <a href="https://code.claude.com/docs/en/skills" rel="noopener external" target="_blank">skills</a>
+, <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP servers</a>
+, and configuration</li>
+<li><strong>Expanded use cases:</strong> Claude Code for general knowledge work beyond software development</li>
+</ul>
+<p><a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026" rel="noopener external" target="_blank">Eight trends defining how software gets built in 2026</a>
+:
+agent orchestration replaced human-authored logic as the primary mode.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Both ecosystems: production concerns became system design</summary>
+  <div class="details__body"><p>Prompt caching for latency and input costs on shared prefixes. Background mode for long-running responses without
+holding connections open. Webhooks for event-driven systems. Rate limits matured. Building agents is now as much about
+system design as prompting.</p>
+<p><strong>OpenAI:</strong> Responses API, background mode, <code>/responses/compact</code> endpoint.
+<strong>Claude:</strong> <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">Automatic compaction</a>
+, artifacts for
+state, MCP for integration.</p>
+</div>
+</details>
+
+<details class="details">
+  <summary>Both ecosystems: open standards converged</summary>
+  <div class="details__body"><p><strong>OpenAI:</strong> Pushed <a href="https://agents.md/" rel="noopener external" target="_blank">AGENTS.md spec</a>
+ and participated in the <a href="https://aaif.io/" rel="noopener external" target="_blank">Agentic AI Foundation (AAIF)</a>
+ alongside MCP and Skills standards. Released open-weight models: <a href="https://huggingface.co/collections/openai/gpt-oss" rel="noopener external" target="_blank">gpt-oss 120b &amp; 20b</a>
+ for self-hosting, plus <a href="https://huggingface.co/collections/openai/gpt-oss-safeguard" rel="noopener external" target="_blank">gpt-oss-safeguard 120b &amp; 20b</a>
+ safety models. Apps SDK extends MCP for UI development.</p>
+<p><strong>Claude:</strong> <a href="https://github.com/anthropics/claude-code/issues/6235" rel="noopener external" target="_blank">CLAUDE.md + AGENTS.md compatibility</a>
+, <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">MCP as primary integration protocol</a>
+, <a href="https://code.claude.com/docs/en/skills" rel="noopener external" target="_blank">Skills aligned with Agent Skills standard</a>
+. Can use gpt-oss models via API or local deployment.</p>
+<p><strong>Shared infrastructure:</strong> Open standards (AGENTS.md, MCP, Skills via AAIF), evals frameworks, reinforcement fine-tuning (RFT), supervised fine-tuning, distillation patterns for pushing quality into smaller models.</p>
+</div>
+</details>
+
+<p><strong>Recommended models by task (end of 2025):</strong></p>
+<div class="admonition info">
+  <div class="admonition-title">Model naming context</div>
+  <div class="admonition-content">
+    This section uses OpenAI&rsquo;s model naming from their end-of-2025 platform update (prep source material). For Claude equivalents, use current production model names as of early 2026.
+  </div>
+</div>
+<table>
+	<thead>
+			<tr>
+					<th>Task</th>
+					<th>OpenAI</th>
+					<th>Anthropic</th>
+					<th>Notes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>General-purpose (text + multimodal)</strong></td>
+					<td>GPT-5.2</td>
+					<td>Claude 3.5 Sonnet</td>
+					<td>For chat, long-context work, and multimodal inputs</td>
+			</tr>
+			<tr>
+					<td><strong>Deep reasoning / reliability-sensitive</strong></td>
+					<td>GPT-5.2 Pro</td>
+					<td>Claude 3 Opus</td>
+					<td>Planning and tasks where quality is worth extra compute</td>
+			</tr>
+			<tr>
+					<td><strong>Coding and software engineering</strong></td>
+					<td>GPT-5.2-Codex</td>
+					<td>Claude Code (Sonnet 3.5)</td>
+					<td>Code generation, review, repo-scale reasoning</td>
+			</tr>
+			<tr>
+					<td><strong>Image generation and editing</strong></td>
+					<td>GPT Image 1.5</td>
+					<td>N/A</td>
+					<td>Higher-fidelity generation and iterative edits</td>
+			</tr>
+			<tr>
+					<td><strong>Realtime voice</strong></td>
+					<td>gpt-realtime</td>
+					<td>N/A</td>
+					<td>Low-latency speech-to-speech and live voice agents</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Key insights:</strong></p>
+<ul>
+<li><strong>OpenAI strengths:</strong> Native multimodal generation (GPT Image 1.5, video via Sora), realtime voice (gpt-realtime), reasoning capabilities (GPT-5.2 Pro)</li>
+<li><strong>Claude strengths:</strong> Longer context windows (200K), superior code understanding, better at following complex
+instructions, MCP-first integration</li>
+<li><strong>For harness engineering:</strong> Both ecosystems work. Choose based on your existing infrastructure, cost constraints, and
+specific task requirements. The patterns in this article apply to both.</li>
+</ul>
+<hr>
+<h2 id="where-this-frame-goes-next">Where this frame goes next</h2>
+<p>This article is deliberately tool-agnostic and domain-agnostic. The same frame applies with extra force in
+domains where the substrate is itself a system the agent has to reason about. The next piece in this series applies the
+harness model specifically to data engineering: the substrate becomes algebraic (typestate builders that refuse to
+compile half-configured pipelines, schema-policy lattices, retry-strategy monoids), and a Scalafix layer mechanically
+bans what the algebras cannot express. The architectural decision moves out of a document and into CI.</p>
+<p>If your domain happens to be data, the in-progress companion article at
+<code>/posts/2026/05/ai-orchestrated-de/</code> and the upcoming Scala Days 2026 talks pick up the thread.</p>
+<hr>
+<h2 id="references">References</h2>
+<h3 id="openai-sources">OpenAI sources</h3>
+<ol>
+<li>Harness engineering: <a href="https://openai.com/index/harness-engineering/" rel="noopener external" target="_blank">https://openai.com/index/harness-engineering/</a>
+</li>
+<li>Skills + shell + compaction tips: <a href="https://developers.openai.com/blog/skills-shell-tips" rel="noopener external" target="_blank">https://developers.openai.com/blog/skills-shell-tips</a>
+</li>
+<li>15 lessons building ChatGPT apps: <a href="https://developers.openai.com/blog/15-lessons-building-chatgpt-apps" rel="noopener external" target="_blank">https://developers.openai.com/blog/15-lessons-building-chatgpt-apps</a>
+</li>
+<li>OpenAI for Developers in 2025: <a href="https://developers.openai.com/blog/openai-for-developers-2025" rel="noopener external" target="_blank">https://developers.openai.com/blog/openai-for-developers-2025</a>
+</li>
+<li>Codex CLI: <a href="https://github.com/openai/codex" rel="noopener external" target="_blank">https://github.com/openai/codex</a>
+</li>
+<li>OpenAI Agents SDK (Python): <a href="https://openai.github.io/openai-agents-python/" rel="noopener external" target="_blank">https://openai.github.io/openai-agents-python/</a>
+</li>
+<li>OpenAI Agents SDK (TypeScript): <a href="https://openai.github.io/openai-agents-js/" rel="noopener external" target="_blank">https://openai.github.io/openai-agents-js/</a>
+</li>
+<li>AgentKit: <a href="https://openai.com/index/introducing-agentkit/" rel="noopener external" target="_blank">https://openai.com/index/introducing-agentkit/</a>
+</li>
+<li>Aardvark: <a href="https://openai.com/index/introducing-aardvark/" rel="noopener external" target="_blank">https://openai.com/index/introducing-aardvark/</a>
+</li>
+<li>Skybridge Framework: <a href="https://github.com/alpic-ai/skybridge" rel="noopener external" target="_blank">https://github.com/alpic-ai/skybridge</a>
+</li>
+</ol>
+<h3 id="claudeanthropic-sources">Claude/Anthropic sources</h3>
+<ol start="11">
+<li>Claude Code Best Practices: <a href="https://code.claude.com/docs/en/best-practices" rel="noopener external" target="_blank">https://code.claude.com/docs/en/best-practices</a>
+</li>
+<li>Creating the Perfect CLAUDE.md: <a href="https://dometrain.com/blog/creating-the-perfect-claudemd-for-claude-code/" rel="noopener external" target="_blank">https://dometrain.com/blog/creating-the-perfect-claudemd-for-claude-code/</a>
+</li>
+<li>Claude Code Hooks Guide: <a href="https://aiorg.dev/blog/claude-code-hooks" rel="noopener external" target="_blank">https://aiorg.dev/blog/claude-code-hooks</a>
+</li>
+<li>Connect Claude Code to tools via MCP: <a href="https://code.claude.com/docs/en/mcp" rel="noopener external" target="_blank">https://code.claude.com/docs/en/mcp</a>
+</li>
+<li>Building MCP Servers: <a href="https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/" rel="noopener external" target="_blank">https://www.sitepoint.com/building-mcp-servers-custom-context-for-claude-code/</a>
+</li>
+<li>Claude Code Subagents: <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener external" target="_blank">https://code.claude.com/docs/en/sub-agents</a>
+</li>
+<li>Claude Compaction Documentation: <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" rel="noopener external" target="_blank">https://platform.claude.com/docs/en/build-with-claude/compaction</a>
+</li>
+<li>Claude Skills Documentation: <a href="https://code.claude.com/docs/en/skills" rel="noopener external" target="_blank">https://code.claude.com/docs/en/skills</a>
+</li>
+<li>Claude Skills Library: <a href="https://mcpservers.org/claude-skills" rel="noopener external" target="_blank">https://mcpservers.org/claude-skills</a>
+</li>
+<li>Claude Artifacts Guide: <a href="https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them" rel="noopener external" target="_blank">https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them</a>
+</li>
+<li>Understanding Claude&rsquo;s conversation
+Compacting: <a href="https://www.ajeetraina.com/understanding-claudes-conversation-compacting-a-deep-dive-into-context-management/" rel="noopener external" target="_blank">https://www.ajeetraina.com/understanding-claudes-conversation-compacting-a-deep-dive-into-context-management/</a>
+</li>
+<li>Claude Code security best practices: <a href="https://www.mintmcp.com/blog/claude-code-security" rel="noopener external" target="_blank">https://www.mintmcp.com/blog/claude-code-security</a>
+</li>
+<li>Eight trends defining software in
+2026: <a href="https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026" rel="noopener external" target="_blank">https://claude.com/blog/eight-trends-defining-how-software-gets-built-in-2026</a>
+</li>
+<li>Building agents with the Claude Agent
+SDK: <a href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk" rel="noopener external" target="_blank">https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk</a>
+</li>
+<li>Complete guide to agentic coding in 2026: <a href="https://www.teamday.ai/blog/complete-guide-agentic-coding-2026" rel="noopener external" target="_blank">https://www.teamday.ai/blog/complete-guide-agentic-coding-2026</a>
+</li>
+</ol>
+<h3 id="community-resources">Community resources</h3>
+<ol start="26">
+<li>Awesome Claude code: <a href="https://github.com/hesreallyhim/awesome-claude-code" rel="noopener external" target="_blank">https://github.com/hesreallyhim/awesome-claude-code</a>
+</li>
+<li>Everything Claude code (production configs): <a href="https://github.com/affaan-m/everything-claude-code" rel="noopener external" target="_blank">https://github.com/affaan-m/everything-claude-code</a>
+</li>
+<li>Claude code Showcase: <a href="https://github.com/ChrisWiles/claude-code-showcase" rel="noopener external" target="_blank">https://github.com/ChrisWiles/claude-code-showcase</a>
+</li>
+<li>Claude code hooks for production: <a href="https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns" rel="noopener external" target="_blank">https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns</a>
+</li>
+<li>How to use AGENTS.md in Claude code: <a href="https://aiengineerguide.com/blog/how-to-use-agents-md-in-claude-code/" rel="noopener external" target="_blank">https://aiengineerguide.com/blog/how-to-use-agents-md-in-claude-code/</a>
+</li>
+</ol>
+<h3 id="universal-patterns">Universal patterns</h3>
+<ol start="31">
+<li>FlowForge: <a href="https://github.com/com-vitthalmirji/flowforge" rel="noopener external" target="_blank">https://github.com/com-vitthalmirji/flowforge</a>
+</li>
+<li>Code review operating system (companion article): <a href="/code-review-system/">Build a code review operating system</a>
+</li>
+<li>AGENTS.md spec: <a href="https://agents.md/" rel="noopener external" target="_blank">https://agents.md/</a>
+</li>
+<li>Parse, don&rsquo;t validate (Alexis King): <a href="https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/" rel="noopener external" target="_blank">https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/</a>
+</li>
+<li>AI is forcing us to write good code: <a href="https://bits.logic.inc/p/ai-is-forcing-us-to-write-good-code" rel="noopener external" target="_blank">https://bits.logic.inc/p/ai-is-forcing-us-to-write-good-code</a>
+</li>
+<li>Ralph Wiggum Loop: <a href="https://ghuntley.com/loop/" rel="noopener external" target="_blank">https://ghuntley.com/loop/</a>
+</li>
+<li>Good context, bad context: AGENTS.md for coding agents: <a href="https://addyosmani.com/blog/agents-md/" rel="noopener external" target="_blank">https://addyosmani.com/blog/agents-md/</a>
+</li>
+</ol>
+<h3 id="2026-platform-developments-added-may-2026">2026 platform developments (added May 2026)</h3>
+<ol start="38">
+<li>BigQuery Data Engineering Agent (GA 22 April 2026): <a href="https://cloud.google.com/bigquery/docs/data-engineering-agent" rel="noopener external" target="_blank">https://cloud.google.com/bigquery/docs/data-engineering-agent</a>
+</li>
+<li>dbt Coalesce 2025 announcements (dbt Agents, Fusion, MCP server): <a href="https://www.getdbt.com/blog/coalesce-2025-rewriting-the-future" rel="noopener external" target="_blank">https://www.getdbt.com/blog/coalesce-2025-rewriting-the-future</a>
+</li>
+<li>Snowflake Managed MCP Servers: <a href="https://www.snowflake.com/en/blog/managed-mcp-servers-secure-data-agents/" rel="noopener external" target="_blank">https://www.snowflake.com/en/blog/managed-mcp-servers-secure-data-agents/</a>
+</li>
+<li>Microsoft Fabric: Agentic Fabric (MCP as AI-native OS): <a href="https://blog.fabric.microsoft.com/en-us/blog/agentic-fabric-how-mcp-is-turning-your-data-platform-into-an-ai-native-operating-system" rel="noopener external" target="_blank">https://blog.fabric.microsoft.com/en-us/blog/agentic-fabric-how-mcp-is-turning-your-data-platform-into-an-ai-native-operating-system</a>
+</li>
+<li>Atlan MCP-Connected Data Catalog: <a href="https://atlan.com/know/mcp-connected-data-catalog/" rel="noopener external" target="_blank">https://atlan.com/know/mcp-connected-data-catalog/</a>
+</li>
+<li>dbt Semantic Layer vs Text-to-SQL benchmark (2026): <a href="https://docs.getdbt.com/blog/semantic-layer-vs-text-to-sql-2026" rel="noopener external" target="_blank">https://docs.getdbt.com/blog/semantic-layer-vs-text-to-sql-2026</a>
+</li>
+<li>Data Engineering in 2026: 12 Predictions (Datafold): <a href="https://www.datafold.com/blog/data-engineering-in-2026-predictions/" rel="noopener external" target="_blank">https://www.datafold.com/blog/data-engineering-in-2026-predictions/</a>
+</li>
+</ol>
+<h3 id="adjacent-scala-language-and-academic-work">Adjacent Scala-language and academic work</h3>
+<ol start="45">
+<li>Scalar 2026: How Can We Trust Our Agents? (Odersky framing): <a href="https://www.slideshare.net/slideshow/how-can-we-trust-our-agents-talk-given-at-scala3-2026/286692416" rel="noopener external" target="_blank">https://www.slideshare.net/slideshow/how-can-we-trust-our-agents-talk-given-at-scala3-2026/286692416</a>
+</li>
+<li>OPAW: Tracking Capabilities for Safer Agents (March 2026): <a href="https://blog.georgovassilis.com/2026/03/13/opaw-tracking-capabilities-for-safer-agents/" rel="noopener external" target="_blank">https://blog.georgovassilis.com/2026/03/13/opaw-tracking-capabilities-for-safer-agents/</a>
+</li>
+<li>TypePilot: Leveraging the Scala type system for secure LLM-generated code (ACL Anthology 2025, OMMM workshop): <a href="https://aclanthology.org/2025.ommm-1.11/" rel="noopener external" target="_blank">https://aclanthology.org/2025.ommm-1.11/</a>
+</li>
+<li>Hivemind Technologies: Prompting Safely (Lambda World 2025): <a href="https://github.com/HivemindTechnologies/scala-llms-dsl_final" rel="noopener external" target="_blank">https://github.com/HivemindTechnologies/scala-llms-dsl_final</a>
+</li>
+<li>llm4s: Agentic and LLM Programming in Scala (under the Scala Center, GSoC 2025/2026): <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">https://github.com/llm4s/llm4s</a>
+</li>
+</ol>
+<h3 id="production-telemetry-and-failure-mode-evidence">Production telemetry and failure-mode evidence</h3>
+<ol start="50">
+<li>Why AI Agents Break: A Field Analysis (Arize): <a href="https://arize.com/blog/common-ai-agent-failures/" rel="noopener external" target="_blank">https://arize.com/blog/common-ai-agent-failures/</a>
+</li>
+<li>AI Agents for Data Engineering: 2026 reliability guide (Atlan): <a href="https://atlan.com/know/ai-agents-for-data-engineering/" rel="noopener external" target="_blank">https://atlan.com/know/ai-agents-for-data-engineering/</a>
+</li>
+<li>Detecting AI Agent Failure Modes in Production (Latitude): <a href="https://latitude.so/blog/ai-agent-failure-detection-guide" rel="noopener external" target="_blank">https://latitude.so/blog/ai-agent-failure-detection-guide</a>
+</li>
+<li>Data Engineering Open Forum 2025 (recordings playlist): <a href="https://www.youtube.com/playlist?list=PLfXiENmg6yyXKICQiUNutmDyJKk84BVSP" rel="noopener external" target="_blank">https://www.youtube.com/playlist?list=PLfXiENmg6yyXKICQiUNutmDyJKk84BVSP</a>
+</li>
+</ol>
+<h3 id="karpathy-practitioner-patterns">Karpathy: practitioner patterns</h3>
+<ol start="54">
+<li>Andrej Karpathy - LLM coding pitfalls (January 2026): <a href="https://x.com/karpathy/status/2015883857489522876" rel="noopener external" target="_blank">https://x.com/karpathy/status/2015883857489522876</a>
+</li>
+<li>andrej-karpathy-skills - four-principle CLAUDE.md, also installable as a Claude Code plugin (143K+ stars): <a href="https://github.com/multica-ai/andrej-karpathy-skills" rel="noopener external" target="_blank">https://github.com/multica-ai/andrej-karpathy-skills</a>
+</li>
+<li>Andrej Karpathy - LLM Knowledge Bases (April 2026): <a href="https://x.com/karpathy/status/2039805659525644595" rel="noopener external" target="_blank">https://x.com/karpathy/status/2039805659525644595</a>
+</li>
+<li>Karpathy LLM wiki gist (raw/wiki/operations pattern): <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" rel="noopener external" target="_blank">https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f</a>
+</li>
+</ol>
+<h3>🔗 Related Posts</h3>
+<ul>
+  
+  
+    
+  
+    
+    <li><a href="/2026/02/build-a-code-review-operating-system-prevent-2-am-incidents-with-an-engineering-code-design-ops-infra-security-performance-review-system/">Build a code review operating system: prevent 2 AM incidents in serious codebases</a></li>
+    
+  
+    
+    <li><a href="/2025/10/rust-fundamentals-a-precise-6-week-plan-for-systems-minded-data-engineers-now/">Rust fundamentals: a precise 6-week plan for systems-minded data engineers now</a></li>
+    
+  
+    
+    <li><a href="/2025/10/effect-polymorphism-in-scala-write-once-choose-your-runtime-later-safely-now/">Effect polymorphism in Scala: write once, choose your runtime later safely now</a></li>
+    
+  
+    
+    <li><a href="/2025/10/kleisli-for-data-engineers-the-category-trick-that-makes-pipelines-compose/">Kleisli for data engineers: the category trick that makes pipelines compose</a></li>
+    
+  
+</ul>
+
+<hr>
+<p>If you&rsquo;re staff or principal today, your highest-impact work isn&rsquo;t writing excellent code anymore.</p>
+<p>It&rsquo;s in building a harness where excellent code becomes the default output of the system.</p>
+<p>OpenAI shipped 1 million lines in 5 months with agents generating every line. They did it by investing in environment
+design, not implementation speed.</p>
+<p><strong>You can build the same harness with Claude Code.</strong> The patterns are identical. The tools differ. The outcomes are the
+same.</p>
+<p><a class="btn" href="/posts/2026/02/code-review-operating-system/" target="_blank" rel="noopener noreferrer">
+Read the companion: Build a code review operating system
+</a></p>
+
+
+<p>You can start building your harness today. You&rsquo;ve got the map for both ecosystems.
+Start with your instruction file (AGENTS.md or CLAUDE.md). The rest follows.</p>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2026-02-build-the-harness-not-the-code-a-staff-principal-engineers-guide-to-ai-agent-systems.png" type="image/png"/></item></channel></rss>

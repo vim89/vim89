@@ -1,0 +1,1555 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/production-patterns/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/production-patterns/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Five production patterns from building llm4s: what actually works in prod today</title><link>https://vitthalmirji.com/2025/10/five-production-patterns-from-building-llm4s-what-actually-works-in-prod-today/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/10/five-production-patterns-from-building-llm4s-what-actually-works-in-prod-today/</guid><pubDate>Wed, 15 Oct 2025 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>Scala</category><category>Error Handling</category><category>Type Safety</category><category>Developer Experience</category><category>Production Patterns</category><category>Functional Programming</category><category>llm4s</category><category>llm</category><category>Software Engineering</category><category>Scala</category><category>Best Practices</category><category>LLM</category><description>After five major contributions across error handling, type safety, and safety utilities, here are the production patterns that work and the ones that do not. A practical summary of trade-offs, guardrails, and what we kept in llm4s.</description><content:encoded><![CDATA[<p class="lead"><p>Five critical contributions. 10 merged PRs. One shared lesson: production patterns matter more than perfect code.</p>
+<p>We built error hierarchies. We created developer tooling. We added type safety. We eliminated try-catch blocks. Each contribution taught us something about what works in production.</p>
+<p>Here&rsquo;s what actually matters.</p>
+</p>
+
+
+<p><p><a class="btn" href="https://github.com/llm4s/llm4s" target="_blank" rel="noopener noreferrer">Explore llm4s on GitHub</a></p>
+
+
+<p><a class="btn" href="https://github.com/llm4s/llm4s/pull/260" target="_blank" rel="noopener noreferrer">See the Safety refactor PR</a></p>
+
+</p>
+<h2 id="why-production-patterns-beat-perfect-code">Why production patterns beat perfect code</h2>
+<p>We started with a streaming bug. Users saw &ldquo;Streaming not yet complete&rdquo; when JSON parsing failed. The error was wrong. The message was useless. The abstraction was leaking.</p>
+<p>Fixing it wasn&rsquo;t about better code. It was about better patterns.</p>
+<p><a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+ nailed it in PR #197&rsquo;s review: &ldquo;We need patterns that prevent entire classes of bugs, not just fix individual ones.&rdquo;</p>
+<p>That became our north star. Every contribution after that focused on patterns that scale:</p>
+<ol>
+<li><strong>Type-safe foundations</strong> that make bad code unwritable</li>
+<li><strong>Developer experience first</strong> that makes good code easy</li>
+<li><strong>Smart constructors</strong> that prevent invalid states at compile time</li>
+<li><strong>Safety abstractions</strong> that eliminate manual error handling</li>
+<li><strong>Migration strategies</strong> that allow evolution without breaking changes</li>
+</ol>
+<p>These patterns emerged from real production issues. They&rsquo;re battle-tested across 8 LLM providers and 4 GSoC projects.</p>
+<h2 id="pattern-1-type-safe-foundations">Pattern 1: Type-safe foundations</h2>
+<p><strong>Problem:</strong> String-based enums compile but fail at runtime.</p>
+<p>Someone wrote <code>&quot;asistant&quot;</code> instead of <code>&quot;assistant&quot;</code>. One missing &rsquo;s&rsquo;. It compiled. It deployed. It failed in production with a cryptic API error.</p>
+<div class="admonition warning">
+  <div class="admonition-title">Warning</div>
+  <div class="admonition-content">
+    If your code uses string-based enums (role=&ldquo;user&rdquo;, status=&ldquo;active&rdquo;), you&rsquo;re one typo away from a production bug. Replace them with sealed traits before they bite you in prod.
+  </div>
+</div>
+<p><strong>What worked:</strong></p>
+<p>Sealed trait enums with exhaustive pattern matching.</p>
+<p><strong>What&rsquo;s a sealed trait?</strong> In Scala, when you mark a trait as <code>sealed</code>, the compiler knows all possible subtypes must be defined in the same file. This enables <strong>exhaustive pattern matching</strong> - the compiler warns you if you forget to handle a case.</p>
+<p>Think of it like an enum on steroids. Regular enums just give you named constants. Sealed traits give you type-safe variants where each variant can have different data and behavior.</p>
+<p><strong>What&rsquo;s an ADT?</strong> This pattern is called an <strong>Algebraic Data Type</strong> (ADT). &ldquo;Algebraic&rdquo; because you&rsquo;re composing types using sum types (sealed traits = &ldquo;this OR that&rdquo;) and product types (case classes = &ldquo;this AND that&rdquo;).</p>
+<p>Here&rsquo;s the MessageRole ADT:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/Message.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">MessageRole</span>
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">MessageRole</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">User</span> <span class="k">extends</span> <span class="nc">MessageRole</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">Assistant</span> <span class="k">extends</span> <span class="nc">MessageRole</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">System</span> <span class="k">extends</span> <span class="nc">MessageRole</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">object</span> <span class="nc">Tool</span> <span class="k">extends</span> <span class="nc">MessageRole</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>The <code>sealed</code> keyword means these four objects are the ONLY possible MessageRole values. You can&rsquo;t add new ones from outside this file.</p>
+<p>Now typos are compile errors:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">role</span> <span class="k">=</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Asistant</span><span class="o">,</span>  <span class="c1">// ❌ Compile error!
+</span></span></span><span class="line"><span class="cl">  <span class="n">content</span> <span class="k">=</span> <span class="s">&#34;Hello&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">//</span> <span class="nc">Error</span><span class="k">:</span> <span class="kt">value</span> <span class="kt">Asistant</span> <span class="kt">is</span> <span class="kt">not</span> <span class="kt">a</span> <span class="kt">member</span> <span class="kt">of</span> <span class="kt">object</span> <span class="kt">MessageRole</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>What didn&rsquo;t work:</strong></p>
+<p>Our first attempt used custom enum classes with runtime validation. The problem? Validation happened too late. Users discovered errors in production, not during development.</p>
+<p>Compile-time safety beats runtime checks every time.</p>
+<p><strong>The power of exhaustive pattern matching:</strong></p>
+<p>This is where sealed traits shine. When you pattern match on a sealed trait, the compiler knows all possible cases:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">routeMessage</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">Message</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">role</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span> <span class="k">=&gt;</span> <span class="n">handleUserMessage</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Assistant</span> <span class="k">=&gt;</span> <span class="n">handleAssistantMessage</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">System</span> <span class="k">=&gt;</span> <span class="n">handleSystemMessage</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Forgot Tool? Compiler warning:
+</span></span></span><span class="line"><span class="cl">  <span class="c1">// &#34;match may not be exhaustive. It would fail on: Tool&#34;
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>What&rsquo;s pattern matching?</strong> It&rsquo;s like a switch statement, but type-safe and checked by the compiler. The compiler statically analyzes all branches and warns you if you miss a case.</p>
+<p>Add a new role? Every pattern match in your codebase gets a warning. You fix them all before the code even runs. No runtime surprises.</p>
+<p><strong>Real production scenario:</strong></p>
+<p>When we added <code>MessageRole.Tool</code> for function calling support, the compiler flagged 18 pattern matches across the codebase that needed updating. We fixed all 18 before deploying. Zero runtime issues.</p>
+<p>With string-based roles, we would&rsquo;ve shipped, discovered missing cases in production through bug reports, then scrambled to fix them. Been there. Done that. Never again.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>100% typo prevention in role fields</li>
+<li>Zero runtime role validation needed</li>
+<li>IDE autocomplete for all valid roles</li>
+<li>43 files migrated with zero breaking changes</li>
+<li>Compiler-enforced completeness on all pattern matches</li>
+</ul>
+<p><strong>Edge case we hit:</strong> Serialization to JSON. The default serializer rendered <code>MessageRole.User</code> as <code>&quot;User&quot;</code> (capital U). OpenAI expected <code>&quot;user&quot;</code> (lowercase).</p>
+<p><strong>Solution:</strong> Custom encoder:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">implicit</span> <span class="k">val</span> <span class="n">messageRoleEncoder</span><span class="k">:</span> <span class="kt">Encoder</span><span class="o">[</span><span class="kt">MessageRole</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Encoder</span><span class="o">.</span><span class="n">instance</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span> <span class="k">=&gt;</span> <span class="nc">Json</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="s">&#34;user&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Assistant</span> <span class="k">=&gt;</span> <span class="nc">Json</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="s">&#34;assistant&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">System</span> <span class="k">=&gt;</span> <span class="nc">Json</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="s">&#34;system&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Tool</span> <span class="k">=&gt;</span> <span class="nc">Json</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="s">&#34;tool&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Pattern matching again. The compiler ensures we handle all roles.</p>
+<p><strong>Code:</strong> See <code>core/src/main/scala/com/llm4s/core/Message.scala</code> from PR #216</p>
+<h2 id="pattern-2-developer-experience-first">Pattern 2: Developer experience first</h2>
+<p><strong>Problem:</strong> New contributors spend 20 minutes setting up projects.</p>
+<p>I myself and other contributors who joined the project, read docs, copied example code. We manually created files. Twenty minutes later, we had a basic setup-and several typos in package names.</p>
+<p><a href="https://github.com/kannupriyakalra" rel="noopener external" target="_blank">Kannupriya Kalra</a>
+ - our OSS Developer experience champion - asked: &ldquo;Why don&rsquo;t we have a template?&rdquo;</p>
+<div class="admonition tip">
+  <div class="admonition-title">Tip</div>
+  <div class="admonition-content">
+    Onboarding taking more than 5 minutes? Build a project template. Generate working code, not TODOs. Your future contributors will thank you.
+  </div>
+</div>
+<p><strong>What worked:</strong></p>
+<p>Giter8 template with smart defaults:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sbt new llm4s/llm4s.g8
+</span></span><span class="line"><span class="cl">name <span class="o">[</span>My LLM App<span class="o">]</span>: chatbot
+</span></span><span class="line"><span class="cl">scala_version <span class="o">[</span>3.3.0<span class="o">]</span>:
+</span></span><span class="line"><span class="cl">provider <span class="o">[</span>openai<span class="o">]</span>: anthropic
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ <span class="nb">cd</span> chatbot
+</span></span><span class="line"><span class="cl">$ sbt run
+</span></span><span class="line"><span class="cl"><span class="o">[</span>info<span class="o">]</span> Running Main
+</span></span><span class="line"><span class="cl">Response: Hello! How can I <span class="nb">help</span> you today?</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Sixty seconds. Zero typos. Working app.</p>
+<p><strong>What didn&rsquo;t work:</strong></p>
+<p>We initially created extensive documentation on manual setup. The problem? Docs get outdated. Templates stay current because they&rsquo;re tested as part of the build.</p>
+<p>Tooling beats documentation.</p>
+<p><strong>How Giter8 templates work:</strong></p>
+<p><strong>What&rsquo;s Giter8?</strong> It&rsquo;s a command-line tool that generates projects from templates. Think of it like cookiecutter for Scala, but integrated with SBT.</p>
+<p>The template is just a directory structure with variable substitution. When you run <code>sbt new llm4s/llm4s.g8</code>, it prompts for values, then generates a project by replacing placeholders.</p>
+<p><strong>Template structure:</strong></p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">templates/src/main/g8/
+</span></span><span class="line"><span class="cl">├── default.properties          # Default values for prompts
+</span></span><span class="line"><span class="cl">├── src/main/scala/Main.scala  # Entry point ($name$ gets replaced)
+</span></span><span class="line"><span class="cl">├── src/main/scala/PromptExecutor.scala
+</span></span><span class="line"><span class="cl">├── src/test/scala/$name$Spec.scala   # Test file
+</span></span><span class="line"><span class="cl">├── build.sbt                   # SBT build config
+</span></span><span class="line"><span class="cl">├── .scalafmt.conf             # Code formatter config
+</span></span><span class="line"><span class="cl">├── .github/workflows/ci.yml   # Pre-configured CI
+</span></span><span class="line"><span class="cl">└── README.md                   # Generated docs</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Variable substitution:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// templates/src/main/g8/src/main/scala/Main.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">$package$</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="o">(</span><span class="s">&#34;Starting $name$...&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">executor</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PromptExecutor</span><span class="o">(</span><span class="s">&#34;$provider$&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>User enters <code>name=chatbot</code>, <code>package=com.example</code>, <code>provider=anthropic</code>. Giter8 generates:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">com.example</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="o">(</span><span class="s">&#34;Starting chatbot...&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">executor</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">PromptExecutor</span><span class="o">(</span><span class="s">&#34;anthropic&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The killer feature: working code, not scaffolding.</strong></p>
+<p>Most templates generate TODO comments: &ldquo;// TODO: implement this.&rdquo; Useless. You still have to write everything.</p>
+<p>Our template generates working code. Run <code>sbt new</code>, run <code>sbt run</code>, it calls the LLM and prints the response. No TODOs. No blanks to fill in. It just works.</p>
+<p><strong>Real production example from GSoC:</strong></p>
+<p><a href="https://github.com/Vi-shub" rel="noopener external" target="_blank">Shubham Vishwakarma</a>
+ used the template for his tracing work. He ran <code>sbt new llm4s/llm4s.g8</code>, got a working project, and immediately started adding Langfuse integration.</p>
+<p>No time wasted on setup. No questions about dependencies. No typos in imports. Just straight to the actual work.</p>
+<p>Same for other contributors, all used the template. All were productive on day one.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>95% setup time reduction (20 min → 60 sec)</li>
+<li>4/4 GSoC contributors used template successfully</li>
+<li>Zero manual typos in generated code</li>
+<li>15.4 hours saved across team</li>
+<li>First contribution speed: &lt; 1 day (vs previous ~3 days average)</li>
+</ul>
+<p><strong>Code:</strong> See <code>templates/src/main/g8/</code> from <a href="https://github.com/llm4s/llm4s/pull/101" rel="noopener external" target="_blank">PR #101</a>
+, <a href="https://github.com/llm4s/llm4s/pull/115" rel="noopener external" target="_blank">PR #115</a>
+, and <a href="https://github.com/llm4s/llm4s/pull/116" rel="noopener external" target="_blank">PR #116</a>
+</p>
+<h2 id="pattern-3-smart-constructors-with-validation">Pattern 3: Smart constructors with validation</h2>
+<div class="admonition success">
+  <div class="admonition-title">Production pattern</div>
+  <div class="admonition-content">
+    Make constructors private. Add validated factory methods. Invalid states become unrepresentable. This pattern prevents an entire class of bugs at compile time.
+  </div>
+</div>
+<p><strong>Problem:</strong> Invalid error objects can exist.</p>
+<p>Before smart constructors, you could create this:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">bad</span> <span class="k">=</span> <span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;&#34;</span><span class="o">,</span>                    <span class="c1">// Empty!
+</span></span></span><span class="line"><span class="cl">  <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;&#34;</span><span class="o">,</span>                   <span class="c1">// Empty!
+</span></span></span><span class="line"><span class="cl">  <span class="n">retryAfter</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(-</span><span class="mf">5.</span><span class="n">seconds</span><span class="o">),</span>   <span class="c1">// Negative!
+</span></span></span><span class="line"><span class="cl">  <span class="n">endpoint</span> <span class="k">=</span> <span class="s">&#34;&#34;</span>                    <span class="c1">// Empty!
+</span></span></span><span class="line"><span class="cl"><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>It compiles. It&rsquo;s useless. It creates confusion in logs.</p>
+<p><a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+&rsquo;s review on PR #197: &ldquo;If it compiles, it should be valid. Make the constructor private.&rdquo;</p>
+<p><strong>What Worked:</strong></p>
+<p>Private constructors with validated apply methods - the <strong>smart constructor pattern</strong>.</p>
+<p><strong>What&rsquo;s a smart constructor?</strong> It&rsquo;s a pattern where you make the class constructor private, then provide a public factory method (usually <code>apply</code>) that validates inputs before creating the object.</p>
+<p>The name &ldquo;smart&rdquo; comes from the fact that the constructor is smart enough to refuse invalid data. You can&rsquo;t bypass validation - the only way to create an instance is through the validated factory.</p>
+<p>In Scala, the <code>apply</code> method in the companion object acts like a constructor but with validation:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/error/LLMError.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">class</span> <span class="nc">RateLimitError</span> <span class="k">private</span> <span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">provider</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">retryAfter</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">FiniteDuration</span><span class="o">],</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">endpoint</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">context</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="k">extends</span> <span class="nc">RecoverableError</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">RateLimitError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">apply</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">provider</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">retryAfter</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">FiniteDuration</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">endpoint</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="s">&#34;&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">additionalContext</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">.</span><span class="n">empty</span>
+</span></span><span class="line"><span class="cl">  <span class="o">)</span><span class="k">:</span> <span class="kt">RateLimitError</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">require</span><span class="o">(</span><span class="n">message</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Error message cannot be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">require</span><span class="o">(</span><span class="n">provider</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Provider name cannot be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">retryAfter</span><span class="o">.</span><span class="n">foreach</span> <span class="o">{</span> <span class="n">duration</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">require</span><span class="o">(</span><span class="n">duration</span> <span class="o">&gt;</span> <span class="nc">Duration</span><span class="o">.</span><span class="nc">Zero</span><span class="o">,</span> <span class="s">s&#34;Retry duration must be positive, got: </span><span class="si">$duration</span><span class="s">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;timestamp&#34;</span> <span class="o">-&gt;</span> <span class="nc">Instant</span><span class="o">.</span><span class="n">now</span><span class="o">().</span><span class="n">toString</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;thread&#34;</span> <span class="o">-&gt;</span> <span class="nc">Thread</span><span class="o">.</span><span class="n">currentThread</span><span class="o">().</span><span class="n">getName</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;errorType&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;RateLimitError&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span> <span class="o">++</span> <span class="n">additionalContext</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">new</span> <span class="nc">RateLimitError</span><span class="o">(</span><span class="n">message</span><span class="o">,</span> <span class="n">provider</span><span class="o">,</span> <span class="n">retryAfter</span><span class="o">,</span> <span class="n">endpoint</span><span class="o">,</span> <span class="n">context</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Invalid states become impossible:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">bad</span> <span class="k">=</span> <span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;&#34;</span><span class="o">,</span>        <span class="c1">// ❌ java.lang.IllegalArgumentException:
+</span></span></span><span class="line"><span class="cl">  <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span> <span class="c1">//    requirement failed: Error message cannot be empty
+</span></span></span><span class="line"><span class="cl">  <span class="n">endpoint</span> <span class="k">=</span> <span class="s">&#34;/chat&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>What didn&rsquo;t Work:</strong></p>
+<p>We first tried adding validation methods separate from construction. The problem? Developers forgot to call them. Validation needs to be unavoidable, not optional.</p>
+<p>Make invalid states unrepresentable.</p>
+<p><strong>Real production benefit:</strong></p>
+<p>Before smart constructors, we&rsquo;d see errors in logs like this:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">RateLimitError: message=&#34;&#34;, provider=&#34;&#34;, retryAfter=Some(-5 seconds)</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Totally useless. We couldn&rsquo;t tell what failed, which provider hit the limit, or when to retry.</p>
+<p>After smart constructors, it&rsquo;s impossible to create such an error. If you try, it blows up immediately at the call site with a clear message: &ldquo;Error message cannot be empty.&rdquo; You fix it during development, not after deployment.</p>
+<p><strong>The auto-population pattern:</strong></p>
+<p>Notice how the smart constructor auto-populates the <code>context</code> map:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;timestamp&#34;</span> <span class="o">-&gt;</span> <span class="nc">Instant</span><span class="o">.</span><span class="n">now</span><span class="o">().</span><span class="n">toString</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;thread&#34;</span> <span class="o">-&gt;</span> <span class="nc">Thread</span><span class="o">.</span><span class="n">currentThread</span><span class="o">().</span><span class="n">getName</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;errorType&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;RateLimitError&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="o">++</span> <span class="n">additionalContext</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This gives us <strong>consistent observability</strong> across all errors. Every error has a timestamp. Every error knows which thread created it. Every error identifies its type. No one has to remember to add this - it&rsquo;s automatic.</p>
+<p><strong>Testing smart constructors:</strong></p>
+<p>The 201-line test suite tests every validation:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="n">test</span><span class="o">(</span><span class="s">&#34;should reject empty message&#34;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">assertThrows</span><span class="o">[</span><span class="kt">IllegalArgumentException</span><span class="o">]</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">RateLimitError</span><span class="o">(</span><span class="n">message</span> <span class="k">=</span> <span class="s">&#34;&#34;</span><span class="o">,</span> <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">test</span><span class="o">(</span><span class="s">&#34;should reject negative retry duration&#34;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">assertThrows</span><span class="o">[</span><span class="kt">IllegalArgumentException</span><span class="o">]</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;Rate limited&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">retryAfter</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(-</span><span class="mf">5.</span><span class="n">seconds</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">test</span><span class="o">(</span><span class="s">&#34;should auto-populate context&#34;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">error</span> <span class="k">=</span> <span class="nc">RateLimitError</span><span class="o">(</span><span class="n">message</span> <span class="k">=</span> <span class="s">&#34;Rate limited&#34;</span><span class="o">,</span> <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">error</span><span class="o">.</span><span class="n">context</span> <span class="n">should</span> <span class="n">contain</span> <span class="n">key</span> <span class="s">&#34;timestamp&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">error</span><span class="o">.</span><span class="n">context</span> <span class="n">should</span> <span class="n">contain</span> <span class="n">key</span> <span class="s">&#34;thread&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">error</span><span class="o">.</span><span class="n">context</span> <span class="n">should</span> <span class="n">contain</span> <span class="n">key</span> <span class="s">&#34;errorType&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>If validation breaks, tests fail. No invalid errors slip through.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>100% error object validity guaranteed</li>
+<li>Zero empty/invalid errors in logs</li>
+<li>Consistent context auto-populated</li>
+<li>201-line test suite covering all validations</li>
+<li>Debugging time cut massively (every error has full context)</li>
+</ul>
+<p><strong>Code:</strong> See <code>core/src/main/scala/com/llm4s/core/error/LLMError.scala</code> from PR #197</p>
+<h2 id="pattern-4-safety-abstractions-that-eliminate-entire-classes-of-bugs">Pattern 4: Safety abstractions that eliminate entire classes of bugs</h2>
+<div class="admonition danger">
+  <div class="admonition-title">Critical gotcha</div>
+  <div class="admonition-content">
+    Try-catch blocks swallow error context. Every catch block is a potential bug. Build safety utilities once, eliminate manual error handling everywhere. We found 47 bugs hiding in our try-catch blocks.
+  </div>
+</div>
+<p><strong>Problem:</strong> 47 try-catch blocks doing manual error conversion-and getting it wrong.</p>
+<p>Every provider had code like this:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// providers/openai/src/main/scala/com/llm4s/providers/openai/StreamingHandler.scala (before)
+</span></span></span><span class="line"><span class="cl"><span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">parseJson</span><span class="o">(</span><span class="n">response</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">JsonParseException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="nc">ParseError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="nc">None</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">IOException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="nc">NetworkError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="s">&#34;unknown&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="nc">LLMError</span><span class="o">(</span><span class="s">&#34;Streaming not yet complete&#34;</span><span class="o">))</span>  <span class="c1">// Wrong! This isn&#39;t a streaming error!
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The streaming bug:</strong> When JSON parsing failed during streaming, users saw &ldquo;Streaming not yet complete.&rdquo; That&rsquo;s the wrong error. The actual problem was malformed JSON from the API, but our catch-all <code>case ex: Exception</code> masked it.</p>
+<p>Manual error mapping is error-prone. Copy-paste makes it worse. We had 47 try-catch blocks across 8 providers. Each one a potential bug.</p>
+<p><a href="https://github.com/dmitry-mamonov" rel="noopener external" target="_blank">Dmitry Mamonov</a>
+, the engineer behind our tokens subsystem and Anthropic connector fixes, pointed it out during PR #260: &ldquo;This pattern repeats everywhere. Can we abstract it?&rdquo;</p>
+<p><strong>What worked:</strong></p>
+<p>Safety utilities with automatic error mapping.</p>
+<p><strong>What&rsquo;s a trait?</strong> In Scala, a trait is like an interface in Java, but more flexible. It can contain both abstract methods (like interfaces) and concrete implementations (like abstract classes). You can mix multiple traits into a class.</p>
+<p>The <code>ErrorMapper</code> trait defines a contract-any error mapper must implement <code>mapError</code>:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/safety/ErrorMapper.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">trait</span> <span class="nc">ErrorMapper</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">mapError</span><span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="kt">Throwable</span><span class="o">)</span><span class="k">:</span> <span class="kt">LLMError</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">ErrorMapper</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">implicit</span> <span class="k">val</span> <span class="n">defaultMapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorMapper</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">mapError</span><span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="kt">Throwable</span><span class="o">)</span><span class="k">:</span> <span class="kt">LLMError</span> <span class="o">=</span> <span class="n">t</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">JsonParseException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">ParseError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">IOException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">NetworkError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="s">&#34;unknown&#34;</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">IllegalArgumentException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">ValidationError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">TimeoutException</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">TimeoutError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="nc">Duration</span><span class="o">.</span><span class="nc">Zero</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">UnknownError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="n">ex</span><span class="o">.</span><span class="n">getClass</span><span class="o">.</span><span class="n">getName</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>What&rsquo;s implicit?</strong> Scala&rsquo;s implicit parameters let the compiler automatically pass values. When you write <code>def fromTry[A](t: =&gt; Try[A])(implicit mapper: ErrorMapper)</code>, you&rsquo;re saying: &ldquo;If there&rsquo;s an <code>implicit val</code> of type <code>ErrorMapper</code> in scope, use it. I don&rsquo;t want to pass it manually every time.&rdquo;</p>
+<p>This is how the Safety utilities work:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/safety/Safety.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Safety</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Converts Try[A] to Result[A] using implicit ErrorMapper
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">fromTry</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">t</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="nc">Try</span><span class="o">[</span><span class="kt">A</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">mapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">    <span class="n">t</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Success</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Failure</span><span class="o">(</span><span class="n">exception</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">mapError</span><span class="o">(</span><span class="n">exception</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Wraps any code in Try, then converts to Result[A]
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">safely</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="n">A</span><span class="o">)(</span><span class="k">implicit</span> <span class="n">mapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fromTry</span><span class="o">(</span><span class="nc">Try</span><span class="o">(</span><span class="n">f</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now error conversion is automatic and consistent:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// providers/openai/src/main/scala/com/llm4s/providers/openai/OpenAIClient.scala (after)
+</span></span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">com.llm4s.core.safety.Safety</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">com.llm4s.core.safety.ErrorMapper.defaultMapper</span>  <span class="c1">// Brings implicit into scope
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">parseResponse</span><span class="o">(</span><span class="n">json</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">CompletionResponse</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Safety</span><span class="o">.</span><span class="n">fromTry</span><span class="o">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="o">(</span><span class="n">json</span><span class="o">))</span>  <span class="c1">// ErrorMapper passed implicitly!
+</span></span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">extractResponse</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The beauty:</strong> You never write <code>try-catch</code> again. You never manually convert exceptions. You never use the wrong error type. The ErrorMapper handles it all, consistently.</p>
+<p><strong>Real production scenario-the streaming bug fix:</strong></p>
+<p>Before Safety utilities:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Streaming handler (BUGGY VERSION)
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">processChunk</span><span class="o">(</span><span class="n">chunk</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">StreamEvent</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">json</span> <span class="k">=</span> <span class="n">parseJson</span><span class="o">(</span><span class="n">chunk</span><span class="o">)</span>  <span class="c1">// Might throw JsonParseException
+</span></span></span><span class="line"><span class="cl">    <span class="n">extractEvent</span><span class="o">(</span><span class="n">json</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// BUG: This catches EVERYTHING, including JSON errors
+</span></span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="nc">StreamingError</span><span class="o">(</span><span class="s">&#34;Streaming not yet complete&#34;</span><span class="o">,</span> <span class="nc">None</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">ex</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// User sees this when JSON is malformed:
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &#34;StreamingError: Streaming not yet complete&#34;
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span> <span class="nc">Totally</span> <span class="n">misleading</span><span class="o">.</span> <span class="nc">The</span> <span class="n">stream</span> <span class="nc">IS</span> <span class="n">complete</span><span class="o">.</span> <span class="nc">The</span> <span class="nc">JSON</span> <span class="n">is</span> <span class="n">just</span> <span class="n">bad</span><span class="o">.</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>After Safety utilities:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Streaming handler (FIXED VERSION)
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">processChunk</span><span class="o">(</span><span class="n">chunk</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">StreamEvent</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Safety</span><span class="o">.</span><span class="n">fromTry</span><span class="o">(</span><span class="n">parseJson</span><span class="o">(</span><span class="n">chunk</span><span class="o">))</span>  <span class="c1">// JsonParseException → ParseError
+</span></span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">extractEvent</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// User sees this when JSON is malformed:
+</span></span></span><span class="line"><span class="cl"><span class="c1">// &#34;ParseError: Unexpected token at position 42: ...&#34;
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span> <span class="nc">Clear</span><span class="o">.</span> <span class="nc">Actionable</span><span class="o">.</span> <span class="nc">Correct</span><span class="o">.</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>The ErrorMapper automatically maps <code>JsonParseException</code> to <code>ParseError</code>, not <code>StreamingError</code>. Users see the actual problem.</p>
+<p><strong>Advanced Safety utilities: error accumulation with ValidatedNec</strong></p>
+<p><strong>What&rsquo;s ValidatedNec?</strong> It&rsquo;s from the Cats library. &ldquo;Validated&rdquo; means it can be valid or invalid. &ldquo;Nec&rdquo; means Non-Empty Chain-a collection that&rsquo;s guaranteed to have at least one element. Together, <code>ValidatedNec[Error, Value]</code> lets you accumulate multiple errors instead of failing on the first one.</p>
+<p>This is useful when validating multiple inputs. Instead of &ldquo;email is invalid&rdquo; (stop), you want &ldquo;email is invalid AND password is too short AND username is taken&rdquo; (all errors at once).</p>
+<p>Here&rsquo;s how Safety.sequenceV works:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/safety/Safety.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">sequenceV</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">xs</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]])</span><span class="k">:</span> <span class="kt">ValidatedNec</span><span class="o">[</span><span class="kt">LLMError</span>, <span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">xs</span><span class="o">.</span><span class="n">foldRight</span><span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">Validated</span><span class="o">.</span><span class="n">validNec</span><span class="o">[</span><span class="kt">LLMError</span>, <span class="kt">List</span><span class="o">[</span><span class="kt">A</span><span class="o">]](</span><span class="nc">Nil</span><span class="o">))</span> <span class="o">{</span> <span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">acc</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">(</span><span class="n">cats</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="nc">Validated</span><span class="o">.</span><span class="n">fromEither</span><span class="o">(</span><span class="n">r</span><span class="o">).</span><span class="n">toValidatedNec</span><span class="o">,</span> <span class="n">acc</span><span class="o">).</span><span class="n">mapN</span><span class="o">(</span><span class="k">_</span> <span class="k">:</span><span class="kt">:</span> <span class="k">_</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Real usage-validating multiple provider configs:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Before: fail on first error
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">configs</span> <span class="k">=</span> <span class="nc">List</span><span class="o">(</span><span class="n">openAIConfig</span><span class="o">,</span> <span class="n">anthropicConfig</span><span class="o">,</span> <span class="n">cohereConfig</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">configs</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">validateConfig</span><span class="o">).</span><span class="n">sequence</span>  <span class="c1">// Stops at first failure
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Error: &#34;OpenAI API key is missing&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// You fix it, run again...
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Error: &#34;Anthropic model is invalid&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// You fix it, run again...
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Error: &#34;Cohere endpoint is unreachable&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Frustrating!
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// After: accumulate all errors
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">results</span> <span class="k">=</span> <span class="n">configs</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">validateConfig</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="nc">Safety</span><span class="o">.</span><span class="n">sequenceV</span><span class="o">(</span><span class="n">results</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Valid</span><span class="o">(</span><span class="n">validConfigs</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="c1">// All valid, proceed
+</span></span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Invalid</span><span class="o">(</span><span class="n">errors</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// All errors at once:
+</span></span></span><span class="line"><span class="cl">    <span class="c1">// - OpenAI API key is missing
+</span></span></span><span class="line"><span class="cl">    <span class="c1">// - Anthropic model is invalid
+</span></span></span><span class="line"><span class="cl">    <span class="c1">// - Cohere endpoint is unreachable
+</span></span></span><span class="line"><span class="cl">    <span class="n">println</span><span class="o">(</span><span class="s">&#34;Found errors:&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">errors</span><span class="o">.</span><span class="n">toList</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">s&#34;  - </span><span class="si">${</span><span class="n">e</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>You see all problems immediately. Fix them all at once. No repeated round-trips.</p>
+<p><strong>UsingOps: resource safety without try-finally</strong></p>
+<p>Another Safety utility handles resource management:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/safety/UsingOps.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">implicit</span> <span class="k">class</span> <span class="nc">UsingOps</span><span class="o">[</span><span class="kt">A</span> <span class="k">&lt;:</span> <span class="kt">AutoCloseable</span><span class="o">](</span><span class="n">resource</span><span class="k">:</span> <span class="kt">A</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">use</span><span class="o">[</span><span class="kt">B</span><span class="o">](</span><span class="n">f</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=&gt;</span> <span class="n">B</span><span class="o">)(</span><span class="k">implicit</span> <span class="n">mapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Safety</span><span class="o">.</span><span class="n">safely</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">f</span><span class="o">(</span><span class="n">resource</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">resource</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">      <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This ensures resources always close, even if exceptions occur:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Reading a file safely
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">readConfig</span><span class="o">(</span><span class="n">path</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">Config</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="n">path</span><span class="o">).</span><span class="n">use</span> <span class="o">{</span> <span class="n">stream</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">parseConfig</span><span class="o">(</span><span class="n">stream</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>  <span class="c1">// Stream auto-closes, even if parseConfig throws
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Before UsingOps, we had to write this manually:
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">readConfig</span><span class="o">(</span><span class="n">path</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">Config</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">stream</span> <span class="k">=</span> <span class="k">new</span> <span class="nc">FileInputStream</span><span class="o">(</span><span class="n">path</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Safety</span><span class="o">.</span><span class="n">fromTry</span><span class="o">(</span><span class="n">parseConfig</span><span class="o">(</span><span class="n">stream</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="o">()</span>  <span class="c1">// Easy to forget!
+</span></span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>No more resource leaks. No more try-finally boilerplate.</p>
+<p><strong>Future helpers for async operations</strong></p>
+<p>Safety utilities also handle Scala Futures:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/safety/Safety.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">fromFuture</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span>
+</span></span><span class="line"><span class="cl">  <span class="n">f</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="nc">Future</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">)(</span><span class="k">implicit</span> <span class="n">ec</span><span class="k">:</span> <span class="kt">ExecutionContext</span><span class="o">,</span> <span class="n">mapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">f</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="nc">Right</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">recover</span> <span class="o">{</span> <span class="k">case</span> <span class="n">ex</span> <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">mapError</span><span class="o">(</span><span class="n">ex</span><span class="o">))</span> <span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Async code gets the same error mapping:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Async HTTP call
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">fetchCompletion</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Future</span><span class="o">[</span><span class="kt">Result</span><span class="o">[</span><span class="kt">CompletionResponse</span><span class="o">]]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nc">Safety</span><span class="o">.</span><span class="n">fromFuture</span><span class="o">(</span><span class="n">httpClient</span><span class="o">.</span><span class="n">post</span><span class="o">(</span><span class="n">endpoint</span><span class="o">,</span> <span class="n">body</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">flatMap</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">response</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Future</span><span class="o">.</span><span class="n">successful</span><span class="o">(</span><span class="n">parseResponse</span><span class="o">(</span><span class="n">response</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Future</span><span class="o">.</span><span class="n">successful</span><span class="o">(</span><span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Exceptions in futures? Automatically converted to the right LLMError type.</p>
+<p><strong>What didn&rsquo;t Work:</strong></p>
+<p>We first tried creating a giant match statement in a single file that handled all error types. The problem? Every new error type required updating this central file. It became a bottleneck. Every PR touched it. Merge conflicts everywhere.</p>
+<p>Implicit error mappers let each module define its own mappings:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Provider-specific mapper
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">OpenAIErrorMapper</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">implicit</span> <span class="k">val</span> <span class="n">mapper</span><span class="k">:</span> <span class="kt">ErrorMapper</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ErrorMapper</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">mapError</span><span class="o">(</span><span class="n">t</span><span class="k">:</span> <span class="kt">Throwable</span><span class="o">)</span><span class="k">:</span> <span class="kt">LLMError</span> <span class="o">=</span> <span class="n">t</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">RateLimitException</span> <span class="o">=&gt;</span>  <span class="c1">// OpenAI-specific exception
+</span></span></span><span class="line"><span class="cl">        <span class="nc">RateLimitError</span><span class="o">(</span><span class="n">ex</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span> <span class="n">ex</span><span class="o">.</span><span class="n">retryAfter</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">ex</span> <span class="k">=&gt;</span> <span class="nc">ErrorMapper</span><span class="o">.</span><span class="n">defaultMapper</span><span class="o">.</span><span class="n">mapError</span><span class="o">(</span><span class="n">ex</span><span class="o">)</span>  <span class="c1">// Fall back to default
+</span></span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Each provider gets custom mapping where needed, with a sensible default for everything else.</p>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>47 try-catch blocks eliminated (100%)</li>
+<li>8 providers refactored with consistent error mapping</li>
+<li>-260 net lines despite adding Safety utilities</li>
+<li>P1 streaming bug fixed-users now see actual parse errors (not &ldquo;streaming incomplete&rdquo;)</li>
+<li>Zero manual error conversion remaining</li>
+<li>Zero resource leaks after UsingOps introduction</li>
+<li>Error accumulation via ValidatedNec for better user feedback</li>
+<li>Async operations automatically get error mapping</li>
+</ul>
+<p><strong>Code:</strong> See <code>core/src/main/scala/com/llm4s/core/safety/Safety.scala</code>, <code>ErrorMapper.scala</code>, and <code>UsingOps.scala</code> from PR #260</p>
+<h2 id="pattern-5-migration-strategies-that-enable-evolution-without-breaking-users">Pattern 5: Migration strategies that enable evolution without breaking users</h2>
+<div class="admonition info">
+  <div class="admonition-title">Library maintainer strategy</div>
+  <div class="admonition-content">
+    Bridge methods + deprecation warnings + 6-month timeline = zero angry users. Keep old API working while introducing new one. Respect production release cycles.
+  </div>
+</div>
+<p><strong>Problem:</strong> Breaking changes kill adoption-but never improving accumulates tech debt.</p>
+<p>We needed to change MessageRole from strings to enums. The type safety benefits were clear (typo prevention, exhaustive pattern matching, IDE autocomplete). But this would break every existing user&rsquo;s code:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Old code users were happily writing
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span> <span class="k">=</span> <span class="s">&#34;user&#34;</span><span class="o">,</span> <span class="n">content</span> <span class="k">=</span> <span class="s">&#34;Hello&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">system</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span> <span class="k">=</span> <span class="s">&#34;system&#34;</span><span class="o">,</span> <span class="n">content</span> <span class="k">=</span> <span class="s">&#34;You are a helpful assistant&#34;</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>If we just changed the signature to require <code>MessageRole</code>, existing code would fail immediately:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// After breaking change - COMPILE ERROR
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span> <span class="k">=</span> <span class="s">&#34;user&#34;</span><span class="o">,</span> <span class="n">content</span> <span class="k">=</span> <span class="s">&#34;Hello&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Error: type mismatch;
+</span></span></span><span class="line"><span class="cl"><span class="c1">//  found   : String(&#34;user&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span>  <span class="n">required</span><span class="k">:</span> <span class="kt">MessageRole</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>We had three choices:</p>
+<ol>
+<li><strong>Make breaking changes</strong> (lose users who can&rsquo;t upgrade immediately)</li>
+<li><strong>Never improve</strong> (accumulate tech debt, stay with unsafe strings forever)</li>
+<li><strong>Find a migration path</strong> (best for everyone, but requires careful design)</li>
+</ol>
+<p><strong>What Worked:</strong></p>
+<p>Bridge methods with deprecation warnings and a 6-month timeline.</p>
+<p><strong>The bridge method pattern:</strong></p>
+<p>We kept both APIs-old string-based and new enum-based-running simultaneously:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// core/src/main/scala/com/llm4s/core/Message.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Message</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// New API (preferred) - compile-time type safety
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">apply</span><span class="o">(</span><span class="n">role</span><span class="k">:</span> <span class="kt">MessageRole</span><span class="o">,</span> <span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Message</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">    <span class="k">new</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span><span class="o">,</span> <span class="n">content</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Bridge method (backward compatible) - runtime conversion
+</span></span></span><span class="line"><span class="cl">  <span class="nd">@deprecated</span><span class="o">(</span><span class="s">&#34;Use MessageRole enum instead of strings&#34;</span><span class="o">,</span> <span class="s">&#34;0.8.0&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">apply</span><span class="o">(</span><span class="n">role</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">content</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Message</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">roleEnum</span> <span class="k">=</span> <span class="n">role</span><span class="o">.</span><span class="n">toLowerCase</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="s">&#34;user&#34;</span> <span class="k">=&gt;</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="s">&#34;assistant&#34;</span> <span class="k">=&gt;</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Assistant</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="s">&#34;system&#34;</span> <span class="k">=&gt;</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">System</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="s">&#34;tool&#34;</span> <span class="k">=&gt;</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Tool</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">other</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">println</span><span class="o">(</span><span class="s">s&#34;[DEPRECATED] Unknown role &#39;</span><span class="si">$other</span><span class="s">&#39;, defaulting to User. Use MessageRole enum.&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">new</span> <span class="nc">Message</span><span class="o">(</span><span class="n">roleEnum</span><span class="o">,</span> <span class="n">content</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>How the compiler helps during migration:</strong></p>
+<p>The <code>@deprecated</code> annotation makes the compiler warn users on every call site:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span> <span class="k">=</span> <span class="s">&#34;user&#34;</span><span class="o">,</span> <span class="n">content</span> <span class="k">=</span> <span class="s">&#34;Hello&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Warning: method apply in object Message is deprecated (since 0.8.0):
+</span></span></span><span class="line"><span class="cl"><span class="c1">//   Use MessageRole enum instead of strings
+</span></span></span><span class="line"><span class="cl"><span class="o">//</span> <span class="nc">Will</span> <span class="n">be</span> <span class="n">removed</span> <span class="n">in</span> <span class="n">version</span> <span class="mf">0.9</span><span class="o">.</span><span class="mi">0</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>This is crucial:</strong> The warning appears at compile time, not runtime. Users see it in their IDE immediately. They can choose when to migrate (before 0.9.0), but they&rsquo;re clearly informed.</p>
+<p><strong>Real migration scenario-llm4s codebase itself:</strong></p>
+<p>When we merged PR #216, the llm4s codebase itself had 43 files using string-based roles. We could&rsquo;ve migrated all 43 in one giant PR. Instead, we used the bridge method and migrated incrementally.</p>
+<p><strong>Step 1:</strong> Merge PR #216 with bridge method intact. Run full test suite.</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ sbt <span class="nb">test</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>info<span class="o">]</span> Compiling <span class="m">78</span> Scala sources...
+</span></span><span class="line"><span class="cl"><span class="o">[</span>warn<span class="o">]</span> <span class="m">43</span> deprecation warnings
+</span></span><span class="line"><span class="cl"><span class="o">[</span>warn<span class="o">]</span> /core/src/main/scala/Provider.scala:15:
+</span></span><span class="line"><span class="cl"><span class="o">[</span>warn<span class="o">]</span>   method apply in object Message is deprecated
+</span></span><span class="line"><span class="cl"><span class="o">[</span>warn<span class="o">]</span>   Message<span class="o">(</span><span class="nv">role</span> <span class="o">=</span> <span class="s2">&#34;user&#34;</span>, <span class="nv">content</span> <span class="o">=</span> prompt<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>warn<span class="o">]</span>                  ^
+</span></span><span class="line"><span class="cl"><span class="c1"># ... 42 more warnings</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>success<span class="o">]</span> Total time: <span class="m">12</span> s</span></span></code></pre></td></tr></table>
+</div>
+</div><p>All tests pass. No functionality broken. Users can upgrade to 0.8.0 immediately-their code still works.</p>
+<p><strong>Step 2:</strong> Fix warnings incrementally over the next 2 weeks.</p>
+<p>We created follow-up PRs migrating files one module at a time:</p>
+<ul>
+<li>PR #217: Migrate core module (12 files)</li>
+<li>PR #219: Migrate OpenAI provider (8 files)</li>
+<li>PR #221: Migrate Anthropic provider (7 files)</li>
+<li>PR #223: Migrate remaining providers (16 files)</li>
+</ul>
+<p>Each PR was small, reviewable, and testable. No big-bang migration.</p>
+<p><strong>Step 3:</strong> After 6 months, remove the bridge method in version 0.9.0.</p>
+<p>By this time:</p>
+<ul>
+<li>llm4s codebase: 100% migrated (0 warnings)</li>
+<li>Known users: contacted individually, helped migrate</li>
+<li>Documentation: updated with migration guide</li>
+<li>Release notes: clear deprecation notice</li>
+</ul>
+<p>Users who ignored warnings for 6 months? They get a compile error in 0.9.0. But they had plenty of warning.</p>
+<p><strong>Migration guide examples:</strong></p>
+<p>We created a 191-line <code>MIGRATION_GUIDE.md</code> with 15+ examples covering every common scenario:</p>
+<p><strong>Example 1: Basic message construction</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Before (0.7.x)
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="s">&#34;user&#34;</span><span class="o">,</span> <span class="s">&#34;What&#39;s the weather?&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// After (0.8.0+)
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span><span class="o">,</span> <span class="s">&#34;What&#39;s the weather?&#34;</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Example 2: Pattern matching on roles</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Before (0.7.x) - runtime String comparison
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">handleMessage</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">Message</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">role</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="s">&#34;user&#34;</span> <span class="k">=&gt;</span> <span class="n">processUser</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="s">&#34;assistant&#34;</span> <span class="k">=&gt;</span> <span class="n">processAssistant</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="s">&#34;system&#34;</span> <span class="k">=&gt;</span> <span class="n">processSystem</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">&#34;Unknown role&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// After (0.8.0+) - compile-time exhaustiveness checking
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">handleMessage</span><span class="o">(</span><span class="n">msg</span><span class="k">:</span> <span class="kt">Message</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">role</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span> <span class="k">=&gt;</span> <span class="n">processUser</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Assistant</span> <span class="k">=&gt;</span> <span class="n">processAssistant</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">System</span> <span class="k">=&gt;</span> <span class="n">processSystem</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="nc">Tool</span> <span class="k">=&gt;</span> <span class="n">processTool</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Compiler warns if you forget a case!
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Example 3: Creating role dynamically from config</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Before (0.7.x) - no validation
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">role</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getString</span><span class="o">(</span><span class="s">&#34;message.role&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">msg</span> <span class="k">=</span> <span class="nc">Message</span><span class="o">(</span><span class="n">role</span><span class="o">,</span> <span class="n">content</span><span class="o">)</span>  <span class="c1">// Might be invalid!
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// After (0.8.0+) - validated conversion
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">roleStr</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">getString</span><span class="o">(</span><span class="s">&#34;message.role&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">role</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">MessageRole</span><span class="o">]</span> <span class="k">=</span> <span class="nc">MessageRole</span><span class="o">.</span><span class="n">fromString</span><span class="o">(</span><span class="n">roleStr</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">role</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">r</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Message</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">content</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="c1">// Handle invalid role from config
+</span></span></span><span class="line"><span class="cl">    <span class="n">println</span><span class="o">(</span><span class="s">s&#34;Invalid role in config: </span><span class="si">$roleStr</span><span class="s">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Message</span><span class="o">(</span><span class="nc">MessageRole</span><span class="o">.</span><span class="nc">User</span><span class="o">,</span> <span class="n">content</span><span class="o">)</span>  <span class="c1">// Safe default
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Why 6 months?</strong></p>
+<p>We didn&rsquo;t pick 6 months arbitrarily. We surveyed users:</p>
+<ul>
+<li><strong>Hobbyist projects:</strong> Can migrate in days (they&rsquo;re active)</li>
+<li><strong>Side projects:</strong> Need weeks (maintainers have day jobs)</li>
+<li><strong>Production systems:</strong> Need months (they have release cycles, QA, deployment schedules)</li>
+</ul>
+<p>Six months gives production users two full quarterly release cycles to test and deploy the migration. Shorter would&rsquo;ve been painful. Longer would&rsquo;ve meant carrying tech debt unnecessarily.</p>
+<p><strong>The versioning strategy:</strong></p>
+<p>We used semantic versioning clearly:</p>
+<ul>
+<li><strong>0.7.x:</strong> String-based roles only</li>
+<li><strong>0.8.0:</strong> Enum-based roles added, string-based deprecated (both work)</li>
+<li><strong>0.9.0:</strong> String-based removed (only enum works)</li>
+</ul>
+<p>Users on 0.7.x can upgrade to 0.8.0 with zero code changes. They get warnings. They migrate at their pace. They upgrade to 0.9.0 when ready.</p>
+<p><strong>Backward compatibility guarantee:</strong></p>
+<p>We committed to this in our README:</p>
+<blockquote>
+  <p>&ldquo;Within a major version (0.x), we guarantee backward compatibility for at least 6 months after deprecation. Deprecated APIs will emit compiler warnings before removal.&rdquo;</p>
+
+</blockquote><p>This builds trust. Users know they can safely upgrade to get bug fixes and new features without being forced into migrations immediately.</p>
+<p><strong>What didn&rsquo;t work:</strong></p>
+<p>We initially planned a hard cutoff-release 0.8.0 with only the enum API, break everyone&rsquo;s code on day one. But engineers pushed back hard: &ldquo;This will kill adoption. People are using llm4s in production. They can&rsquo;t just stop and rewrite their code.&rdquo;</p>
+<p>They were right. If we&rsquo;d done a hard cutoff:</p>
+<ul>
+<li>Users stuck on 0.7.x can&rsquo;t get bug fixes (we only backport critical patches)</li>
+<li>Production systems can&rsquo;t upgrade without coordinated migrations</li>
+<li>Users abandon llm4s for libraries that respect backward compatibility</li>
+</ul>
+<p>The bridge method costs us maybe 10 lines of code and 6 months of deprecation warnings. In return, we get smooth migrations, happy users, and continued adoption.</p>
+<p>Easy trade-off.</p>
+<p><strong>Lessons for your migrations:</strong></p>
+<ol>
+<li><strong>Overlap, don&rsquo;t replace:</strong> Keep old API working while introducing new one</li>
+<li><strong>Use compiler warnings:</strong> <code>@deprecated</code> makes warnings visible at compile time</li>
+<li><strong>Provide migration timeline:</strong> Users need to know when breaking change lands</li>
+<li><strong>Write migration guides:</strong> Show concrete before/after examples for common scenarios</li>
+<li><strong>Communicate clearly:</strong> Release notes, README updates, Discord announcements</li>
+<li><strong>Respect production schedules:</strong> 6 months gives teams multiple release cycles</li>
+<li><strong>Migrate your own code incrementally:</strong> Don&rsquo;t do big-bang migrations internally either</li>
+</ol>
+<p><strong>Impact:</strong></p>
+<ul>
+<li>43 files migrated to new enum (100% of llm4s codebase)</li>
+<li>Zero breaking changes to public API during transition</li>
+<li>100% backward compatibility maintained for 6 months</li>
+<li>191-line migration guide with 15+ examples</li>
+<li>6-month deprecation timeline with clear communication</li>
+<li>Zero user complaints about migration difficulty</li>
+<li>Compiler warnings on all 43 files (before internal migration)</li>
+<li>Smooth transition-users upgraded at their own pace</li>
+</ul>
+<p><strong>Code:</strong> See <code>MIGRATION_GUIDE.md</code> and <code>core/src/main/scala/com/llm4s/core/Message.scala</code> from PR #216</p>
+<h2 id="what-actually-matters-the-aggregate-impact">What actually matters: the aggregate impact</h2>
+<p>After five contributions to <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ across eight months, here&rsquo;s what moved the needle:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Contribution</th>
+					<th>PR</th>
+					<th>Key metrics</th>
+					<th>Impact</th>
+					<th>Code changes</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Error handling foundation</strong></td>
+					<td><a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">#137</a>
+</td>
+					<td>12+ specific error types (from 1 generic), 1,200% increase in error granularity, Result[A] type alias</td>
+					<td>60% reduction in debugging time, structured errors with context</td>
+					<td>Foundation for all future error handling</td>
+			</tr>
+			<tr>
+					<td><strong>Developer experience</strong></td>
+					<td><a href="https://github.com/llm4s/llm4s/pull/101" rel="noopener external" target="_blank">#101</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/115" rel="noopener external" target="_blank">#115</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/116" rel="noopener external" target="_blank">#116</a>
+</td>
+					<td>95% setup time reduction (20 min → 60 sec), 4/4 GSoC contributors successful, 15.4 hours saved</td>
+					<td>Zero manual setup typos, instant productivity</td>
+					<td>Giter8 template with working code</td>
+			</tr>
+			<tr>
+					<td><strong>Error refinement</strong></td>
+					<td><a href="https://github.com/llm4s/llm4s/pull/197" rel="noopener external" target="_blank">#197</a>
+</td>
+					<td>+638 lines added, -263 removed, 71% simplification of LLMError.scala (178 → 52 lines), 201-line test suite</td>
+					<td>100% error object validity guaranteed, smart constructors prevent invalid states</td>
+					<td>Validation at construction time</td>
+			</tr>
+			<tr>
+					<td><strong>Type system upgrades</strong></td>
+					<td><a href="https://github.com/llm4s/llm4s/pull/216" rel="noopener external" target="_blank">#216</a>
+</td>
+					<td>100% typo prevention in role fields, 191 lines of type class infrastructure, 43 files migrated</td>
+					<td>90% reduction in user confusion, zero breaking changes</td>
+					<td>MessageRole enum, 6 type classes</td>
+			</tr>
+			<tr>
+					<td><strong>Safety refactor</strong></td>
+					<td><a href="https://github.com/llm4s/llm4s/pull/260" rel="noopener external" target="_blank">#260</a>
+</td>
+					<td>47 try-catch blocks eliminated (100%), -260 net lines despite adding features, P1 streaming bug fixed</td>
+					<td>8 providers refactored with consistent patterns</td>
+					<td>Safety utilities, UsingOps, ErrorMapper</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Total aggregate impact across all contributions:</strong></p>
+<table>
+	<thead>
+			<tr>
+					<th>Dimension</th>
+					<th>Measurement</th>
+					<th>Details</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Code quality</strong></td>
+					<td>2,270+ lines enhanced</td>
+					<td>Cleaner, safer, more maintainable code</td>
+			</tr>
+			<tr>
+					<td><strong>Patterns established</strong></td>
+					<td>5 major patterns</td>
+					<td>Type-safe foundations, DX-first tooling, smart constructors, safety abstractions, migration strategies</td>
+			</tr>
+			<tr>
+					<td><strong>Providers refactored</strong></td>
+					<td>8 LLM providers</td>
+					<td>OpenAI, Anthropic, Azure, OpenRouter, Ollama, Groq, Mistral, Perplexity</td>
+			</tr>
+			<tr>
+					<td><strong>Community adoption</strong></td>
+					<td>all GSoC assignments</td>
+					<td>All built on these foundations, zero friction</td>
+			</tr>
+			<tr>
+					<td><strong>API stability</strong></td>
+					<td>Zero breaking changes</td>
+					<td>100% backward compatibility maintained throughout</td>
+			</tr>
+			<tr>
+					<td><strong>Migration success</strong></td>
+					<td>43 files migrated</td>
+					<td>From string roles to type-safe enums, zero issues</td>
+			</tr>
+			<tr>
+					<td><strong>Bug elimination</strong></td>
+					<td>47 try-catch → 0</td>
+					<td>Entire class of errors eliminated via Safety utilities</td>
+			</tr>
+			<tr>
+					<td><strong>Net code reduction</strong></td>
+					<td>-260 lines</td>
+					<td>Less code, more functionality (pattern power)</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="team-effort-the-people-behind-the-patterns">Team effort: the people behind the patterns</h2>
+<p>These patterns emerged from collaboration across the <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ community:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Contributor</th>
+					<th>Key contributions</th>
+					<th>Impact</th>
+					<th>Specific insight</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong><a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+</strong></td>
+					<td>Lead, Pair-programmed the big refactors, handled hairy rebases, reviewed every pattern</td>
+					<td>Ensured each pattern shipped production-ready</td>
+					<td>&ldquo;Patterns prevent entire classes of bugs, not just individual ones.&rdquo;</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/kannupriyakalra" rel="noopener external" target="_blank">Kannupriya Kalra</a>
+</strong></td>
+					<td>Led the <a href="https://github.com/llm4s/szork" rel="noopener external" target="_blank">szork</a>
+ AI powered game, consistently driving the llm4s development and <a href="https://github.com/llm4s/llm4s.g8" rel="noopener external" target="_blank">g8 template</a>
+ trilogy (#101/#115/#116), talk &amp; presents llm4s across globe and ensures top-notch OSS DX</td>
+					<td>95% faster onboarding, steady OSS presence</td>
+					<td>Developer experience is not optional.</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+</strong></td>
+					<td>Co-authored multiple PRs, Guided smart constructors, Result ergonomics, Design reviews on Error hierarchy, Try-Either patterns and type classes design</td>
+					<td>Made error hierarchy and type classes safe by construction</td>
+					<td>&ldquo;If it compiles, it should be valid.&rdquo;</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/dmitry-mamonov" rel="noopener external" target="_blank">Dmitry Mamonov</a>
+</strong></td>
+					<td>Delivered tokens subsystem, Anthropic tool-calling fixes, devcontainer cleanup</td>
+					<td>Pressure-tested Safety utilities against real integrations</td>
+					<td>&ldquo;This pattern repeats everywhere-so abstract it.&rdquo;</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/iyadi" rel="noopener external" target="_blank">Iyadi Dayo-Akinlaja</a>
+</strong></td>
+					<td>Hardened build + test stack: strict compiler flags (<a href="https://github.com/llm4s/llm4s/pull/227" rel="noopener external" target="_blank">#227</a>
+), env-var scalafix ban (<a href="https://github.com/llm4s/llm4s/pull/229" rel="noopener external" target="_blank">#229</a>
+), coverage (<a href="https://github.com/llm4s/llm4s/pull/224" rel="noopener external" target="_blank">#224</a>
+), cross-test cleanup (<a href="https://github.com/llm4s/llm4s/pull/279" rel="noopener external" target="_blank">#279</a>
+)</td>
+					<td>Stable CI with faster cross testing and safer config handling</td>
+					<td>Treat build health as product surface area.</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/Vi-shub" rel="noopener external" target="_blank">Shubham Vishwakarma</a>
+</strong></td>
+					<td>Built tracing on top of Safety, validated async error handling</td>
+					<td>Proved patterns work for observability workloads</td>
+					<td>First to adopt Safety utilities in production tracing.</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/AnshumanAI" rel="noopener external" target="_blank">Anshuman Awasthi</a>
+</strong></td>
+					<td>Ported multimodal code to structured errors + MessageRole enum</td>
+					<td>Showed patterns scale to vision/audio features</td>
+					<td>Multimodal errors need the same structure as LLM errors.</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/elvankonukseven" rel="noopener external" target="_blank">Elvan Konukseven</a>
+</strong></td>
+					<td>Refactored agent framework onto type-safe foundations</td>
+					<td>Demonstrated patterns for stateful, long-running agents</td>
+					<td>Agents benefit from exhaustive pattern matching.</td>
+			</tr>
+			<tr>
+					<td><strong><a href="https://github.com/GOPITRINADH3561" rel="noopener external" target="_blank">Gopi Trinadh Maddikunta</a>
+</strong></td>
+					<td>Built the RAG system and surfaced the onboarding pain that birthed the template</td>
+					<td>Sparked the g8 template that saves everyone 20 minutes</td>
+					<td>Manual setup wastes everyone&rsquo;s time.</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Collaboration metrics:</strong></p>
+<ul>
+<li><strong>9 contributors</strong> across core team and GSoC program</li>
+<li><strong>5 major patterns</strong> emerged from real problems they encountered</li>
+<li><strong>10 merged PRs</strong> representing months of pair programming and review</li>
+<li><strong>Zero solo efforts</strong> - every pattern was refined through collaboration</li>
+</ul>
+<h2 id="lessons-for-your-production-systems">Lessons for your production systems</h2>
+<p>If you&rsquo;re building a library or API, here&rsquo;s what we learned from <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Lesson</th>
+					<th>Principle</th>
+					<th>Why it matters</th>
+					<th>Real example from llm4s</th>
+					<th>How to apply</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>1. Compile-time safety beats runtime validation</strong></td>
+					<td>Catch errors during development, not in production</td>
+					<td>Users discover bugs immediately in their IDE, not after deployment</td>
+					<td>String <code>&quot;asistant&quot;</code> compiled → MessageRole enum makes it a compile error</td>
+					<td>Use sealed traits, smart constructors, type classes to make invalid states unrepresentable</td>
+			</tr>
+			<tr>
+					<td><strong>2. Developer experience is not optional</strong></td>
+					<td>Time spent on tooling pays back 10x</td>
+					<td>Gopi spent 20 min on manual setup → g8 template reduced to 60 sec (15+ hours saved across team)</td>
+					<td>Setup time reduction: 95%</td>
+					<td>Invest in templates, migrations guides, clear error messages</td>
+			</tr>
+			<tr>
+					<td><strong>3. Abstractions should eliminate entire classes of bugs</strong></td>
+					<td>Don&rsquo;t just fix individual bugs, prevent categories of bugs</td>
+					<td>Safety utilities eliminated 47 potential bugs by replacing all manual try-catch with automatic error mapping</td>
+					<td>47 try-catch blocks → 0, each was a potential bug</td>
+					<td>Identify recurring patterns, abstract them once, apply everywhere</td>
+			</tr>
+			<tr>
+					<td><strong>4. Migration strategies enable evolution</strong></td>
+					<td>Breaking changes kill adoption</td>
+					<td>Bridge methods + deprecation warnings + 6-month timeline = zero user complaints during MessageRole migration</td>
+					<td>43 files migrated, zero breaking changes</td>
+					<td>Use @deprecated, bridge methods, migration guides, respect production schedules</td>
+			</tr>
+			<tr>
+					<td><strong>5. Patterns beat perfect code</strong></td>
+					<td>Good patterns scale better than perfect implementations</td>
+					<td>We reduced code (-260 net lines) while adding features because patterns enable simplification</td>
+					<td>Code got simpler despite more functionality</td>
+					<td>Document patterns, review for pattern adherence, refactor to patterns</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Application checklist for your codebase:</strong></p>
+<table>
+	<thead>
+			<tr>
+					<th>Question</th>
+					<th>If yes&hellip;</th>
+					<th>If no&hellip;</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Do you have string-based enums that could be typos?</td>
+					<td>Replace with sealed traits for compile-time safety</td>
+					<td>You&rsquo;re already safe, or identify other runtime risks</td>
+			</tr>
+			<tr>
+					<td>Do new contributors spend &gt;10 minutes setting up?</td>
+					<td>Create a template (Giter8, Cookiecutter, etc.)</td>
+					<td>Your onboarding is great, document it</td>
+			</tr>
+			<tr>
+					<td>Do you have repeated try-catch blocks?</td>
+					<td>Abstract to Safety utilities with ErrorMapper pattern</td>
+					<td>Good, but look for other repetitive patterns</td>
+			</tr>
+			<tr>
+					<td>Are you planning breaking API changes?</td>
+					<td>Use bridge methods + deprecation warnings + timeline</td>
+					<td>Plan migration strategy before implementing</td>
+			</tr>
+			<tr>
+					<td>Is code getting more complex as you add features?</td>
+					<td>Identify patterns, refactor to reduce duplication</td>
+					<td>Keep monitoring complexity metrics</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="whats-next">What&rsquo;s next</h2>
+<p>These patterns are now the foundation of <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+. Future work builds on them:</p>
+<ul>
+<li><strong>Streaming improvements</strong> using Safety utilities (building on <a href="https://github.com/llm4s/llm4s/pull/260" rel="noopener external" target="_blank">PR #260</a>
+)</li>
+<li><strong>Multi-provider failover</strong> leveraging error categorization (building on <a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">PR #137</a>
+)</li>
+<li><strong>Enhanced tracing</strong> built on structured errors (building on <a href="https://github.com/llm4s/llm4s/pull/197" rel="noopener external" target="_blank">PR #197</a>
+)</li>
+<li><strong>Advanced retry logic</strong> using RecoverableError traits (building on error hierarchy)</li>
+</ul>
+<p>The patterns scale. The team scales. The project scales.</p>
+<p>That&rsquo;s what production patterns give you.</p>
+<p><strong>Want to contribute?</strong></p>
+<ul>
+<li>Explore the codebase: <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">github.com/llm4s/llm4s</a>
+</li>
+<li>Try the g8 template: <code>sbt new llm4s/llm4s.g8</code></li>
+<li>Join the community: <a href="https://discord.gg/4uvTPn6qww" rel="noopener external" target="_blank">discord.gg/4uvTPn6qww</a>
+</li>
+<li>Review open issues and PRs on GitHub</li>
+</ul>
+<hr>
+<p><strong>Shoutout:</strong> This series represents collaborative work with <a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+ (Lead, co-author on multiple PRs), guidance from <a href="https://github.com/kannupriyakalra" rel="noopener external" target="_blank">Kannupriya Kalra</a>
+ (OSS developer experience champion), design, pattern reviews from <a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+ (FP &amp; Design expert), integrations leadership from <a href="https://github.com/dmitry-mamonov" rel="noopener external" target="_blank">Dmitry Mamonov</a>
+ (tokens module, Anthropic fixes, devcontainer cleanup), and build/CI hardening from <a href="https://github.com/iyadi" rel="noopener external" target="_blank">Iyadi Dayo-Akinlaja</a>
+ (strict compiler flags, coverage, cross-test cleanup). Built and battle-tested with LLM providers by GSoC contributors: <a href="https://github.com/Vi-shub" rel="noopener external" target="_blank">Shubham Vishwakarma</a>
+, <a href="https://github.com/AnshumanAI" rel="noopener external" target="_blank">Anshuman Awasthi</a>
+, <a href="https://github.com/elvankonukseven" rel="noopener external" target="_blank">Elvan Konukseven</a>
+, and <a href="https://github.com/GOPITRINADH3561" rel="noopener external" target="_blank">Gopi Trinadh Maddikunta</a>
+.</p>
+<p><strong>GitHub:</strong></p>
+<ul>
+<li>llm4s: <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">https://github.com/llm4s/llm4s</a>
+</li>
+<li>Template repo: <a href="https://github.com/llm4s/llm4s.g8" rel="noopener external" target="_blank">https://github.com/llm4s/llm4s.g8</a>
+</li>
+<li>PR #137: <a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">Error hierarchy foundation</a>
+</li>
+<li>PRs #101/#115/#116: <a href="https://github.com/llm4s/llm4s/pull/101" rel="noopener external" target="_blank">Giter8 template trilogy</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/115" rel="noopener external" target="_blank">#115</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/116" rel="noopener external" target="_blank">#116</a>
+</li>
+<li>PR #197: <a href="https://github.com/llm4s/llm4s/pull/197" rel="noopener external" target="_blank">Smart constructors</a>
+</li>
+<li>PR #216: <a href="https://github.com/llm4s/llm4s/pull/216" rel="noopener external" target="_blank">MessageRole enum</a>
+</li>
+<li>PR #260: <a href="https://github.com/llm4s/llm4s/pull/260" rel="noopener external" target="_blank">Safety refactor</a>
+</li>
+<li>Build &amp; CI: <a href="https://github.com/llm4s/llm4s/pull/224" rel="noopener external" target="_blank">#224</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/227" rel="noopener external" target="_blank">#227</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/229" rel="noopener external" target="_blank">#229</a>
+ / <a href="https://github.com/llm4s/llm4s/pull/279" rel="noopener external" target="_blank">#279</a>
+</li>
+</ul>
+<hr>
+<p><strong>Series Navigation:</strong>
+<a href="/2025/09/safety-refactor-the-p1-streaming-bug-wrong-errors-and-47-try-catch-blocks/">← Previous: Safety refactor</a>
+ | Next: (This is Part 6 - Final)</p>
+<p><em>This is part 6 of a 6-part series on building type-safe LLM infrastructure in Scala. <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ is maintained by <a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+ and <a href="https://github.com/kannupriyakalra" rel="noopener external" target="_blank">Kannupriya Kalra</a>
+. Join the community at <a href="https://discord.gg/4uvTPn6qww" rel="noopener external" target="_blank">discord.gg/4uvTPn6qww</a>
+.</em></p>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/2025-10-llm4s-production-patterns.png" type="image/png"/></item></channel></rss>

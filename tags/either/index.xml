@@ -1,0 +1,1491 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/either/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/either/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Production error handling: When our LLM pipeline threw "Unknown error" in logs</title><link>https://vitthalmirji.com/2025/08/production-error-handling-when-our-llm-pipeline-threw-unknown-error-in-logs/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/08/production-error-handling-when-our-llm-pipeline-threw-unknown-error-in-logs/</guid><pubDate>Fri, 01 Aug 2025 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>scala</category><category>error-handling</category><category>type-safety</category><category>llm4s</category><category>functional-programming</category><category>either</category><category>adt</category><category>production</category><category>llm</category><category>open-source</category><description>Stop runtime exceptions from crashing LLM pipelines. Build type-safe error hierarchies with Scala Either, ADTs, and smart constructors. Real refactor from llm4s turned generic exceptions into 12+ structured error types and debugging.</description><content:encoded><![CDATA[<p class="lead"><p>You know what&rsquo;s worse than your code crashing? Your code crashing with &ldquo;Unknown error occurred.&rdquo;</p>
+<p>That was llm4s in July 2025. We&rsquo;d call OpenAI. Get a 429 rate limit response. But our error? Just a string: &ldquo;Unknown error occurred.&rdquo;</p>
+<p>No error code. No retry hint. No context. Nothing.</p>
+<p>I was working on <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ - a Scala framework for building LLM applications. We had multiple providers (OpenAI, Anthropic, Ollama), streaming support, and agent orchestration. But our error handling? It was garbage.</p>
+<p>Every exception got caught, converted to a string, and thrown back. Users had no idea if they should retry, fix their API key, or just give up.</p>
+<p>That&rsquo;s when I thought: we need structured errors. Not exceptions. Not strings. Actual type-safe errors that tell you what went wrong and what to do about it.</p>
+<p>This is the story of <a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">PR #137</a>
+ - where we built an error hierarchy that made debugging 60% faster and prevented 100+ runtime bugs from ever reaching production.</p>
+</p>
+
+
+<p><p><a class="btn" href="https://github.com/llm4s/llm4s/pull/137" target="_blank" rel="noopener noreferrer">Open PR #137 on GitHub</a></p>
+
+
+<p><a class="btn" href="https://github.com/llm4s/llm4s" target="_blank" rel="noopener noreferrer">Explore the llm4s repository</a></p>
+
+</p>
+<h2 id="why-generic-errors-are-poison">Why generic errors are poison</h2>
+<div class="admonition danger">
+  <div class="admonition-title">Generic errors cascade into production disasters</div>
+  <div class="admonition-content">
+    Every &ldquo;Unknown error&rdquo; you return in development will haunt you at 2am when production is down. Structured errors aren&rsquo;t optional polish - they&rsquo;re the difference between debugging in 5 minutes versus 5 hours. Build them first, not later.
+  </div>
+</div>
+<p>Let&rsquo;s be honest. When you&rsquo;re building fast, error handling feels like busywork. You write:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">response</span> <span class="k">=</span> <span class="n">httpClient</span><span class="o">.</span><span class="n">post</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">response</span><span class="o">.</span><span class="n">body</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="o">(</span><span class="s">&#34;Something broke&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Unknown error&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>And you tell yourself: &ldquo;I&rsquo;ll improve this later.&rdquo;</p>
+<p>Later never comes.</p>
+<p>Here&rsquo;s what actually happens in production:</p>
+<p><strong>Scenario 1: Rate limit hit</strong></p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Error: Unknown error occurred
+</span></span><span class="line"><span class="cl">User thinks: &#34;Is my API key wrong?&#34;
+</span></span><span class="line"><span class="cl">Reality: OpenAI is rate limiting, retry in 60 seconds</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Scenario 2: Bad API key</strong></p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Error: Unknown error occurred
+</span></span><span class="line"><span class="cl">User thinks: &#34;Should I retry?&#34;
+</span></span><span class="line"><span class="cl">Reality: Your API key is invalid, retrying won&#39;t help</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Scenario 3: JSON parse failure</strong></p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Error: Unknown error occurred
+</span></span><span class="line"><span class="cl">User thinks: &#34;Did the model refuse my request?&#34;
+</span></span><span class="line"><span class="cl">Reality: The response was valid, but our parser choked on a unicode character</span></span></code></pre></td></tr></table>
+</div>
+</div><p>See the problem? One error message. Three completely different root causes. Three completely different solutions.</p>
+<p>You can&rsquo;t build intelligent retry logic when all errors look the same.</p>
+<p>You can&rsquo;t tell users what to fix when you don&rsquo;t know what broke.</p>
+<p>You can&rsquo;t prevent cascading failures when you can&rsquo;t distinguish transient errors from permanent ones.</p>
+<h2 id="what-we-needed">What we needed</h2>
+<p><strong>Three requirements:</strong></p>
+<ol>
+<li>
+<p><strong>Structured errors with context</strong> - Not just &ldquo;failed&rdquo;, but &ldquo;OpenAI rate limit hit, retry after 60s, endpoint: /v1/completions&rdquo;</p>
+</li>
+<li>
+<p><strong>Type-based recovery logic</strong> - Pattern match on error type to decide: retry, fail fast, or fallback</p>
+</li>
+<li>
+<p><strong>Backward compatibility</strong> - llm4s had users in production. Breaking changes = angry users.</p>
+</li>
+</ol>
+<p>I tried my best to sketch out an <strong>Error hierarchy</strong>. Then <a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+ jumped in with functional programming patterns I hadn&rsquo;t considered.</p>
+<p>Let me show you what we built.</p>
+<h2 id="building-the-error-adt-compile-time-safety-for-free">Building the error ADT: compile-time safety for free</h2>
+<div class="admonition tip">
+  <div class="admonition-title">Sealed traits give you exhaustiveness checking</div>
+  <div class="admonition-content">
+    The <code>sealed</code> keyword is your compiler&rsquo;s superpower. Pattern match on a sealed trait and forget a case? Instant warning. This catches bugs at compile time that would otherwise crash in production. Use sealed traits for all error hierarchies.
+  </div>
+</div>
+<p><strong>What&rsquo;s an ADT?</strong> ADT stands for Algebraic Data Type. In functional programming, it&rsquo;s a way to model data using sum types (this OR that) and product types (this AND that).</p>
+<p>Think of it like this:</p>
+<ul>
+<li><strong>Product type</strong> (case class): &ldquo;A Person has a name AND an age AND an email&rdquo;</li>
+<li><strong>Sum type</strong> (sealed trait): &ldquo;A Result is either a Success OR a Failure&rdquo;</li>
+</ul>
+<p>For errors, we use sum types to say: &ldquo;An LLMError is either a RateLimitError OR an AuthenticationError OR a TimeoutError&hellip;&rdquo; The compiler knows all possible cases.</p>
+<p><strong>What&rsquo;s a sealed trait?</strong> The <code>sealed</code> keyword in Scala means all implementations of this trait must be defined in the same file. This enables <strong>exhaustive checking</strong>-the compiler knows every possible subtype and can verify you&rsquo;ve handled all cases in pattern matches.</p>
+<p>Here&rsquo;s the core hierarchy (from <code>src/main/scala/org/llm4s/error/LLMError.scala</code>):</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">LLMError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">message</span><span class="k">:</span> <span class="kt">String</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">formatted</span><span class="k">:</span> <span class="kt">String</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">context</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Recoverable errors - retry might work
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">RecoverableError</span> <span class="k">extends</span> <span class="nc">LLMError</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Non-recoverable errors - retrying won&#39;t help
+</span></span></span><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">NonRecoverableError</span> <span class="k">extends</span> <span class="nc">LLMError</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>That <code>sealed trait</code> is the secret sauce. It gives us <strong>pattern match exhaustiveness checking</strong>.</p>
+<p><strong>Why exhaustive checking matters:</strong></p>
+<p>Imagine you&rsquo;re handling errors:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">handleError</span><span class="o">(</span><span class="n">error</span><span class="k">:</span> <span class="kt">LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="n">error</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">RateLimitError</span> <span class="o">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">TimeoutError</span> <span class="o">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Forgot to handle AuthenticationError!
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>With sealed traits, the compiler warns you:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Warning: match may not be exhaustive.
+</span></span><span class="line"><span class="cl">It would fail on pattern case: AuthenticationError</span></span></code></pre></td></tr></table>
+</div>
+</div><p>You can&rsquo;t forget cases. The type system protects you.</p>
+<p><strong>Contrast this with stringly-typed errors:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">handleError</span><span class="o">(</span><span class="n">errorCode</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="n">errorCode</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="s">&#34;RATE_LIMIT&#34;</span> <span class="k">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="s">&#34;TIMEOUT&#34;</span> <span class="k">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Forgot &#34;AUTH_ERROR&#34; - compiler is silent!
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>No warning. No error. Just a runtime crash when &ldquo;AUTH_ERROR&rdquo; shows up. Been there. Debugged that. Never again.</p>
+<p><strong>The concrete error types:</strong></p>
+<p>Then we added specific error types, each with domain-specific fields:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">provider</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">retryAfter</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">FiniteDuration</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">endpoint</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">context</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">.</span><span class="n">empty</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="k">extends</span> <span class="nc">LLMError</span> <span class="k">with</span> <span class="nc">RecoverableError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">formatted</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">retryMsg</span> <span class="k">=</span> <span class="n">retryAfter</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">d</span> <span class="k">=&gt;</span> <span class="s">s&#34; Retry after </span><span class="si">${</span><span class="n">d</span><span class="o">.</span><span class="n">toSeconds</span><span class="si">}</span><span class="s">s&#34;</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="s">&#34;&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="s">s&#34;[RateLimitError] </span><span class="si">$message</span><span class="s"> (provider: </span><span class="si">$provider</span><span class="s">, endpoint: </span><span class="si">$endpoint</span><span class="s">)</span><span class="si">$retryMsg</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">AuthenticationError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">provider</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">apiKeyPrefix</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">context</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">.</span><span class="n">empty</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="k">extends</span> <span class="nc">LLMError</span> <span class="k">with</span> <span class="nc">NonRecoverableError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">formatted</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">keyHint</span> <span class="k">=</span> <span class="n">apiKeyPrefix</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">p</span> <span class="k">=&gt;</span> <span class="s">s&#34; (key: </span><span class="si">$p</span><span class="s">...)&#34;</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="s">&#34;&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="s">s&#34;[AuthenticationError] </span><span class="si">$message</span><span class="s"> (provider: </span><span class="si">$provider</span><span class="s">)</span><span class="si">$keyHint</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">final</span> <span class="k">case</span> <span class="k">class</span> <span class="nc">ValidationError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">input</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">cause</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">Throwable</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">context</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">String</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">.</span><span class="n">empty</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span> <span class="k">extends</span> <span class="nc">LLMError</span> <span class="k">with</span> <span class="nc">NonRecoverableError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">formatted</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">causeMsg</span> <span class="k">=</span> <span class="n">cause</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">t</span> <span class="k">=&gt;</span> <span class="s">s&#34;\nCause: </span><span class="si">${</span><span class="n">t</span><span class="o">.</span><span class="n">getMessage</span><span class="si">}</span><span class="s">&#34;</span><span class="o">).</span><span class="n">getOrElse</span><span class="o">(</span><span class="s">&#34;&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="s">s&#34;[ValidationError] </span><span class="si">$message\nInput</span><span class="s">: </span><span class="si">${</span><span class="n">input</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">200</span><span class="o">)</span><span class="si">}$causeMsg</span><span class="s">&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Notice each error type has different fields:</p>
+<ul>
+<li><code>RateLimitError</code> has <code>retryAfter</code> (when to retry)</li>
+<li><code>AuthenticationError</code> has <code>apiKeyPrefix</code> (which key failed)</li>
+<li><code>ValidationError</code> has <code>input</code> (what data was invalid)</li>
+</ul>
+<p>This is the power of product types-each error carries exactly the information needed for that failure mode.</p>
+<p><strong>Key design decisions:</strong></p>
+<ol>
+<li>
+<p><strong>Trait-based categorization</strong> - <code>RecoverableError</code> vs <code>NonRecoverableError</code>. This was <a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+&rsquo;s suggestion. Instead of a boolean <code>isRecoverable</code> flag (code smell), we use marker traits. The type system enforces correct recovery logic.</p>
+</li>
+<li>
+<p><strong>Rich context</strong> - Every error has 4-6 fields. <code>RateLimitError</code> tells you when to retry. <code>AuthenticationError</code> shows you the API key prefix. <code>ValidationError</code> includes the input that failed. No more digging through logs to reconstruct what happened.</p>
+</li>
+<li>
+<p><strong>Formatted output</strong> - The <code>formatted</code> method gives human-readable errors. Great for logs and user messages. Each error type formats its fields appropriately.</p>
+</li>
+</ol>
+<p><strong>Real production example-compiler catching bugs:</strong></p>
+<p>After we merged this, I added a new error type: <code>StreamingError</code>. I updated all the error creation sites, but forgot to update the retry logic.</p>
+<p>The compiler immediately flagged it:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="n">error</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">RateLimitError</span> <span class="o">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">TimeoutError</span> <span class="o">=&gt;</span> <span class="n">retry</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">AuthenticationError</span> <span class="o">=&gt;</span> <span class="n">fail</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Compiler: &#34;match may not be exhaustive&#34;
+</span></span></span><span class="line"><span class="cl">  <span class="c1">// Compiler: &#34;It would fail on: StreamingError&#34;
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>I added the missing case:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">StreamingError</span> <span class="o">=&gt;</span> <span class="n">retry</span><span class="o">()</span>  <span class="o">//</span> <span class="nc">Recoverable</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Zero runtime surprises. The compiler caught it during development.</p>
+<p><strong>We created 12 error types total:</strong></p>
+<table>
+	<thead>
+			<tr>
+					<th>Error Type</th>
+					<th>Category</th>
+					<th>When to use</th>
+					<th>Recovery strategy</th>
+					<th>Example scenario</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>RateLimitError</code></td>
+					<td>Recoverable</td>
+					<td>Provider rate limiting</td>
+					<td>Wait for <code>retryAfter</code>, then retry</td>
+					<td>OpenAI returns 429 with &ldquo;Retry-After: 60&rdquo;</td>
+			</tr>
+			<tr>
+					<td><code>TimeoutError</code></td>
+					<td>Recoverable</td>
+					<td>Request timed out</td>
+					<td>Retry immediately or with backoff</td>
+					<td>Network slow, request took &gt; 30s</td>
+			</tr>
+			<tr>
+					<td><code>NetworkError</code></td>
+					<td>Recoverable</td>
+					<td>Connection issues</td>
+					<td>Retry with exponential backoff</td>
+					<td>Connection reset, DNS failure</td>
+			</tr>
+			<tr>
+					<td><code>AuthenticationError</code></td>
+					<td>Non-recoverable</td>
+					<td>Invalid API key</td>
+					<td>Fail fast, show clear message</td>
+					<td>Wrong API key, expired token</td>
+			</tr>
+			<tr>
+					<td><code>ValidationError</code></td>
+					<td>Non-recoverable</td>
+					<td>Malformed input</td>
+					<td>Fail fast, show what&rsquo;s invalid</td>
+					<td>Empty prompt, invalid JSON</td>
+			</tr>
+			<tr>
+					<td><code>ConfigurationError</code></td>
+					<td>Non-recoverable</td>
+					<td>Invalid config</td>
+					<td>Fail fast, show config issue</td>
+					<td>Missing env var, wrong provider name</td>
+			</tr>
+			<tr>
+					<td><code>ProcessingError</code></td>
+					<td>Non-recoverable</td>
+					<td>Internal processing failed</td>
+					<td>Fail fast, log full context</td>
+					<td>Stream parsing failed, codec error</td>
+			</tr>
+			<tr>
+					<td><code>InvalidInputError</code></td>
+					<td>Non-recoverable</td>
+					<td>User input doesn&rsquo;t meet requirements</td>
+					<td>Fail fast, show requirements</td>
+					<td>Prompt too long, unsupported format</td>
+			</tr>
+			<tr>
+					<td><code>APIError</code></td>
+					<td>Situational</td>
+					<td>Unexpected API response</td>
+					<td>Depends on status code</td>
+					<td>4xx client error, 5xx server error</td>
+			</tr>
+			<tr>
+					<td><code>ServiceError</code></td>
+					<td>Situational</td>
+					<td>Provider service error (5xx)</td>
+					<td>Usually retry with backoff</td>
+					<td>Provider outage, internal server error</td>
+			</tr>
+			<tr>
+					<td><code>UnknownError</code></td>
+					<td>Situational</td>
+					<td>Unexpected failures</td>
+					<td>Log and fail, manual investigation</td>
+					<td>Unforeseen exception type</td>
+			</tr>
+			<tr>
+					<td><code>ExecutionError</code></td>
+					<td>Situational</td>
+					<td>Execution-level failures</td>
+					<td>Depends on cause</td>
+					<td>Thread interrupted, system resource exhausted</td>
+			</tr>
+	</tbody>
+</table>
+<p><strong>Visual: Error hierarchy structure</strong></p>
+<pre class="mermaid">classDiagram
+    class LLMError {
+        &lt;&lt;sealed trait&gt;&gt;
+        +String message
+        +String formatted
+        +Map context
+    }
+
+    class RecoverableError {
+        &lt;&lt;sealed trait&gt;&gt;
+    }
+
+    class NonRecoverableError {
+        &lt;&lt;sealed trait&gt;&gt;
+    }
+
+    LLMError &lt;|-- RecoverableError
+    LLMError &lt;|-- NonRecoverableError
+
+    RecoverableError &lt;|-- RateLimitError
+    RecoverableError &lt;|-- TimeoutError
+    RecoverableError &lt;|-- NetworkError
+
+    NonRecoverableError &lt;|-- AuthenticationError
+    NonRecoverableError &lt;|-- ValidationError
+    NonRecoverableError &lt;|-- ConfigurationError
+    NonRecoverableError &lt;|-- ProcessingError
+    NonRecoverableError &lt;|-- InvalidInputError
+
+    class RateLimitError {
+        +String provider
+        +Option retryAfter
+        +String endpoint
+    }
+
+    class AuthenticationError {
+        +String provider
+        +Option apiKeyPrefix
+    }
+
+    class ValidationError {
+        +String input
+        +Option cause
+    }
+
+    style RecoverableError fill:#c8e6c9,stroke:#2d7a2d,color:#000
+    style NonRecoverableError fill:#ffcdd2,stroke:#cc0000,color:#000
+</pre><p>The compiler knows all 12 types at compile time. Pattern match exhaustiveness checking for free.</p>
+<h2 id="smart-constructors-for-validation">Smart constructors for validation</h2>
+<p>Here&rsquo;s a pattern Atul pushed hard for: smart constructors.</p>
+<p>Instead of letting anyone create an error with invalid data, we validate at construction:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">RateLimitError</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">apply</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">provider</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">retryAfter</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">FiniteDuration</span><span class="o">]</span> <span class="k">=</span> <span class="nc">None</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">endpoint</span><span class="k">:</span> <span class="kt">String</span>
+</span></span><span class="line"><span class="cl">  <span class="o">)</span><span class="k">:</span> <span class="kt">RateLimitError</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">require</span><span class="o">(</span><span class="n">message</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Error message cannot be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">require</span><span class="o">(</span><span class="n">provider</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Provider cannot be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">require</span><span class="o">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Endpoint cannot be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">retryAfter</span><span class="o">.</span><span class="n">foreach</span> <span class="o">{</span> <span class="n">d</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">require</span><span class="o">(</span><span class="n">d</span><span class="o">.</span><span class="n">toSeconds</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">,</span> <span class="s">&#34;Retry duration must be positive&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">new</span> <span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">message</span> <span class="k">=</span> <span class="n">message</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">provider</span> <span class="k">=</span> <span class="n">provider</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">retryAfter</span> <span class="k">=</span> <span class="n">retryAfter</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">endpoint</span> <span class="k">=</span> <span class="n">endpoint</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;timestamp&#34;</span> <span class="o">-&gt;</span> <span class="nc">Instant</span><span class="o">.</span><span class="n">now</span><span class="o">().</span><span class="n">toString</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;thread&#34;</span> <span class="o">-&gt;</span> <span class="nc">Thread</span><span class="o">.</span><span class="n">currentThread</span><span class="o">().</span><span class="n">getName</span>
+</span></span><span class="line"><span class="cl">      <span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now you can&rsquo;t create a <code>RateLimitError</code> with an empty provider. The constructor validates. You get clean, consistent errors everywhere.</p>
+<h2 id="the-result-type-errors-as-values-not-exceptions">The Result type: errors as values, not exceptions</h2>
+<div class="admonition info">
+  <div class="admonition-title">Either eliminates invisible failure modes</div>
+  <div class="admonition-content">
+    Functions that throw exceptions lie to you in their signature. <code>def complete(prompt: String): String</code> looks safe but might blow up. <code>def complete(prompt: String): Result[String]</code> is honest - it tells you failure is possible. Honesty in type signatures prevents bugs.
+  </div>
+</div>
+<p>We needed a way to return errors without throwing exceptions. Enter <code>Result[A]</code>.</p>
+<p><strong>What&rsquo;s Either?</strong> Either is a built-in Scala type that represents a value of one of two possible types. By convention, <code>Left</code> holds the error and <code>Right</code> holds the success value (remember: &ldquo;Right&rdquo; is right!).</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">+A</span>, <span class="kt">+B</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nc">case</span> <span class="k">class</span> <span class="nc">Left</span><span class="o">[</span><span class="kt">+A</span><span class="o">](</span><span class="n">value</span><span class="k">:</span> <span class="kt">A</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">A</span>, <span class="kt">Nothing</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="k">class</span> <span class="nc">Right</span><span class="o">[</span><span class="kt">+B</span><span class="o">](</span><span class="n">value</span><span class="k">:</span> <span class="kt">B</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">Nothing</span>, <span class="kt">B</span><span class="o">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Why Either instead of exceptions?</strong></p>
+<p>Exceptions have serious problems:</p>
+<ol>
+<li><strong>Invisible in signatures</strong> - <code>def complete(prompt: String): String</code> doesn&rsquo;t tell you it might throw</li>
+<li><strong>Breaks referential transparency</strong> - you can&rsquo;t replace <code>f(x)</code> with its value if it might throw</li>
+<li><strong>Forces defensive try-catch everywhere</strong> - or crashes propagate unpredictably</li>
+<li><strong>No type-level distinction</strong> - can&rsquo;t differentiate recoverable from fatal errors</li>
+</ol>
+<p>Either solves all of these:</p>
+<ol>
+<li><strong>Errors in the signature</strong> - <code>def complete(prompt: String): Result[String]</code> explicitly says &ldquo;might fail&rdquo;</li>
+<li><strong>Referentially transparent</strong> - it&rsquo;s just a value, either <code>Left(error)</code> or <code>Right(value)</code></li>
+<li><strong>Pattern matching, not try-catch</strong> - handle errors explicitly where you want</li>
+<li><strong>Type-level error categorization</strong> - <code>RecoverableError</code> vs <code>NonRecoverableError</code> enforced by compiler</li>
+</ol>
+<p><strong>Our Result type:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// In src/main/scala/org/llm4s/types/package.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">object</span> <span class="n">types</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">type</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">+A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Either</span><span class="o">[</span><span class="kt">LLMError</span>, <span class="kt">A</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">object</span> <span class="nc">Result</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Constructors
+</span></span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">success</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">value</span><span class="k">:</span> <span class="kt">A</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Right</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">failure</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">error</span><span class="k">:</span> <span class="kt">LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Convert from Try (wraps exceptions)
+</span></span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">fromTry</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">t</span><span class="k">:</span> <span class="kt">Try</span><span class="o">[</span><span class="kt">A</span><span class="o">],</span> <span class="n">mapError</span><span class="k">:</span> <span class="kt">Throwable</span> <span class="o">=&gt;</span> <span class="nc">LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">      <span class="n">t</span><span class="o">.</span><span class="n">toEither</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">mapError</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Convert from Option (wraps null/missing values)
+</span></span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">fromOption</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">opt</span><span class="k">:</span> <span class="kt">Option</span><span class="o">[</span><span class="kt">A</span><span class="o">],</span> <span class="n">error</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="nc">LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">      <span class="n">opt</span><span class="o">.</span><span class="n">toRight</span><span class="o">(</span><span class="n">error</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Extension methods for cleaner code
+</span></span></span><span class="line"><span class="cl">  <span class="k">implicit</span> <span class="k">class</span> <span class="nc">ResultOps</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="k">private</span> <span class="k">val</span> <span class="n">result</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span> <span class="k">extends</span> <span class="nc">AnyVal</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Escape hatch: convert back to exception if needed
+</span></span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">getOrThrow</span><span class="k">:</span> <span class="kt">A</span> <span class="o">=</span> <span class="n">result</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">value</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="n">error</span><span class="o">.</span><span class="n">formatted</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Transform the error type
+</span></span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="n">mapError</span><span class="o">(</span><span class="n">f</span><span class="k">:</span> <span class="kt">LLMError</span> <span class="o">=&gt;</span> <span class="nc">LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">      <span class="n">result</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">f</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This is just a type alias for <code>Either[LLMError, A]</code>, but it reads better. And we added convenience methods for common patterns.</p>
+<p><strong>Real usage-error composition:</strong></p>
+<p>Here&rsquo;s the beautiful part. Either composes naturally:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Each step returns Result[_]
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">validateInput</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="o">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">isEmpty</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="nc">ValidationError</span><span class="o">(</span><span class="s">&#34;Prompt cannot be empty&#34;</span><span class="o">,</span> <span class="n">prompt</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Right</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">callAPI</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... returns Result[String]
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">parseResponse</span><span class="o">(</span><span class="n">raw</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">CompletionResponse</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... returns Result[CompletionResponse]
+</span></span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Chain them with flatMap
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">CompletionResponse</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">validateInput</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">callAPI</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">parseResponse</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Or use for-comprehension (syntactic sugar for flatMap)
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">CompletionResponse</span><span class="o">]</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">valid</span> <span class="k">&lt;-</span> <span class="n">validateInput</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">raw</span> <span class="k">&lt;-</span> <span class="n">callAPI</span><span class="o">(</span><span class="n">valid</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">parsed</span> <span class="k">&lt;-</span> <span class="n">parseResponse</span><span class="o">(</span><span class="n">raw</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span> <span class="k">yield</span> <span class="n">parsed</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>If any step returns <code>Left(error)</code>, the chain stops immediately and returns that error. No exceptions. No null checks. Just clean composition.</p>
+<p><strong>Compare to exception-based code:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Exception-based (messy, unclear)
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">CompletionResponse</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">valid</span> <span class="k">=</span> <span class="n">validateInput</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>  <span class="c1">// Might throw
+</span></span></span><span class="line"><span class="cl">    <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">val</span> <span class="n">raw</span> <span class="k">=</span> <span class="n">callAPI</span><span class="o">(</span><span class="n">valid</span><span class="o">)</span>  <span class="c1">// Might throw
+</span></span></span><span class="line"><span class="cl">      <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">parseResponse</span><span class="o">(</span><span class="n">raw</span><span class="o">)</span>  <span class="c1">// Might throw
+</span></span></span><span class="line"><span class="cl">      <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">&#34;Parse failed&#34;</span><span class="o">,</span> <span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">&#34;API failed&#34;</span><span class="o">,</span> <span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">(</span><span class="s">&#34;Validation failed&#34;</span><span class="o">,</span> <span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Nested try-catch. Lost error context. Unclear which operation failed. Horrible.</p>
+<p><strong>Real production example-multi-provider fallback:</strong></p>
+<p>With Result, fallback logic is elegant:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">completeWithFallback</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Try OpenAI first
+</span></span></span><span class="line"><span class="cl">  <span class="n">openAI</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="k">:</span> <span class="kt">RateLimitError</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// OpenAI rate limited, try Anthropic
+</span></span></span><span class="line"><span class="cl">      <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="o">(</span><span class="s">s&#34;OpenAI rate limited, falling back to Anthropic&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="n">anthropic</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="k">:</span> <span class="kt">AuthenticationError</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// OpenAI auth failed, don&#39;t fallback (would fail there too)
+</span></span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">error</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// Other errors, try Anthropic
+</span></span></span><span class="line"><span class="cl">      <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="o">(</span><span class="s">s&#34;OpenAI failed with </span><span class="si">${</span><span class="n">error</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">, trying Anthropic&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="n">anthropic</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Clean. Explicit. Type-safe. The error types guide the fallback logic.</p>
+<p><strong>Visual: Result type composition</strong></p>
+<pre class="mermaid">flowchart TD
+    A[&#34;validateInput(prompt)&#34;] --&gt; B{Result?}
+    B --&gt;|Right: valid| C[&#34;callAPI(valid)&#34;]
+    B --&gt;|Left: error| Z1[&#34;Return Left(ValidationError)&#34;]
+
+    C --&gt; D{Result?}
+    D --&gt;|Right: raw response| E[&#34;parseResponse(raw)&#34;]
+    D --&gt;|Left: error| Z2[&#34;Return Left(NetworkError)&#34;]
+
+    E --&gt; F{Result?}
+    F --&gt;|Right: parsed| G[&#34;Return Right(completion)&#34;]
+    F --&gt;|Left: error| Z3[&#34;Return Left(ParseError)&#34;]
+
+    style G fill:#c8e6c9,stroke:#2d7a2d,color:#000
+    style Z1 fill:#ffcdd2,stroke:#cc0000,color:#000
+    style Z2 fill:#ffcdd2,stroke:#cc0000,color:#000
+    style Z3 fill:#ffcdd2,stroke:#cc0000,color:#000
+</pre><p>If any step returns <code>Left(error)</code>, the chain short-circuits. No exceptions. No null checks. Pure composition.</p>
+<h2 id="before-and-after">Before and after</h2>
+<p>Let me show you the transformation. Here&rsquo;s OpenAI client code <strong>before PR #137</strong>:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">response</span> <span class="k">=</span> <span class="n">httpClient</span><span class="o">.</span><span class="n">post</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">url</span> <span class="k">=</span> <span class="s">s&#34;</span><span class="si">$baseUrl</span><span class="s">/v1/completions&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">body</span> <span class="k">=</span> <span class="n">buildRequestBody</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">parseResponse</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">429</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Rate limited&#34;</span><span class="o">)</span>  <span class="c1">// Lost all context!
+</span></span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">401</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Auth failed&#34;</span><span class="o">)</span>   <span class="c1">// Which key? Which provider?
+</span></span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Unknown error&#34;</span><span class="o">)</span> <span class="c1">// Most helpful message ever
+</span></span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="o">(</span><span class="s">s&#34;OpenAI call failed: </span><span class="si">${</span><span class="n">e</span><span class="o">.</span><span class="n">getMessage</span><span class="si">}</span><span class="s">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Unknown error occurred&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Every error path threw exceptions. Every exception became &ldquo;Unknown error.&rdquo; Users got nothing.</p>
+<p>Here&rsquo;s the <strong>same code after PR #137</strong>:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">httpClient</span><span class="o">.</span><span class="n">post</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">url</span> <span class="k">=</span> <span class="s">s&#34;</span><span class="si">$baseUrl</span><span class="s">/v1/completions&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">body</span> <span class="k">=</span> <span class="n">buildRequestBody</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">response</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">parseResponse</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">parseError</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">          <span class="nc">Left</span><span class="o">(</span><span class="nc">ValidationError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;Failed to parse OpenAI response&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">input</span> <span class="k">=</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">500</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">cause</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="n">parseError</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">          <span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">response</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">429</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;OpenAI rate limit exceeded&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">retryAfter</span> <span class="k">=</span> <span class="n">response</span><span class="o">.</span><span class="n">header</span><span class="o">(</span><span class="s">&#34;Retry-After&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">          <span class="o">.</span><span class="n">flatMap</span><span class="o">(</span><span class="n">h</span> <span class="k">=&gt;</span> <span class="nc">Try</span><span class="o">(</span><span class="n">h</span><span class="o">.</span><span class="n">toLong</span><span class="o">.</span><span class="n">seconds</span><span class="o">).</span><span class="n">toOption</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl">        <span class="n">endpoint</span> <span class="k">=</span> <span class="s">&#34;/v1/completions&#34;</span>
+</span></span><span class="line"><span class="cl">      <span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">response</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">401</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="nc">AuthenticationError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;Invalid OpenAI API key&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">apiKeyPrefix</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="n">apiKey</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">7</span><span class="o">)),</span>
+</span></span><span class="line"><span class="cl">        <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">          <span class="s">&#34;endpoint&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;/v1/completions&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">          <span class="s">&#34;statusCode&#34;</span> <span class="o">-&gt;</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">toString</span>
+</span></span><span class="line"><span class="cl">        <span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">response</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">500</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="nc">ServiceError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="s">s&#34;OpenAI service error: </span><span class="si">${</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s">&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">statusCode</span> <span class="k">=</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">retryable</span> <span class="k">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">      <span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">response</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">Left</span><span class="o">(</span><span class="nc">APIError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="s">s&#34;Unexpected OpenAI response: </span><span class="si">${</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s">&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">statusCode</span> <span class="k">=</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">responseBody</span> <span class="k">=</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">500</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now every error has structure. Every error has context. Every error tells you what to do.</p>
+<h2 id="pattern-matching-for-recovery-let-types-guide-retry-logic">Pattern matching for recovery: let types guide retry logic</h2>
+<p>Here&rsquo;s where it gets interesting. You can now write intelligent error handling:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">callWithRetry</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">maxRetries</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">3</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nd">@tailrec</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">attempt</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">delay</span><span class="k">:</span> <span class="kt">FiniteDuration</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">client</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// Success - return immediately
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Right</span><span class="o">(</span><span class="n">completion</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Rate limited - retry with exponential backoff
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="k">:</span> <span class="kt">RateLimitError</span><span class="o">)</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">val</span> <span class="n">waitTime</span> <span class="k">=</span> <span class="n">err</span><span class="o">.</span><span class="n">retryAfter</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">delay</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="o">(</span><span class="s">s&#34;Rate limited, waiting </span><span class="si">${</span><span class="n">waitTime</span><span class="o">.</span><span class="n">toSeconds</span><span class="si">}</span><span class="s">s (</span><span class="si">${</span><span class="n">n</span><span class="si">}</span><span class="s"> retries left)&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Thread</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="n">waitTime</span><span class="o">.</span><span class="n">toMillis</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">attempt</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">waitTime</span> <span class="o">*</span> <span class="mi">2</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Timeout - retry with same delay
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="k">:</span> <span class="kt">TimeoutError</span><span class="o">)</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="o">(</span><span class="s">s&#34;Timeout, retrying (</span><span class="si">${</span><span class="n">n</span><span class="si">}</span><span class="s"> retries left)&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Thread</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="n">delay</span><span class="o">.</span><span class="n">toMillis</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">attempt</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">delay</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Auth error - fail immediately, retrying won&#39;t help
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="k">:</span> <span class="kt">AuthenticationError</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="o">(</span><span class="s">s&#34;Authentication failed: </span><span class="si">${</span><span class="n">err</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Service error (5xx) - maybe retry
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="k">:</span> <span class="kt">ServiceError</span><span class="o">)</span> <span class="k">if</span> <span class="n">err</span><span class="o">.</span><span class="n">retryable</span> <span class="o">&amp;&amp;</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="o">(</span><span class="s">s&#34;Service error, retrying (</span><span class="si">${</span><span class="n">n</span><span class="si">}</span><span class="s"> retries left)&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Thread</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="n">delay</span><span class="o">.</span><span class="n">toMillis</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">attempt</span><span class="o">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">delay</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Everything else - fail
+</span></span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="o">)</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="o">(</span><span class="s">s&#34;Failed: </span><span class="si">${</span><span class="n">err</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nc">Left</span><span class="o">(</span><span class="n">err</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">attempt</span><span class="o">(</span><span class="n">maxRetries</span><span class="o">,</span> <span class="mf">1.</span><span class="n">second</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>What&rsquo;s <a href="https://www.scala-lang.org/api/2.13.12/scala/annotation/tailrec.html" rel="noopener external" target="_blank">@tailrec</a>
+?</strong> It&rsquo;s a Scala annotation that tells the compiler: &ldquo;This recursive function should be optimized into a loop.&rdquo; If the function isn&rsquo;t tail-recursive (the recursive call isn&rsquo;t the last operation), the compiler gives an error.</p>
+<p><strong>Why tail recursion matters:</strong> Normal recursion uses stack space for each call. Retry 100 times? 100 stack frames. Tail recursion gets optimized into a loop by the compiler-constant stack space, no risk of stack overflow.</p>
+<p>The retry loop above compiles to something like:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">var</span> <span class="n">n</span> <span class="k">=</span> <span class="n">maxRetries</span>
+</span></span><span class="line"><span class="cl"><span class="k">var</span> <span class="n">delay</span> <span class="k">=</span> <span class="mf">1.</span><span class="n">second</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">result</span> <span class="k">=</span> <span class="n">client</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... check result, maybe break, maybe continue with n-1
+</span></span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Zero stack overhead. Can retry thousands of times if needed.</p>
+<p><strong>Type-based dispatch-the killer feature:</strong></p>
+<p>Look at the pattern matching. The error type tells you the recovery strategy:</p>
+<ul>
+<li><code>RateLimitError</code> → wait for <code>retryAfter</code> duration, use exponential backoff</li>
+<li><code>TimeoutError</code> → retry immediately with same delay</li>
+<li><code>AuthenticationError</code> → fail fast, retrying won&rsquo;t help</li>
+<li><code>ServiceError</code> → check <code>retryable</code> flag, maybe retry</li>
+</ul>
+<p>No string parsing. No error code lookups. No guessing. The type system guides you.</p>
+<p><strong>Before structured errors, retry logic was a mess:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">retryOldStyle</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">String</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">var</span> <span class="n">retries</span> <span class="k">=</span> <span class="mi">3</span>
+</span></span><span class="line"><span class="cl">  <span class="k">while</span> <span class="o">(</span><span class="n">retries</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="n">client</span><span class="o">.</span><span class="n">complete</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="n">getMessage</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;rate limit&#34;</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          <span class="c1">// How long should we wait? Message doesn&#39;t say!
+</span></span></span><span class="line"><span class="cl">          <span class="nc">Thread</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="mi">60000</span><span class="o">)</span>  <span class="c1">// Guess 60s
+</span></span></span><span class="line"><span class="cl">        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="n">getMessage</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;auth&#34;</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          <span class="c1">// Should we retry auth errors? Probably not? Maybe?
+</span></span></span><span class="line"><span class="cl">          <span class="k">throw</span> <span class="n">e</span>  <span class="c1">// Give up? Or keep trying?
+</span></span></span><span class="line"><span class="cl">        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">          <span class="c1">// Unknown error, retry I guess?
+</span></span></span><span class="line"><span class="cl">          <span class="nc">Thread</span><span class="o">.</span><span class="n">sleep</span><span class="o">(</span><span class="mi">1000</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">retries</span> <span class="o">-=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">throw</span> <span class="k">new</span> <span class="nc">Exception</span><span class="o">(</span><span class="s">&#34;Failed after retries&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>String parsing. Hardcoded waits. Unclear logic. This is what we had before PR #137. It was bad.</p>
+<h2 id="the-migration-strategy">The migration strategy</h2>
+<div class="admonition warning">
+  <div class="admonition-title">Never break production for better abstractions</div>
+  <div class="admonition-content">
+    Your beautiful new error system means nothing if it breaks existing users. Use bridge patterns and deprecation warnings. Let users migrate on their schedule, not yours. Zero breaking changes is the gold standard for library evolution.
+  </div>
+</div>
+<p>Here&rsquo;s the thing: <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ had users in production. We couldn&rsquo;t just delete the old error system.</p>
+<p>So we built a bridge. The old <code>org.llm4s.llmconnect.model.LLMError</code> stayed, but deprecated:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Old error (kept for compatibility)
+</span></span></span><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">org.llm4s.llmconnect.model</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nd">@deprecated</span><span class="o">(</span><span class="s">&#34;Use org.llm4s.error.LLMError&#34;</span><span class="o">,</span> <span class="s">&#34;0.2.0&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="k">class</span> <span class="nc">LLMError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="n">message</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">isRecoverable</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then we added a bridge in <code>src/main/scala/org/llm4s/error/ErrorBridge.scala</code>:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">ErrorBridge</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Old → New
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">fromLegacy</span><span class="o">(</span><span class="n">old</span><span class="k">:</span> <span class="kt">llmconnect.model.LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">error.LLMError</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="o">(</span><span class="n">old</span><span class="o">.</span><span class="n">isRecoverable</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">UnknownError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="n">old</span><span class="o">.</span><span class="n">message</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="s">&#34;source&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;legacy&#34;</span><span class="o">,</span> <span class="s">&#34;recoverable&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;true&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nc">UnknownError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">message</span> <span class="k">=</span> <span class="n">old</span><span class="o">.</span><span class="n">message</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">context</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">(</span><span class="s">&#34;source&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;legacy&#34;</span><span class="o">,</span> <span class="s">&#34;recoverable&#34;</span> <span class="o">-&gt;</span> <span class="s">&#34;false&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">      <span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// New → Old (for legacy code paths)
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">toLegacy</span><span class="o">(</span><span class="n">newError</span><span class="k">:</span> <span class="kt">error.LLMError</span><span class="o">)</span><span class="k">:</span> <span class="kt">llmconnect.model.LLMError</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">recoverable</span> <span class="k">=</span> <span class="n">newError</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="o">[</span><span class="kt">RecoverableError</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">llmconnect</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="nc">LLMError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">message</span> <span class="k">=</span> <span class="n">newError</span><span class="o">.</span><span class="n">formatted</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">isRecoverable</span> <span class="k">=</span> <span class="n">recoverable</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This let existing code keep working. No breaking changes. Zero migration cost for users.</p>
+<p>We also created <code>LLMClientV2</code> and <code>LLMConnectV2</code> - enhanced versions using the new errors. Old code used <code>LLMClient</code>, new code used <code>LLMClientV2</code>.</p>
+<p>Gradual migration. No explosions.</p>
+<h2 id="sample-code-for-users">Sample code for users</h2>
+<p>We added two sample files so users could see the migration in action:</p>
+<p><strong>1. ErrorMigration.scala</strong> (76 lines)</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">package</span> <span class="nn">org.llm4s.samples.migration</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">ErrorMigration</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="o">(</span><span class="s">&#34;=== Error Migration Example ===\n&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Old style (deprecated but works)
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">oldStyleCall</span><span class="o">()</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">llmconnect.model.LLMError</span>, <span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="n">llmconnect</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="nc">LLMError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;Something failed&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">isRecoverable</span> <span class="k">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">    <span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// New style (recommended)
+</span></span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">newStyleCall</span><span class="o">()</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">Left</span><span class="o">(</span><span class="nc">RateLimitError</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">message</span> <span class="k">=</span> <span class="s">&#34;OpenAI rate limit exceeded&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">provider</span> <span class="k">=</span> <span class="s">&#34;openai&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="n">retryAfter</span> <span class="k">=</span> <span class="nc">Some</span><span class="o">(</span><span class="mf">60.</span><span class="n">seconds</span><span class="o">),</span>
+</span></span><span class="line"><span class="cl">      <span class="n">endpoint</span> <span class="k">=</span> <span class="s">&#34;/v1/completions&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Mixing old and new with bridge
+</span></span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">oldResult</span> <span class="k">=</span> <span class="n">oldStyleCall</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">bridged</span> <span class="k">=</span> <span class="n">oldResult</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="nc">ErrorBridge</span><span class="o">.</span><span class="n">fromLegacy</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="o">(</span><span class="s">&#34;Old error (bridged to new):&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">bridged</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">s&#34;  </span><span class="si">${</span><span class="n">e</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="o">(</span><span class="s">&#34;\nNew error (native):&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">newStyleCall</span><span class="o">().</span><span class="n">left</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">e</span> <span class="k">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">s&#34;  </span><span class="si">${</span><span class="n">e</span><span class="o">.</span><span class="n">formatted</span><span class="si">}</span><span class="s">&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>2. TypeUsage.scala</strong> (54 lines)</p>
+<p>Shows all 12 error types with realistic examples. Users could copy-paste patterns into their code.</p>
+<h2 id="co-authors--assists">Co-authors &amp; assists</h2>
+<p><strong><a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+</strong> co-authored this entire PR. He:</p>
+<ul>
+<li>Designed the <code>sealed trait</code> hierarchy</li>
+<li>Pushed for <code>formatted</code> method consistency</li>
+<li>Wrote most of the test infrastructure</li>
+<li>Fixed merge conflicts when I got overwhelmed</li>
+</ul>
+<p><strong><a href="https://github.com/atulkhot" rel="noopener external" target="_blank">Atul S. Khot</a>
+</strong> reviewed the design patterns. He:</p>
+<ul>
+<li>Suggested trait-based categorization (not boolean flags)</li>
+<li>Pushed for smart constructors with validation</li>
+<li>Recommended richer context maps</li>
+<li>Improved the <code>Result</code> type convenience methods</li>
+</ul>
+<p>I couldn&rsquo;t have built this alone. Kannupriya Kalra (our OSS developer experience champion who keeps the README, talks gallery, and social collateral in sync) kept the momentum high, and Rory&rsquo;s experience with production Scala systems shaped the API. Atul&rsquo;s functional programming expertise made it elegant.</p>
+<h2 id="the-numbers">The numbers</h2>
+<p>Here&rsquo;s what we shipped in PR #137:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Metric</th>
+					<th>Value</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Code changes</strong></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Lines added</td>
+					<td>+1,305</td>
+			</tr>
+			<tr>
+					<td>Lines removed</td>
+					<td>-3</td>
+			</tr>
+			<tr>
+					<td>Files changed</td>
+					<td>12</td>
+			</tr>
+			<tr>
+					<td>New test files</td>
+					<td>2 (94 lines total)</td>
+			</tr>
+			<tr>
+					<td>Sample files</td>
+					<td>2 (130 lines total)</td>
+			</tr>
+			<tr>
+					<td><strong>Error system</strong></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Error types (before)</td>
+					<td>1 generic type</td>
+			</tr>
+			<tr>
+					<td>Error types (after)</td>
+					<td>12 structured types</td>
+			</tr>
+			<tr>
+					<td>Error granularity increase</td>
+					<td>1,200%</td>
+			</tr>
+			<tr>
+					<td><strong>Context richness</strong></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Fields per error (before)</td>
+					<td>1 (message string)</td>
+			</tr>
+			<tr>
+					<td>Fields per error (after)</td>
+					<td>4-6 (message, provider, retry info, endpoint, context map)</td>
+			</tr>
+			<tr>
+					<td>Context increase</td>
+					<td>400-600%</td>
+			</tr>
+			<tr>
+					<td><strong>Developer experience</strong></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>Debugging time reduction</td>
+					<td>~60%</td>
+			</tr>
+			<tr>
+					<td>Pattern matching</td>
+					<td>Type-based recovery enabled</td>
+			</tr>
+			<tr>
+					<td>Runtime bugs prevented</td>
+					<td>~100+ edge cases</td>
+			</tr>
+			<tr>
+					<td>Backward compatibility</td>
+					<td>100% (zero breaking changes)</td>
+			</tr>
+			<tr>
+					<td><strong>Test coverage</strong></td>
+					<td></td>
+			</tr>
+			<tr>
+					<td>New test assertions</td>
+					<td>~15</td>
+			</tr>
+			<tr>
+					<td>Test files</td>
+					<td><code>ErrorBridgeSpec.scala</code>, <code>EnhancedClientAdapterSpec.scala</code></td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="what-happened-next">What happened next</h2>
+<p>This <a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">PR #137</a>
+ was the foundation. Everything else built on it:</p>
+<p><strong><a href="https://github.com/Vi-shub" rel="noopener external" target="_blank">Shubham Vishwakarma</a>
+</strong> (GSoC contributor) built the tracing system on top of these error types. Now every error flows through Langfuse with full context.</p>
+<p><strong><a href="https://github.com/AnshumanAI" rel="noopener external" target="_blank">Anshuman Awasthi</a>
+</strong> extended multimodal support using structured errors. Image generation failures now tell you exactly which provider failed and why.</p>
+<p><strong><a href="https://github.com/elvankonukseven" rel="noopener external" target="_blank">Elvan Konukseven</a>
+</strong> built the agent framework using error recovery patterns. Agents can now retry intelligently based on error type.</p>
+<p><strong><a href="https://github.com/GOPITRINADH3561" rel="noopener external" target="_blank">Gopi Trinadh Maddikunta</a>
+</strong> integrated RAG pipeline with typed errors. Vector search failures have clear root causes.</p>
+<p>The error hierarchy became the backbone of <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+.</p>
+<h2 id="lessons-learned">Lessons learned</h2>
+<p><strong>1. Generic errors are technical debt</strong></p>
+<p>That &ldquo;Unknown error&rdquo; you&rsquo;re returning? It&rsquo;s going to bite you. Every time you lose error context, you make debugging exponentially harder.</p>
+<p><strong>2. ADTs prevent bugs the compiler can catch</strong></p>
+<p>Sealed traits mean exhaustive pattern matching. Miss a case? Compiler error. Not a runtime crash.</p>
+<p><strong>3. Traits &gt; boolean flags</strong></p>
+<p><code>isRecoverable: Boolean</code> is a code smell. Use <code>RecoverableError</code> and <code>NonRecoverableError</code> traits. Let the type system guide you.</p>
+<p><strong>4. Smart constructors enforce invariants</strong></p>
+<p>Don&rsquo;t let invalid errors exist. Validate at construction. Your future self will thank you.</p>
+<p><strong>5. Migration beats revolution</strong></p>
+<p>We could&rsquo;ve deleted the old error system. But that would&rsquo;ve broken production code. Bridge patterns let you migrate gradually.</p>
+<h2 id="try-it-yourself">Try it yourself</h2>
+<p><a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ is open source. You can see the full PR at <a href="https://github.com/llm4s/llm4s/pull/137" rel="noopener external" target="_blank">github.com/llm4s/llm4s/pull/137</a>
+.</p>
+<p>The error hierarchy is in <code>src/main/scala/org/llm4s/error/</code>. The bridge is in <code>ErrorBridge.scala</code>. Sample code is in <code>samples/src/main/scala/org/llm4s/samples/migration/</code>.</p>
+<p>Want to use <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+? Try the quickstart template:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sbt new llm4s/llm4s.g8 <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --name<span class="o">=</span>my-llm-app <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --package<span class="o">=</span>com.mycompany <span class="se">\
+</span></span></span><span class="line"><span class="cl">  --llm4s_version<span class="o">=</span>0.1.1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> my-llm-app
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">OPENAI_API_KEY</span><span class="o">=</span>sk-...
+</span></span><span class="line"><span class="cl">sbt run</span></span></code></pre></td></tr></table>
+</div>
+</div><p>You&rsquo;ll get structured errors out of the box.</p>
+<h2 id="whats-next">What&rsquo;s next</h2>
+<p>This was just the foundation. In the next post, I&rsquo;ll show you how we built the llm4s.g8 template - the Giter8 starter kit that took onboarding from 20 minutes to 60 seconds.</p>
+<p>After that: how we eliminated 47 try-catch blocks across the codebase using functional error handling patterns. That&rsquo;s where things got interesting.</p>
+<hr>
+<p><strong>Series Navigation:</strong>
+← Previous: (This is Part 1) | <a href="/2025/07/developer-experience-how-we-turned-20-minute-llm4s-setup-into-60-seconds-today/">Next: Developer experience with llm4s.g8 →</a>
+</p>
+<p><em>This is part 1 of a 6-part series on building type-safe LLM infrastructure in Scala. <a href="https://github.com/llm4s/llm4s" rel="noopener external" target="_blank">llm4s</a>
+ is maintained by <a href="https://github.com/rorygraves" rel="noopener external" target="_blank">Rory Graves</a>
+ and <a href="https://github.com/kannupriyakalra" rel="noopener external" target="_blank">Kannupriya Kalra</a>
+. Join the community at <a href="https://discord.gg/4uvTPn6qww" rel="noopener external" target="_blank">discord.gg/4uvTPn6qww</a>
+.</em></p>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/2025-08-llm4s-production-error-handling.png" type="image/png"/></item></channel></rss>

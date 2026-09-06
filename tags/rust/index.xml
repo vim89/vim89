@@ -1,0 +1,773 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/rust/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/rust/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Rust fundamentals: a precise 6-week plan for systems-minded data engineers now</title><link>https://vitthalmirji.com/2025/10/rust-fundamentals-a-precise-6-week-plan-for-systems-minded-data-engineers-now/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/10/rust-fundamentals-a-precise-6-week-plan-for-systems-minded-data-engineers-now/</guid><pubDate>Tue, 28 Oct 2025 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>rust</category><category>systems</category><category>data-engineering</category><description>A hands-on, zero-nonsense plan to learn Rust with precision: ownership, traits, async, Arrow, Polars, DataFusion, web services, FFI, testing, profiling, and shipping. Includes a weekly rhythm and a realistic scope for busy data engineers.</description><content:encoded><![CDATA[<hr>
+<p>Rust rewards precision. This plan gets you productive fast without hand‑wavy theory. It’s optimized for an experienced engineer coming from JVM or Scala, who cares about performance, correctness, and clean mental models.</p>
+<h2 id="ground-rules">Ground rules</h2>
+<ul>
+<li>Keep it hands on. Every day ships a small artifact.</li>
+<li>Read just enough, code immediately, then measure.</li>
+<li>Prefer standard library and simple crates first. Add frameworks only when you feel the pain.</li>
+<li>Pin to stable Rust. Let cargo choose the current edition when you create a crate; set <code>rust-version</code> in <code>Cargo.toml</code>. Use nightly only for learning tools like <code>cargo-expand</code>.</li>
+</ul>
+<h2 id="day-0---your-toolchain-verified">Day 0 - your toolchain, verified</h2>
+<p><strong>Goal:</strong> clean install, fast feedback, and a project workspace you enjoy using.</p>
+<ol>
+<li>Install Xcode Command Line Tools on macOS:</li>
+</ol>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">xcode-select --install</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="2">
+<li>Install Rust via rustup and set stable as default:</li>
+</ol>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl https://sh.rustup.rs -sSf <span class="p">|</span> sh
+</span></span><span class="line"><span class="cl">rustup default stable
+</span></span><span class="line"><span class="cl">rustc --version
+</span></span><span class="line"><span class="cl">cargo --version</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="3">
+<li>Add the standard components:</li>
+</ol>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">rustup component add clippy rustfmt llvm-tools-preview</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="4">
+<li>Editor setup:</li>
+</ol>
+<ul>
+<li>IntelliJ IDEA: install the <strong>Rust</strong> plugin (RustRover tech) and enable rust‑analyzer.</li>
+<li>Turn on format on save and Clippy on check.</li>
+</ul>
+<ol start="5">
+<li>Quality and velocity tools you’ll actually use:</li>
+</ol>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Faster test runner</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-nextest
+</span></span><span class="line"><span class="cl"><span class="c1"># Coverage</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-llvm-cov
+</span></span><span class="line"><span class="cl"><span class="c1"># Security advisories</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-audit
+</span></span><span class="line"><span class="cl"><span class="c1"># Outdated and unused deps</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-outdated cargo-udeps
+</span></span><span class="line"><span class="cl"><span class="c1"># Macro expansion and profiling</span>
+</span></span><span class="line"><span class="cl">rustup toolchain install nightly
+</span></span><span class="line"><span class="cl">cargo install cargo-expand flamegraph
+</span></span><span class="line"><span class="cl"><span class="c1"># File watching and task runner</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-watch just
+</span></span><span class="line"><span class="cl"><span class="c1"># Cross‑compile helpers</span>
+</span></span><span class="line"><span class="cl">cargo install cross
+</span></span><span class="line"><span class="cl"><span class="c1"># Optional speed-ups</span>
+</span></span><span class="line"><span class="cl">cargo install cargo-binstall --locked <span class="c1"># faster installing binaries</span>
+</span></span><span class="line"><span class="cl">brew install sccache <span class="o">||</span> <span class="nb">true</span>         <span class="c1"># macOS; or use your package manager</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Create a <code>Justfile</code> to make common tasks one‑liners:</p>
+<div class="highlight highlight-make" data-lang="make"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-make" data-lang="make"><span class="line"><span class="cl"><span class="c"># Justfile
+</span></span></span><span class="line"><span class="cl"><span class="nf">fmt</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">	cargo fmt --all
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nf">lint</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">	cargo clippy --all-targets --all-features -D warnings
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nf">test</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">	cargo nextest run
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nf">cov</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">	cargo llvm-cov --workspace --html
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nf">watch</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">	cargo watch -x check -x <span class="nb">test</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="the-6week-ladder">The 6‑week ladder</h2>
+<h2 id="sprint-timeline-journal-view">Sprint timeline (journal view)</h2>
+<p>Use the journal tasks below to track weekly progress directly inside this post. Update statuses in the front matter, and the embedded view will reflect your current state.</p>
+
+  <p class="journal-tabs__empty">No structured tasks found. Add them under <code>journal.tasks</code> in front matter.</p>
+<p>Each week is 5 focused days (~90 minutes/day) + one deeper weekend session. By the end you’ll have three production‑grade artifacts. Targets per week are explicit so you know you’re done.</p>
+<h3 id="week-1---ownership-borrowing-result-modules">Week 1 - ownership, borrowing, result, modules</h3>
+<p><strong>You’ll learn:</strong> ownership moves, borrowing, lifetimes by feel, pattern matching, modules, <code>Result</code> and error context.</p>
+<p><strong>Build:</strong> CLI <code>csv-cut</code> that selects columns from a CSV and writes CSV to stdout (keep I/O simple this week).</p>
+<ul>
+<li>Start a workspace <code>data-tools</code> with members <code>csv-cut</code> and <code>libcore</code>.</li>
+<li>Add crates incrementally: <code>csv</code>, <code>serde</code>, <code>serde_json</code>, <code>clap</code>.</li>
+<li>Practice: accept <code>&amp;str</code> not <code>String</code>; return <code>Result&lt;T, E&gt;</code>; bubble errors with <code>?</code>; attach context using <code>anyhow</code> or define a small domain error with <code>thiserror</code>.</li>
+<li>Stretch: add <code>--output parquet</code> flag but wire it next week.</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Handles headers and empty fields; exits non‑zero on bad indices; <code>--help</code> prints usage.</li>
+<li>Processes a 1GB CSV without panicking on your machine.</li>
+</ul>
+<p><strong>Checkpoint:</strong> explain why the borrow checker rejected a mutable and immutable borrow in the same scope, then fix it using narrower scopes or by re‑structuring data.</p>
+<h3 id="week-2---enums-traits-generics-iterators">Week 2 - enums, traits, generics, iterators</h3>
+<p><strong>You’ll learn:</strong> enums as algebraic data types, <code>impl</code> blocks, trait bounds, iterators and adapters, zero‑cost abstractions.</p>
+<p><strong>Build:</strong> <code>csv-scan</code> that streams CSV to minimal Arrow arrays (no DataFusion yet).</p>
+<ul>
+<li>Library crate <code>libarrow</code>: write small helpers that convert rows to Arrow arrays/builders.</li>
+<li>Add property tests with <code>proptest</code> and one snapshot test with <code>insta</code> for a tricky format edge case.</li>
+<li>Micro‑bench with <code>criterion</code> on one hot loop (row parsing → array build).</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Arrow crate compiles with a minimal feature set; Criterion report shows a measurable delta after an iterator refactor.</li>
+</ul>
+<p><strong>Checkpoint:</strong> replace a <code>for</code> loop with iterator combinators and show the perf delta in a Criterion report.</p>
+<h3 id="week-3---concurrency-and-messaging">Week 3 - concurrency and messaging</h3>
+<p><strong>You’ll learn:</strong> threads, channels, <code>Send</code> and <code>Sync</code>, data parallelism, cancellation.</p>
+<p><strong>Build:</strong> parallel CSV→Parquet converter.</p>
+<ul>
+<li>Use <code>crossbeam-channel</code> to decouple read/transform/write with bounded channels for backpressure.</li>
+<li>Use <code>rayon</code> only for CPU-bound transforms; keep I/O on dedicated threads.</li>
+<li>Add <code>tracing</code> for structured logs and spans.</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Converts 1GB CSV to Parquet within an acceptable wall‑time on your machine; graceful cancellation on drop of sender.</li>
+</ul>
+<p><strong>Checkpoint:</strong> run <code>cargo flamegraph</code> on a large file and paste the top 3 hot symbols into your notes with what you’ll try next. On macOS, <code>cargo flamegraph</code> may require <code>sudo</code> (dtrace). If blocked, use Instruments or <code>pprof-rs</code>.</p>
+<h3 id="week-4---async-io-and-a-tiny-service">Week 4 - async I/O and a tiny service</h3>
+<p><strong>You’ll learn:</strong> <code>Future</code>, executors, async I/O, backpressure, timeouts.</p>
+<p><strong>Build:</strong> an <code>axum</code> HTTP service with two endpoints.</p>
+<ul>
+<li><code>/healthz</code> returns 200.</li>
+<li><code>/sql</code> starts as a stub (fixed JSON) to wire timeouts, errors, and graceful shutdown; then integrate DataFusion over local Parquet as a stretch.</li>
+<li>Use Tokio runtime, graceful shutdown, request timeouts, and structured errors.</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Under a simple load test, p95 stays within your target at N RPS for the stub; DataFusion integration keeps p95 within a relaxed target.</li>
+</ul>
+<p><strong>Checkpoint:</strong> add a load test and confirm p95 stays within your target under parallel queries.</p>
+<h3 id="week-5---ffi-and-python-bridge">Week 5 - FFI and Python bridge</h3>
+<p><strong>You’ll learn:</strong> writing a thin Rust core and exposing it to Python.</p>
+<p><strong>Build:</strong> a Python package <code>fastcsv</code> that wraps your Rust <code>libcore</code> using PyO3 and maturin.</p>
+<ul>
+<li>First: <code>maturin develop</code> for local import; wheels later.</li>
+<li>Ship two functions: <code>infer_schema(path) -&gt; dict</code>, <code>select_cols(path, cols) -&gt; output_path</code>.</li>
+<li>Keep the Python API tiny and well‑typed.</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Local import works in a clean venv; function timings beat a pure‑Python baseline on a sample file.</li>
+</ul>
+<p><strong>Checkpoint:</strong> from a Python REPL, import <code>fastcsv</code>, run it on a sample file, compare timings vs pure Python.</p>
+<h3 id="week-6---profiling-coverage-supplychain-hygiene-release">Week 6 - profiling, coverage, supply‑chain hygiene, release</h3>
+<p><strong>You’ll learn:</strong> coverage with LLVM, auditing, dependency hygiene, minimal releases.</p>
+<p><strong>Build:</strong> a clean release of <code>csv-cut</code>.</p>
+<ul>
+<li>Add coverage gates with <code>cargo llvm-cov</code> (needs <code>llvm-tools-preview</code>).</li>
+<li>Run <code>cargo audit</code>, <code>cargo outdated</code>, <code>cargo udeps</code> and fix issues.</li>
+<li>Produce a macOS arm64 binary locally; for Linux/x86_64 use CI runners. If cross‑compiling is required, try <code>cross</code> (Docker/Podman needed) or <code>cargo-zigbuild</code> as Plan B.</li>
+<li>Tag a release and attach artifacts.</li>
+</ul>
+<p><strong>Targets:</strong></p>
+<ul>
+<li>Reproducible build script; <code>--version</code> flag; binary ≤ your size budget; audit clean.</li>
+</ul>
+<p><strong>Checkpoint:</strong> a short CHANGELOG entry that states perf, memory, and behavior changes with numbers.</p>
+<h2 id="capstones-you-can-actually-reuse">Capstones you can actually reuse</h2>
+<ol>
+<li><strong>DataFusion micro‑warehouse</strong> - run SQL on local Parquet for quick analysis and tests.</li>
+<li><strong>High‑throughput CSV→Parquet pipeline</strong> - rayon + Arrow + Parquet writer.</li>
+<li><strong>Python bridge</strong> - a wheel that exposes your hot path to data scientists.</li>
+</ol>
+<h2 id="the-mental-model-that-makes-rust-click">The mental model that makes Rust click</h2>
+<ul>
+<li><strong>Ownership:</strong> one owner at a time. Moves transfer ownership. Clones are explicit.</li>
+<li><strong>Borrowing:</strong> immutable borrows can alias, mutable borrow is exclusive.</li>
+<li><strong>Lifetimes:</strong> mostly inferred. Name them only when the compiler can’t.</li>
+<li><strong>Error handling:</strong> make invalid states unrepresentable with types. Use <code>Result</code> generously, add context, avoid <code>unwrap</code> in library code.</li>
+</ul>
+<h2 id="minimal-crate-starter">Minimal crate starter</h2>
+<p>Use this skeleton to avoid yak‑shaving (create it OUTSIDE this website repo, e.g., <code>~/dev/rust/data-tools</code>):</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir -p ~/dev/rust/data-tools
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> ~/dev/rust/data-tools
+</span></span><span class="line"><span class="cl">cargo new csv-cut --bin
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> csv-cut
+</span></span><span class="line"><span class="cl">cargo add anyhow thiserror csv serde serde_json clap</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>main.rs</code>:</p>
+<div class="highlight highlight-rust" data-lang="rust"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">anyhow</span>::<span class="p">{</span><span class="n">Context</span><span class="p">,</span><span class="w"> </span><span class="nb">Result</span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="p">{</span><span class="n">fs</span>::<span class="n">File</span><span class="p">,</span><span class="w"> </span><span class="n">io</span>::<span class="n">BufReader</span><span class="p">,</span><span class="w"> </span><span class="n">path</span>::<span class="n">PathBuf</span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#[derive(Debug)]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">Args</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">input</span>: <span class="nc">PathBuf</span><span class="p">,</span><span class="w"> </span><span class="n">cols</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">run</span><span class="p">(</span><span class="n">a</span>: <span class="nc">Args</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">File</span>::<span class="n">open</span><span class="p">(</span><span class="o">&amp;</span><span class="n">a</span><span class="p">.</span><span class="n">input</span><span class="p">).</span><span class="n">with_context</span><span class="p">(</span><span class="o">||</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&#34;open </span><span class="si">{:?}</span><span class="s">&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">input</span><span class="p">))</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">rdr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">csv</span>::<span class="n">Reader</span>::<span class="n">from_reader</span><span class="p">(</span><span class="n">BufReader</span>::<span class="n">new</span><span class="p">(</span><span class="n">f</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">rec</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">rdr</span><span class="p">.</span><span class="n">records</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">rec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rec</span><span class="o">?</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">picked</span>: <span class="nb">Vec</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">cols</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">filter_map</span><span class="p">(</span><span class="o">|&amp;</span><span class="n">i</span><span class="o">|</span><span class="w"> </span><span class="n">rec</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">)).</span><span class="n">collect</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">&#34;</span><span class="si">{}</span><span class="s">&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">picked</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#34;,&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nb">Ok</span><span class="p">(())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// parse args left as an exercise; start simple, add clap later
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">run</span><span class="p">(</span><span class="n">Args</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">input</span>: <span class="s">&#34;data.csv&#34;</span><span class="p">.</span><span class="n">into</span><span class="p">(),</span><span class="w"> </span><span class="n">cols</span>: <span class="nc">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="handson-project-setup-outside-this-repo">Hands‑on project setup (outside this repo)</h3>
+<ol>
+<li>Create your project folder: <code>mkdir -p ~/dev/rust &amp;&amp; cd ~/dev/rust</code></li>
+<li>Create the crate: <code>cargo new csv-cut --bin &amp;&amp; cd csv-cut</code></li>
+<li>Add deps: <code>cargo add anyhow clap@4 csv serde serde_json thiserror</code></li>
+<li>Add <code>rust-toolchain.toml</code> with <code>channel = &quot;stable&quot;</code> and components <code>clippy</code>, <code>rustfmt</code>, <code>llvm-tools-preview</code> (optional but recommended).</li>
+<li>First run: <code>cargo run -- --help</code></li>
+<li>Format/lint: <code>cargo fmt &amp;&amp; cargo clippy -D warnings</code></li>
+</ol>
+<h3 id="sample-datacsv">Sample data.csv</h3>
+<p>Small sample (for correctness):</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">cat &gt; /tmp/data.csv <span class="s">&lt;&lt;&#39;CSV&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s">id,name,city
+</span></span></span><span class="line"><span class="cl"><span class="s">1,Ada,NYC
+</span></span></span><span class="line"><span class="cl"><span class="s">2,Brandon,SF
+</span></span></span><span class="line"><span class="cl"><span class="s">3,Chika,Austin
+</span></span></span><span class="line"><span class="cl"><span class="s">CSV</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Expect: id and city</span>
+</span></span><span class="line"><span class="cl">cargo run -- -c 0,2 /tmp/data.csv</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Generate a larger CSV locally (approx 5M rows ~ couple hundred MB; adjust N for size):</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">python3 - <span class="s">&lt;&lt;&#39;PY&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s">import csv,sys
+</span></span></span><span class="line"><span class="cl"><span class="s">from random import randint
+</span></span></span><span class="line"><span class="cl"><span class="s">N=5_000_000
+</span></span></span><span class="line"><span class="cl"><span class="s">w=csv.writer(sys.stdout)
+</span></span></span><span class="line"><span class="cl"><span class="s">w.writerow([&#34;id&#34;,&#34;v1&#34;,&#34;v2&#34;,&#34;v3&#34;,&#34;city&#34;]) 
+</span></span></span><span class="line"><span class="cl"><span class="s">for i in range(N):
+</span></span></span><span class="line"><span class="cl"><span class="s">    w.writerow([i, randint(0,9), randint(0,9), randint(0,9), f&#34;C{randint(1,999)}&#34;])
+</span></span></span><span class="line"><span class="cl"><span class="s">PY</span> &gt; /tmp/big.csv</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="tiny-tests-for---cols-and-headers">Tiny tests for <code>--cols</code> and headers</h3>
+<p>Add dev-dependencies to <code>Cargo.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">dev-dependencies</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="nx">assert_cmd</span> <span class="p">=</span> <span class="s2">&#34;2&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">predicates</span> <span class="p">=</span> <span class="s2">&#34;3&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">tempfile</span> <span class="p">=</span> <span class="s2">&#34;3&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Create <code>tests/csv_cut_smoke.rs</code>:</p>
+<div class="highlight highlight-rust" data-lang="rust"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rust" data-lang="rust"><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">assert_cmd</span>::<span class="n">Command</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">predicates</span>::<span class="n">prelude</span>::<span class="o">*</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">io</span>::<span class="n">Write</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">tempfile</span>::<span class="n">NamedTempFile</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">write_csv</span><span class="p">(</span><span class="n">contents</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">NamedTempFile</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NamedTempFile</span>::<span class="n">new</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="fm">write!</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">contents</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">f</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#[test]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">selects_cols_with_headers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">write_csv</span><span class="p">(</span><span class="s">&#34;id,name,city</span><span class="se">\n</span><span class="s">1,Ada,NYC</span><span class="se">\n</span><span class="s">2,B,LA</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Command</span>::<span class="n">cargo_bin</span><span class="p">(</span><span class="s">&#34;csv-cut&#34;</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">cmd</span><span class="p">.</span><span class="n">args</span><span class="p">([</span><span class="s">&#34;-c&#34;</span><span class="p">,</span><span class="s">&#34;0,2&#34;</span><span class="p">]).</span><span class="n">arg</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">cmd</span><span class="p">.</span><span class="n">assert</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="n">success</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">predicate</span>::<span class="kt">str</span>::<span class="n">contains</span><span class="p">(</span><span class="s">&#34;id,city</span><span class="se">\n</span><span class="s">1,NYC</span><span class="se">\n</span><span class="s">2,LA</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#[test]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">fn</span> <span class="nf">respects_no_headers_flag</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">write_csv</span><span class="p">(</span><span class="s">&#34;1,Ada,NYC</span><span class="se">\n</span><span class="s">2,B,LA</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Command</span>::<span class="n">cargo_bin</span><span class="p">(</span><span class="s">&#34;csv-cut&#34;</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">cmd</span><span class="p">.</span><span class="n">args</span><span class="p">([</span><span class="s">&#34;--no-headers&#34;</span><span class="p">,</span><span class="s">&#34;-c&#34;</span><span class="p">,</span><span class="s">&#34;0,2&#34;</span><span class="p">]).</span><span class="n">arg</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">path</span><span class="p">());</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">cmd</span><span class="p">.</span><span class="n">assert</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="n">success</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">predicate</span>::<span class="kt">str</span>::<span class="n">contains</span><span class="p">(</span><span class="s">&#34;1,NYC</span><span class="se">\n</span><span class="s">2,LA</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">));</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Run: <code>cargo test</code></p>
+<h3 id="12-gb-exercise-week-1-target">1–2 GB exercise (Week 1 target)</h3>
+<p>Create a bigger file (~1–2 GB) by raising N in the Python generator above (e.g., <code>N=40_000_000</code> may approach ~1.5–2 GB depending on row width) and run:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">time</span> cargo run --release -- -c 0,2 /path/to/huge.csv &gt; /dev/null</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Note wall-time and CPU usage. If it panics or is too slow, reduce N, confirm correctness first, then profile later in Week 3.</p>
+<h2 id="what-to-read-and-when">What to read and when</h2>
+<ul>
+<li><strong>Start here</strong>: The Rust Programming Language, Ownership, Borrowing, Traits, Error Handling.</li>
+<li><strong>Exercises</strong>: Rustlings. Pair it with Rust by Example for quick lookups.</li>
+<li><strong>Async</strong>: Asynchronous Programming in Rust and Tokio guides.</li>
+<li><strong>Web</strong>: axum examples and docs.</li>
+<li><strong>Data</strong>: Apache Arrow (minimal features) and Parquet crates, Polars docs, DataFusion user docs and <code>datafusion-expr</code> crate (integrate after Week 3).</li>
+<li><strong>Unsafe</strong>: The Rustonomicon. Read for literacy, not to write unsafe code.</li>
+<li><strong>Testing &amp; Perf</strong>: proptest, insta, criterion. Coverage with cargo‑llvm‑cov. Profiling with cargo‑flamegraph.</li>
+<li><strong>Tooling</strong>: rustfmt and Clippy. Dependency checks with cargo‑audit, cargo‑outdated, cargo‑udeps. Release with cross and just enough packaging.</li>
+</ul>
+<h2 id="common-borrow-checker-errors-and-quick-fixes">Common borrow checker errors and quick fixes</h2>
+<ul>
+<li>&ldquo;cannot borrow as mutable because it is also borrowed as immutable&rdquo;: shorten the immutable borrow’s scope, or split the data structure so borrows don’t overlap.</li>
+<li>&ldquo;value moved here&rdquo;: pass a reference if you only need to read, or <code>clone</code> if cheap and correctness matters more than allocations. Better: refactor to return the value to the caller.</li>
+<li>&ldquo;returns a reference to data owned by the function&rdquo;: return an owned value instead, or thread lifetimes through types explicitly.</li>
+</ul>
+<h2 id="your-success-checklist">Your success checklist</h2>
+<ul>
+<li>Code daily. Small loops of build, run, test.</li>
+<li>Write down one thing you learned per day.</li>
+<li>Every Friday: <code>cargo audit</code>, <code>outdated</code>, <code>udeps</code>, and one micro‑bench.</li>
+<li>Every Sunday: refactor one function for clarity. No new features.</li>
+</ul>
+<hr>
+<h3 id="appendix---commands-youll-reuse">Appendix - commands you’ll reuse</h3>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Change to your project dir first (OUTSIDE this repo):</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> ~/dev/rust/data-tools <span class="o">&amp;&amp;</span> cargo run -p csv-cut -- --help
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Toolchain (per-repo pin)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># rust-toolchain.toml with: channel = &#34;stable&#34;; components = [&#34;clippy&#34;,&#34;rustfmt&#34;,&#34;llvm-tools-preview&#34;]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Format and lint</span>
+</span></span><span class="line"><span class="cl">cargo fmt --all
+</span></span><span class="line"><span class="cl">cargo clippy --all-targets --all-features -D warnings
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Tests, coverage, profiling</span>
+</span></span><span class="line"><span class="cl">cargo nextest run
+</span></span><span class="line"><span class="cl">cargo llvm-cov --workspace --html
+</span></span><span class="line"><span class="cl">cargo flamegraph --bin csv-cut
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Dependency hygiene</span>
+</span></span><span class="line"><span class="cl">cargo audit
+</span></span><span class="line"><span class="cl">cargo outdated
+</span></span><span class="line"><span class="cl">cargo udeps --all-targets --all-features
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Async service</span>
+</span></span><span class="line"><span class="cl">cargo add axum tokio --features full tracing tracing-subscriber serde_json anyhow thiserror
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Arrow + Parquet + DataFusion (keep features minimal initially)</span>
+</span></span><span class="line"><span class="cl">cargo add arrow-array arrow-schema parquet datafusion-expr
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Python FFI</span>
+</span></span><span class="line"><span class="cl">cargo add pyo3 --features extension-module
+</span></span><span class="line"><span class="cl"><span class="c1"># build locally first: maturin develop (inside a venv)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Optional speed-ups</span>
+</span></span><span class="line"><span class="cl">cargo binstall cargo-nextest cargo-llvm-cov cargo-audit cargo-outdated cargo-udeps --no-confirm <span class="o">||</span> true</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="document-and-commit-this-repo-only-holds-documentation">Document and commit (this repo only holds documentation)</h3>
+<ul>
+<li>Update your weekly notes in this post or add a <code>content/posts/YYYY/MM/progress-&lt;week&gt;.md</code> entry.</li>
+<li>Commit and push the docs here (not your Rust code):</li>
+</ul>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git add content/posts/2025/10/rust-fundamentals/index.md
+</span></span><span class="line"><span class="cl">git commit -m <span class="s2">&#34;Rust plan: add hands-on steps, sample data, tests, large-file exercise&#34;</span>
+</span></span><span class="line"><span class="cl">git push</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="sprint-board-overview">Sprint board overview</h2>
+<p>The board below pulls directly from this post’s <code>sprintboard</code> front matter. Update story statuses, task checkboxes, or comments and the JIRA-style view refreshes on each Hugo build.</p>
+<style>.sprint-board{margin:1.5rem 0;padding:1rem;border-radius:12px;border:1px solid rgba(0,0,0,8%);background:var(--card-bg,#fafafa);box-shadow:0 6px 20px rgba(15,23,42,8%)}.sprint-board__header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem;margin-bottom:1rem;border-bottom:1px solid rgba(0,0,0,7%);padding-bottom:.75rem}.sprint-board__title{font-size:1.2rem;font-weight:700;color:#1f2937;display:flex;align-items:center;gap:.5rem}.sprint-board__meta{display:flex;flex-wrap:wrap;gap:.5rem;font-size:.9rem;opacity:.75}.sprint-board__meta span{display:inline-flex;align-items:center;gap:.25rem;padding:.2rem .6rem;border-radius:999px;background:rgba(15,23,42,4%)}.sprint-board__columns{display:flex;gap:1rem;overflow-x:auto;padding-bottom:.5rem}.sprint-board__column{min-width:240px;max-width:280px;background:#f8fafc;border-radius:10px;border:1px solid rgba(148,163,184,.35);display:flex;flex-direction:column;max-height:70vh}.sprint-board__column-header{padding:.75rem .9rem;border-bottom:1px solid rgba(148,163,184,.35);font-weight:600;display:flex;justify-content:space-between;align-items:center}.sprint-board__column-count{font-size:.78rem;opacity:.7}.sprint-board__column-body{padding:.75rem .9rem;display:flex;flex-direction:column;gap:.75rem;overflow-y:auto}.sprint-card{border-radius:9px;border:1px solid rgba(148,163,184,.4);background:#fff;padding:.7rem .85rem;box-shadow:0 4px 12px rgba(15,23,42,6%);display:flex;flex-direction:column;gap:.55rem;transition:transform .15s ease,box-shadow .15s ease}.sprint-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(15,23,42,.1)}.sprint-card__title{font-weight:600;color:#0f172a;font-size:.98rem;text-decoration:none}.sprint-card__title:hover{text-decoration:underline}.sprint-card__tags{display:flex;flex-wrap:wrap;gap:.4rem;font-size:.72rem}.sprint-card__tag{padding:.15rem .5rem;border-radius:999px;background:rgba(148,163,184,.25);color:#475569}.sprint-card__meta{display:flex;flex-wrap:wrap;gap:.6rem;font-size:.78rem;opacity:.75}.sprint-card__meta span{display:inline-flex;align-items:center;gap:.3rem}.sprint-card__summary{font-size:.85rem;line-height:1.45;color:#334155}.sprint-card__tasks{border-top:1px solid rgba(148,163,184,.25);padding-top:.5rem}.sprint-card__tasks progress{width:100%;height:6px;border-radius:999px;overflow:hidden;margin-bottom:.4rem}.sprint-card__tasks progress::-webkit-progress-bar{background:#e2e8f0;border-radius:999px}.sprint-card__tasks progress::-webkit-progress-value{background:#2563eb;border-radius:999px}.sprint-card__tasks progress::-moz-progress-bar{background:#2563eb}.sprint-card__task-list{list-style:none;padding-left:0;margin:0;display:flex;flex-direction:column;gap:.3rem}.sprint-card__task{display:flex;align-items:flex-start;gap:.4rem;font-size:.82rem;color:#475569}.sprint-card__task input{margin-top:.2rem}.sprint-card__comments{border-top:1px solid rgba(148,163,184,.2);padding-top:.45rem;font-size:.78rem;display:flex;flex-direction:column;gap:.35rem}.sprint-card__comment{display:flex;gap:.4rem}.sprint-card__comment-avatar{width:26px;height:26px;border-radius:999px;background:#2563eb;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;font-size:.7rem}.sprint-card__comment-body{flex:1}.sprint-card__comment-meta{font-weight:600;color:#1e293b;font-size:.78rem}.sprint-card__comment-text{color:#475569;font-size:.78rem}.sprint-board__empty{padding:1rem;text-align:center;font-style:italic;opacity:.6}.sprint-board__legend{display:flex;gap:.75rem;font-size:.8rem;opacity:.7;margin-top:.5rem}.sprint-board__legend span{display:inline-flex;align-items:center;gap:.3rem}.sprint-board__legend-bullet{width:.6rem;height:.6rem;border-radius:999px;display:inline-block}@media(max-width:768px){.sprint-board{padding:.75rem}.sprint-board__columns{gap:.75rem}.sprint-board__column{min-width:210px}}@media(prefers-color-scheme:dark){.sprint-board{background:#111827;border-color:#1f2937;box-shadow:0 6px 22px rgba(15,23,42,.26)}.sprint-board__title{color:#f8fafc}.sprint-board__meta span{background:rgba(148,163,184,.15);color:#e2e8f0}.sprint-board__column{background:#1e293b;border-color:rgba(148,163,184,.35)}.sprint-card{background:#0f172a;border-color:rgba(148,163,184,.25)}.sprint-card__title{color:#e2e8f0}.sprint-card__summary{color:#cbd5f5}.sprint-card__task{color:#cbd5f5}.sprint-card__comments{border-top-color:rgba(148,163,184,.25)}}</style><div class="sprint-board" id="202510rust-fundamentals-a-precise-6-week-plan-for-systems-minded-data-engineers-now-sprint-board">
+    <div class="sprint-board__header">
+      <div class="sprint-board__title"><span>Rust Fundamentals · 6-week learning plan</span>
+      </div>
+      <div class="sprint-board__meta"><span>🗓 Sprint 2025-W44 → 2025-W49</span><span>👤 Owner Vitthal Mirji</span><span>⚡ Velocity 6 stories / 18 points</span><span>📅 Start 2025-10-28</span><span>⏳ End 2025-12-08</span></div>
+    </div>
+
+    <div class="sprint-board__columns"><section class="sprint-board__column">
+          <header class="sprint-board__column-header" style="border-bottom-color: #cbd5f580;">
+            <span>Planned</span>
+            <span class="sprint-board__column-count">3</span>
+          </header>
+          <div class="sprint-board__column-body"><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-2---enums-traits-generics-iterators">Week 2 – Traits &amp; Arrow adapters</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">arrow</span><span class="sprint-card__tag">traits</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 3pt</span><span>👤 Vitthal</span><span>📅 Due 2025-11-15</span></div><p class="sprint-card__summary">Shape Arrow builders, iterators, property tests, benchmark-driven ergonomics.</p><div class="sprint-card__tasks"><progress max="3" value="0"></progress>
+                        <div class="sprint-card__task-stats">0/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Implement Arrow RecordBatch helpers</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Add proptest &#43; insta snapshot</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Replace loops with iterators &amp; benchmark</span>
+                          </li></ul>
+                    </div></article><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-5---ffi-and-python-bridge">Week 5 – PyO3 bridge</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">ffi</span><span class="sprint-card__tag">python</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 3pt</span><span>👤 Vitthal</span><span>📅 Due 2025-12-06</span></div><p class="sprint-card__summary">Expose libcore to Python via PyO3/maturin; benchmark against pure Python.</p><div class="sprint-card__tasks"><progress max="3" value="0"></progress>
+                        <div class="sprint-card__task-stats">0/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Expose infer_schema/select_cols via PyO3</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Build wheel with maturin develop</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Benchmark vs pure Python baseline</span>
+                          </li></ul>
+                    </div></article><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-6---profiling-coverage-supplychain-hygiene-release">Week 6 – Release hygiene</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">release</span><span class="sprint-card__tag">devex</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 4pt</span><span>👤 Vitthal</span><span>📅 Due 2025-12-08</span></div><p class="sprint-card__summary">Coverage gates, supply-chain checks, artifact release, and final metrics.</p><div class="sprint-card__tasks"><progress max="3" value="0"></progress>
+                        <div class="sprint-card__task-stats">0/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Enforce coverage &amp; audit gates</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Produce macOS/Linux binaries &#43; changelog</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Document perf &amp; learning wrap-up</span>
+                          </li></ul>
+                    </div></article></div>
+        </section><section class="sprint-board__column">
+          <header class="sprint-board__column-header" style="border-bottom-color: #bfdbfe80;">
+            <span>In Progress</span>
+            <span class="sprint-board__column-count">2</span>
+          </header>
+          <div class="sprint-board__column-body"><article class="sprint-card">
+                  <a class="sprint-card__title" href="#day-0---your-toolchain-verified">Day 0 – Toolchain verified</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">setup</span><span class="sprint-card__tag">tooling</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 1pt</span><span>👤 Vitthal</span><span>📅 Due 2025-10-31</span><span>⚑ H</span></div><p class="sprint-card__summary">Install stable toolchain, linting, velocity tools, and verify IDE feedback loop.</p><div class="sprint-card__tasks"><progress max="3" value="1"></progress>
+                        <div class="sprint-card__task-stats">1/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled checked>
+                            <span>Install rustup, set default stable, add clippy/rustfmt</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Configure IDE with rust-analyzer, format on save</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Install cargo-nextest, llvm-cov, audit/outdated/udeps</span>
+                          </li></ul>
+                    </div>
+                    <div class="sprint-card__comments">
+                        <div class="sprint-card__comment">
+                          <span class="sprint-card__comment-avatar">V</span>
+                          <div class="sprint-card__comment-body">
+                            <div class="sprint-card__comment-meta">Vitthal · 2025-10-28</div>
+                            <div class="sprint-card__comment-text">Kickoff checklist drafted.</div>
+                          </div>
+                        </div>
+                        <div class="sprint-card__comment">
+                          <span class="sprint-card__comment-avatar">V</span>
+                          <div class="sprint-card__comment-body">
+                            <div class="sprint-card__comment-meta">Vitthal · 2025-10-29</div>
+                            <div class="sprint-card__comment-text">rustup &#43; clippy/rustfmt installed. Next: IDE config.</div>
+                          </div>
+                        </div></div></article><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-1---ownership-borrowing-result-modules">Week 1 – Ownership foundations</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">cli</span><span class="sprint-card__tag">ownership</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 3pt</span><span>👤 Vitthal</span><span>📅 Due 2025-11-08</span></div><p class="sprint-card__summary">CLI practice: borrow checker fluency, Result ergonomics, streaming IO.</p><div class="sprint-card__tasks"><progress max="3" value="0"></progress>
+                        <div class="sprint-card__task-stats">0/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Scaffold csv-cut CLI writing to stdout</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Parse args with clap, emit structured errors</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Prove 1–2 GB CSV throughput</span>
+                          </li></ul>
+                    </div></article></div>
+        </section><section class="sprint-board__column">
+          <header class="sprint-board__column-header" style="border-bottom-color: #ede9fe80;">
+            <span>Review</span>
+            <span class="sprint-board__column-count">1</span>
+          </header>
+          <div class="sprint-board__column-body"><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-4---async-io-and-a-tiny-service">Week 4 – Async axum service</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">async</span><span class="sprint-card__tag">axum</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 3pt</span><span>👤 Vitthal</span><span>📅 Due 2025-11-29</span></div><p class="sprint-card__summary">Expose DataFusion-backed queries with timeouts, tracing, and load-test targets.</p><div class="sprint-card__tasks"><progress max="3" value="1"></progress>
+                        <div class="sprint-card__task-stats">1/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled checked>
+                            <span>Ship stub /sql &#43; timeouts</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Integrate DataFusion query executor</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Run load test &amp; capture p95</span>
+                          </li></ul>
+                    </div>
+                    <div class="sprint-card__comments">
+                        <div class="sprint-card__comment">
+                          <span class="sprint-card__comment-avatar">V</span>
+                          <div class="sprint-card__comment-body">
+                            <div class="sprint-card__comment-meta">Vitthal · 2025-11-18</div>
+                            <div class="sprint-card__comment-text">axum skeleton ready—pending DataFusion results review.</div>
+                          </div>
+                        </div></div></article></div>
+        </section><section class="sprint-board__column">
+          <header class="sprint-board__column-header" style="border-bottom-color: #fecdd380;">
+            <span>Blocked</span>
+            <span class="sprint-board__column-count">1</span>
+          </header>
+          <div class="sprint-board__column-body"><article class="sprint-card">
+                  <a class="sprint-card__title" href="#week-3---concurrency-and-messaging">Week 3 – Concurrency &amp; Parquet pipeline</a>
+                    <div class="sprint-card__tags"><span class="sprint-card__tag">rayon</span><span class="sprint-card__tag">pipeline</span></div>
+                  <div class="sprint-card__meta"><span>⏱ 3pt</span><span>👤 Vitthal</span><span>📅 Due 2025-11-22</span></div><p class="sprint-card__summary">Channel-based CSV → Parquet pipeline with cancellation &amp; profiling insights.</p><div class="sprint-card__tasks"><progress max="3" value="0"></progress>
+                        <div class="sprint-card__task-stats">0/3 tasks</div><ul class="sprint-card__task-list">
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Implement bounded channel stages</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Parallel CPU transforms with rayon</span>
+                          </li>
+                          <li class="sprint-card__task">
+                            <input type="checkbox" disabled >
+                            <span>Profile with flamegraph / Instruments</span>
+                          </li></ul>
+                    </div>
+                    <div class="sprint-card__comments">
+                        <div class="sprint-card__comment">
+                          <span class="sprint-card__comment-avatar">V</span>
+                          <div class="sprint-card__comment-body">
+                            <div class="sprint-card__comment-meta">Vitthal · 2025-11-12</div>
+                            <div class="sprint-card__comment-text">Blocked waiting on production-sized CSV sample.</div>
+                          </div>
+                        </div></div></article></div>
+        </section><section class="sprint-board__column">
+          <header class="sprint-board__column-header" style="border-bottom-color: #bbf7d080;">
+            <span>Done</span>
+            <span class="sprint-board__column-count">0</span>
+          </header>
+          <div class="sprint-board__column-body"><div class="sprint-board__empty">No stories in this column yet.</div></div>
+        </section>
+    </div>
+  </div>
+<p><strong>Usage tips</strong></p>
+<ul>
+<li><code>status</code> controls the column (<code>planned</code>, <code>in-progress</code>, <code>review</code>, <code>blocked</code>, <code>done</code>).</li>
+<li><code>tasks[].done</code> toggles the progress bar for each story.</li>
+<li><code>comments</code> accept <code>author</code>, <code>when</code>, <code>body</code> for quick retros.</li>
+<li>Customize columns or palette via <code>sprintboard.columns</code>.</li>
+</ul>
+<hr>
+<p><strong>Notes for readers:</strong> This plan sticks to stable Rust and conservative crates so you learn fundamentals first. Add frameworks only after Week 3. Keep the repo small, with one <code>Justfile</code> and CI that runs clippy, tests, coverage, and audit. On macOS, <code>cargo flamegraph</code> may require <code>sudo</code> (dtrace). If cross‑compiling becomes a time sink, build natively per target in CI.</p>
+<h2 id="whats-not-covered-yet">What’s not covered (yet)</h2>
+<ul>
+<li>Unsafe Rust: pointer math, <code>unsafe</code> blocks, custom allocators. You’ll read the Rustonomicon later; you won’t write unsafe code in these 6 weeks.</li>
+<li>Advanced lifetimes and pinning: self‑referential structs, <code>Pin</code>, projection. Useful but not needed for the artifacts here.</li>
+<li>Async internals: building executors/reactors. You’ll use Tokio, not write one.</li>
+<li>Proc‑macros and macro_rules! beyond basics. Powerful, but a separate track.</li>
+<li>Embedded/<code>no_std</code>, WASM, GUI. Different ecosystems with extra setup.</li>
+<li>Deep DataFusion internals (optimizer/planner extensions). You’ll use it, not modify it.</li>
+<li>Complex cross‑compilation matrices/universal2 packaging. You’ll produce practical per‑target builds first; advanced packaging is a follow‑up.</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-10-rust-fundamentals-a-precise-6-week-plan-for-systems-minded-data-engineers-now.png" type="image/png"/></item></channel></rss>

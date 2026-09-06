@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/observability/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/observability/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Kotlin for data pipelines: Why I ditched Scala for backend data architecture</title><link>https://vitthalmirji.com/2025/05/kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/05/kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture/</guid><pubDate>Wed, 21 May 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>kotlin</category><category>data-engineering</category><category>data-pipelines</category><category>backend-architecture</category><category>apache-spark</category><category>apache-flink</category><category>coroutines</category><category>lakehouse</category><category>observability</category><category>llm-integration</category><description>Deep-dive guide to building data-centric backends with Kotlin. Learn pipeline patterns with coroutines, Spark/Flink integration, LLM enrichment, lakehouse patterns (Iceberg/Delta), and observability with OpenTelemetry. Includes real code.</description><content:encoded><![CDATA[<p>You know that moment when you&rsquo;re debugging a Scala data pipeline at 2 AM and realize 80% of the code is type gymnastics and implicit hell?</p>
+<p>I spent years building data pipelines in Scala. Type-safe, functional, elegant - but also verbose, complex, and frankly exhausting. Then I tried Kotlin for a backend data pipeline.</p>
+<p><strong>The difference? Shocking.</strong></p>
+<ul>
+<li>Coroutines for async flow → no callback hell</li>
+<li>Data classes + <code>kotlinx.serialization</code> → zero boilerplate</li>
+<li>Spark integration → same power, 50% less code</li>
+<li>Null-safety out of the box → no more <code>Option[Option[T]]</code> madness</li>
+</ul>
+<p>This post shows you how to build production-grade data-centric backends with Kotlin. You&rsquo;ll see:</p>
+<ul>
+<li>Pipeline patterns with composable stages</li>
+<li>Spark and Flink integration (with performance comparisons)</li>
+<li>LLM enrichment stages for AI-powered data</li>
+<li>Lakehouse patterns (Iceberg, Delta Lake)</li>
+<li>Observability with Prometheus and OpenTelemetry</li>
+</ul>
+<p>Real code, real architectures, real production lessons.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the data engineering reality in 2025:</p>
+<p><strong>Traditional approach (Scala/Java):</strong></p>
+<ul>
+<li>Heavy type systems → steep learning curve</li>
+<li>Boilerplate everywhere → slow development</li>
+<li>Futures/monads → complex async code</li>
+<li>Spark verbosity → 10 lines for simple transformations</li>
+</ul>
+<p><strong>The Kotlin advantage:</strong></p>
+<ul>
+<li>Concise syntax → 50% less code</li>
+<li>Coroutines → async without complexity</li>
+<li>Null-safety → catch errors at compile time</li>
+<li>JVM compatibility → use existing Spark/Flink/Kafka libraries</li>
+</ul>
+<p><strong>Why you should care:</strong></p>
+<ul>
+<li>Faster development (less boilerplate)</li>
+<li>Easier onboarding (simpler syntax)</li>
+<li>Better async (coroutines &gt; futures)</li>
+<li>Production-ready (JVM stability + modern features)</li>
+</ul>
+<p>This post is for data engineers who are tired of fighting their language and want something that just works.</p>
+<hr>
+<h2 id="part-1---pipeline-patterns-composable-stages-with-coroutines">Part 1 - Pipeline patterns: composable stages with coroutines</h2>
+<p>A classic <em>pipeline-of-transformations</em> lets us compose reusable stages:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">input</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">stages</span><span class="p">:</span> <span class="n">List</span><span class="p">&lt;</span><span class="k">suspend</span> <span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">&gt;):</span> <span class="k">suspend</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span> <span class="p">=</span>
+</span></span><span class="line"><span class="cl">  <span class="k">suspend</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">stages</span><span class="p">.</span><span class="n">fold</span><span class="p">(</span><span class="n">input</span><span class="p">)</span> <span class="p">{</span> <span class="n">acc</span><span class="p">,</span> <span class="n">fn</span> <span class="o">-&gt;</span> <span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">cleanText</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">s</span><span class="p">.</span><span class="n">trim</span><span class="p">().</span><span class="n">lowercase</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">sanitize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">s</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="n">Regex</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\\</span><span class="s2">s+&#34;</span><span class="p">),</span> <span class="s2">&#34;-&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">pipelineExample</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">input</span> <span class="p">=</span> <span class="s2">&#34; Hello   WORLD! &#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">result</span> <span class="p">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">listOf</span><span class="p">(</span><span class="o">::</span><span class="n">cleanText</span><span class="p">,</span> <span class="o">::</span><span class="n">sanitize</span><span class="p">))()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">println</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="c1">// output: &#34;hello-world!&#34;
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="part-2---data-classes--spark-integration-zero-boilerplate">Part 2 - Data classes + Spark integration (zero boilerplate)</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="nd">@Serializable</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="k">val</span> <span class="py">id</span><span class="p">:</span> <span class="n">Long</span><span class="p">,</span> <span class="k">val</span> <span class="py">ts</span><span class="p">:</span> <span class="n">Instant</span><span class="p">,</span> <span class="k">val</span> <span class="py">payload</span><span class="p">:</span> <span class="n">Map</span><span class="p">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">Any</span><span class="p">?&gt;)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">transformEvents</span><span class="p">():</span> <span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="k">this</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="n">ev</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">payload</span> <span class="p">=</span> <span class="n">ev</span><span class="p">.</span><span class="n">payload</span> <span class="p">+</span> <span class="p">(</span><span class="s2">&#34;processedAt&#34;</span> <span class="n">to</span> <span class="nc">Instant</span><span class="p">.</span><span class="n">now</span><span class="p">()))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin data classes + map closures = Spark pipelines without boilerplate. You could also easily integrate custom UDFs, JSON payloads via kotlinx.serialization, and more.</p>
+<h2 id="part-3---architecture-overview-kafka--sparkflink--lakehouse">Part 3 - Architecture overview: Kafka → Spark/Flink → Lakehouse</h2>
+<pre class="mermaid">flowchart LR
+  subgraph Ingestion
+    API --&gt;|HTTP POST| Kafka
+    Files --&gt;|batch upload| Kafka
+  end
+  Kafka --&gt; SparkProcessor
+  Kafka --&gt; FlinkProcessor
+  SparkProcessor --&gt; DeltaLake
+  FlinkProcessor --&gt; Iceberg
+  DeltaLake --&gt; QueryService
+  Iceberg --&gt; QueryService
+  QueryService --&gt; ClientApp
+</pre><p>Using both Spark and Flink in a Kappa‑style unified engine helps choose between batch or true-stream runtime at the same code-level.</p>
+<h2 id="part-4---spark-vs-flink-choosing-the-right-tool">Part 4 - Spark vs Flink: choosing the right tool</h2>
+<p>Kotlin shines here thanks to interoperability and expressive code.</p>
+<ul>
+<li><strong>Spark</strong> – micro-batch, lazy transforms, rich SQL support</li>
+<li><strong>Flink</strong> – event-time, stateful streams, low-latency</li>
+</ul>
+<p><strong>Performance comparison:</strong></p>
+<table>
+	<thead>
+			<tr>
+					<th>Feature / Design Choice</th>
+					<th>Apache Spark</th>
+					<th>Apache Flink</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Processing Model</strong></td>
+					<td>Micro-batch</td>
+					<td>True streaming (record-by-record)</td>
+			</tr>
+			<tr>
+					<td><strong>Latency</strong></td>
+					<td>Higher (~100s ms – seconds)</td>
+					<td>Low latency (ms level)</td>
+			</tr>
+			<tr>
+					<td><strong>Throughput</strong></td>
+					<td>High (great for batch)</td>
+					<td>Very high (great for stream processing)</td>
+			</tr>
+			<tr>
+					<td><strong>Backpressure Handling</strong></td>
+					<td>Limited / manual</td>
+					<td>Built-in native backpressure mechanism</td>
+			</tr>
+			<tr>
+					<td><strong>State Management</strong></td>
+					<td>Basic with checkpointing</td>
+					<td>First-class, consistent, fault-tolerant</td>
+			</tr>
+			<tr>
+					<td><strong>Event Time Processing</strong></td>
+					<td>Limited (structured streaming workaround)</td>
+					<td>Native support</td>
+			</tr>
+			<tr>
+					<td><strong>Windowing</strong></td>
+					<td>Available, but less flexible</td>
+					<td>Very flexible and expressive</td>
+			</tr>
+			<tr>
+					<td><strong>Use Case Fit</strong></td>
+					<td>Batch &amp; semi-streaming (ETL, ML pipelines)</td>
+					<td>Real-time analytics, event processing</td>
+			</tr>
+			<tr>
+					<td><strong>Language Support</strong></td>
+					<td>Scala, Java, Python, R</td>
+					<td>Java, Scala, Python</td>
+			</tr>
+			<tr>
+					<td><strong>Ease of Integration</strong></td>
+					<td>Well-supported in GCP / Databricks</td>
+					<td>Strong for Kafka, Stateful Apps</td>
+			</tr>
+			<tr>
+					<td><strong>Deployment Complexity</strong></td>
+					<td>Moderate (e.g. on Dataproc)</td>
+					<td>Higher; needs tuned Flink clusters</td>
+			</tr>
+			<tr>
+					<td><strong>Community &amp; Ecosystem</strong></td>
+					<td>Mature and broad</td>
+					<td>Growing rapidly in streaming domain</td>
+			</tr>
+	</tbody>
+</table>
+<h2 id="part-5---llm-enrichment-adding-ai-to-your-data-pipeline">Part 5 - LLM enrichment: adding AI to your data pipeline</h2>
+<p>Imagine injecting an LLM-based enrichment inside a Spark job:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">suspend</span> <span class="k">fun</span> <span class="nf">enrichWithLLM</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">String</span> <span class="p">=</span> <span class="n">coroutineScope</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">response</span> <span class="p">=</span> <span class="n">llmClient</span><span class="p">.</span><span class="n">completions</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="n">Prompt</span><span class="p">(</span><span class="s2">&#34;Extract entities from: </span><span class="si">$text</span><span class="s2">&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="n">response</span><span class="p">.</span><span class="n">choices</span><span class="p">.</span><span class="n">first</span><span class="p">().</span><span class="n">text</span><span class="p">.</span><span class="n">trim</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">enrichEvents</span><span class="p">():</span> <span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="n">mapPartitions</span> <span class="p">{</span> <span class="n">partition</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">runBlocking</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">partition</span><span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ev</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">payload</span> <span class="p">=</span> <span class="n">ev</span><span class="p">.</span><span class="n">payload</span> <span class="p">+</span> <span class="p">(</span><span class="s2">&#34;entities&#34;</span> <span class="n">to</span> <span class="n">enrichWithLLM</span><span class="p">(</span><span class="n">ev</span><span class="p">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&#34;text&#34;</span><span class="p">]</span> <span class="k">as</span> <span class="n">String</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}.</span><span class="n">iterator</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>coroutineScope + mapPartitions avoids per-event I/O overload</li>
+<li>can also be packaged into a Ktor service if isolation is desired</li>
+</ul>
+<h2 id="part-6---end-to-end-flow-from-api-to-lake">Part 6 - End-to-end flow: from API to lake</h2>
+<pre class="mermaid">sequenceDiagram
+  participant API
+  participant Kafka
+  participant Spark
+  participant Enricher
+  participant Lake
+  participant Client
+
+  API-&gt;&gt;Kafka: Publish raw Event
+  Kafka-&gt;&gt;Spark: Read + transform
+  Spark-&gt;&gt;Enricher: async LLM enrich
+  Enricher--&gt;&gt;Spark: return enriched payload
+  Spark-&gt;&gt;Lake: write to Delta
+  Client-&gt;&gt;Lake: query via Presto/Trino
+</pre><h2 id="part-7---observability-metrics-with-prometheus-and-opentelemetry">Part 7 - Observability: metrics with Prometheus and OpenTelemetry</h2>
+<p>Capture stage timings using Kotlin DSL:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">timed</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">):</span> <span class="n">T</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">start</span> <span class="p">=</span> <span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="p">=</span> <span class="n">block</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">finally</span> <span class="p">=</span> <span class="n">prometheus</span><span class="p">.</span><span class="n">histogram</span><span class="p">(</span><span class="s2">&#34;stage_duration_seconds&#34;</span><span class="p">,</span> <span class="n">stage</span><span class="p">).</span><span class="n">observe</span><span class="p">((</span><span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span> <span class="p">-</span> <span class="n">start</span><span class="p">)</span> <span class="p">/</span> <span class="mf">1e9</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span><span class="n">timedTransform</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">timed</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* your logic */</span><span class="p">;</span> <span class="n">ev</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Include tracing with OpenTelemetry and JMX exporters for JVM-level insight.</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="p">&lt;</span><span class="nc">T</span><span class="p">&gt;</span> <span class="nf">timed</span><span class="p">(</span><span class="n">stage</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">):</span> <span class="n">T</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="py">start</span> <span class="p">=</span> <span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">block</span><span class="p">().</span><span class="n">also</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">prometheus</span><span class="p">.</span><span class="n">histogram</span><span class="p">(</span><span class="s2">&#34;stage_seconds&#34;</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">.</span><span class="n">observe</span><span class="p">((</span><span class="nc">System</span><span class="p">.</span><span class="n">nanoTime</span><span class="p">()</span> <span class="p">-</span> <span class="n">start</span><span class="p">)</span> <span class="p">/</span> <span class="mf">1e9</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Dataset</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;.</span> <span class="n">timedTransform</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">=</span> <span class="n">map</span> <span class="p">{</span> <span class="n">ev</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">timed</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span> <span class="n">ev</span> <span class="p">}</span><span class="c1">//placeholder
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="part-8---lakehouse-patterns-iceberg-and-delta-lake">Part 8 - Lakehouse patterns: Iceberg and Delta Lake</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">val</span> <span class="py">table</span> <span class="p">=</span> <span class="nc">IcebergTable</span><span class="p">.</span><span class="n">forName</span><span class="p">(</span><span class="s2">&#34;events&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">table</span><span class="p">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">eventsDs</span><span class="p">)</span> <span class="c1">// merge by id + timestamp // SCD handling built-in</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin handles types, Avro/Parquet writes, and makes schema evolution expressive.</p>
+<h2 id="part-9---config-driven-pipelines-metadata-over-code">Part 9 - Config-driven pipelines: metadata over code</h2>
+<p>Pipeline stages should be pluggable:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">pipeline</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">clean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">enrich</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w"> </span>{<span class="w"> </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;openai-entity-v1&#34;</span><span class="w"> </span>}<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">serialize</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">load</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">pipeline-llm</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">clean</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">llmEnrich</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">params</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l">gpt-3.5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">store</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l">iceberg</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Kotlin maps config to stage pipeline via DI (Koin, Dagger, Guice), making your data flow metadata-driven, not rigid.</p>
+<p>Turn this into:</p>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">sealed</span> <span class="k">interface</span> <span class="nc">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Clean</span><span class="p">():</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">LlmEnrich</span><span class="p">(</span><span class="k">val</span> <span class="py">model</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl"><span class="k">data</span> <span class="k">class</span> <span class="nc">Store</span><span class="p">(</span><span class="k">val</span> <span class="py">target</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">:</span> <span class="n">Stage</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">buildPipeline</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span> <span class="n">List</span><span class="p">&lt;</span><span class="k">suspend</span> <span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Event</span><span class="p">&gt;</span> <span class="p">=</span> <span class="n">TODO</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Use Koin/Dagger or reflection to bind stages—metadata-driven architecture FTW.</p>
+<h2 id="part-10---building-the-api-ktor--kafka-ingestion">Part 10 - Building the API: Ktor + Kafka ingestion</h2>
+<div class="highlight highlight-kotlin" data-lang="kotlin"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">Application</span><span class="p">.</span><span class="n">module</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">routing</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">post</span><span class="p">(</span><span class="s2">&#34;/ingest&#34;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">val</span> <span class="py">ev</span> <span class="p">=</span> <span class="n">call</span><span class="p">.</span><span class="n">receive</span><span class="p">&lt;</span><span class="n">Event</span><span class="p">&gt;()</span>
+</span></span><span class="line"><span class="cl">      <span class="n">producer</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">ProducerRecord</span><span class="p">(</span><span class="s2">&#34;events&#34;</span><span class="p">,</span> <span class="n">ev</span><span class="p">.</span><span class="n">id</span><span class="p">.</span><span class="n">toString</span><span class="p">(),</span> <span class="nc">Json</span><span class="p">.</span><span class="n">encodeToString</span><span class="p">(</span><span class="n">ev</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">      <span class="n">call</span><span class="p">.</span><span class="n">respond</span><span class="p">(</span><span class="nc">HttpStatusCode</span><span class="p">.</span><span class="n">Accepted</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Add Ktor metrics, request logging, backpressure handling, and let downstream processes do the heavy lifting.</p>
+<h3></h3>
+<h2 id="part-11---putting-it-all-together-complete-architecture">Part 11 - Putting it all together: complete architecture</h2>
+<pre class="mermaid">flowchart LR
+  Client --&gt; KtorAPI --&gt; Kafka --&gt; Spark/Flink --&gt; Lakehouse --&gt; QueryEngine --&gt; BI/CliApp
+  subgraph &#34;Observability&#34;
+    Spark/Flink --&gt; Prometheus
+    KtorAPI --&gt; OpenTelemetry
+  end
+</pre><hr>
+<h2 id="best-practices-and-lessons-learned">Best practices and lessons learned</h2>
+<p><strong>What works:</strong></p>
+<ul>
+<li>Use Kotlin DSLs for pipeline and config management</li>
+<li>Combine Spark + Flink for unified streaming/batch</li>
+<li>Inject LLM stages for AI-enriched data</li>
+<li>Abstract data sinks with lakehouse patterns (Iceberg/Delta)</li>
+<li>Centralize monitoring with Prometheus + OpenTelemetry</li>
+</ul>
+<p><strong>Advanced tips:</strong></p>
+<ul>
+<li>Use ArchUnit or Structurizr for architecture validation</li>
+<li>Add CI/CD pipeline generation DSL</li>
+<li>Auto-generate integration tests</li>
+<li>Implement backpressure handling in Kafka consumers</li>
+<li>Monitor JVM metrics with JMX exporters</li>
+</ul>
+<p><strong>Common pitfalls:</strong></p>
+<ul>
+<li>Don&rsquo;t block coroutines with blocking I/O</li>
+<li>Avoid per-event LLM calls (use mapPartitions batching)</li>
+<li>Don&rsquo;t skip observability (you&rsquo;ll regret it in production)</li>
+<li>Remember to handle schema evolution in lakehouse tables</li>
+</ul>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>Kotlin isn&rsquo;t just cleaner than Scala - it&rsquo;s fundamentally more productive for data engineering.</p>
+<p>After years of Scala&rsquo;s implicit hell and type gymnastics, Kotlin feels like a breath of fresh air. Coroutines eliminate callback complexity. Data classes remove boilerplate. Null-safety catches bugs at compile time.</p>
+<p>And you still get the full JVM ecosystem - Spark, Flink, Kafka, everything just works.</p>
+<p>If you&rsquo;re tired of fighting your language, give Kotlin a shot. Your future self will thank you.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> Scala data pipelines are verbose, complex, and exhausting (type gymnastics + implicit hell)</li>
+<li><strong>The solution:</strong> Kotlin = 50% less code, coroutines for async, data classes for zero boilerplate, null-safety built-in</li>
+<li><strong>Pipeline pattern:</strong> Composable stages with suspend functions, fold-based transformation chains</li>
+<li><strong>Spark integration:</strong> Data classes map directly to Datasets, kotlinx.serialization handles JSON/Avro</li>
+<li><strong>Flink vs Spark:</strong> Spark = micro-batch/high throughput, Flink = true streaming/low latency - Kotlin works with both</li>
+<li><strong>LLM enrichment:</strong> Use coroutineScope + mapPartitions to batch LLM calls, avoid per-event overhead</li>
+<li><strong>Architecture:</strong> Ktor API → Kafka → Spark/Flink → Lakehouse (Iceberg/Delta) → Query engine</li>
+<li><strong>Lakehouse patterns:</strong> Iceberg/Delta for ACID, schema evolution, time travel queries</li>
+<li><strong>Config-driven:</strong> YAML-defined pipeline stages, DI (Koin/Dagger) for metadata-driven architecture</li>
+<li><strong>Observability:</strong> Prometheus metrics, OpenTelemetry tracing, JMX exporters for JVM insight</li>
+<li><strong>Production lessons:</strong> Never block coroutines, batch LLM calls, centralize monitoring, handle backpressure</li>
+<li><strong>Bottom line:</strong> Kotlin beats Scala for data engineering - same JVM power, 10x better developer experience</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-05-kotlin-for-data-pipelines-why-i-ditched-scala-for-backend-data-architecture.png" type="image/png"/></item></channel></rss>

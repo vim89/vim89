@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/automation/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/automation/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>DQ is not Dairy Queen: Building a data quality framework (DQF + DPAT) in prod</title><link>https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-a-data-quality-framework-dqf--dpat-in-prod/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/07/dq-is-not-dairy-queen-building-a-data-quality-framework-dqf--dpat-in-prod/</guid><pubDate>Tue, 15 Jul 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>data-quality</category><category>scala</category><category>spark</category><category>ci-cd</category><category>testing</category><category>data-engineering</category><category>yaml</category><category>automation</category><category>open-source</category><description>Complete guide to building a data quality framework. Learn constraint validation in Scala, YAML checks (DPAT), Spark/Airflow/CI/CD integration, and automated failure reporting. Includes real code and architecture to catch issues early.</description><content:encoded><![CDATA[<p>You know that perfect moment when your pipeline runs on time and dashboards look great?</p>
+<p>Then you check Slack: &ldquo;Why are all customer emails NULL?&rdquo;</p>
+<p>Your heart sinks. The job succeeded. Data wrote successfully. But 18% of rows are garbage.</p>
+<p>For months, I fought this with inline checks:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="n">$</span><span class="s">&#34;email&#34;</span><span class="o">.</span><span class="n">isNotNull</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="n">$</span><span class="s">&#34;amount&#34;</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="n">$</span><span class="s">&#34;date&#34;</span> <span class="o">&lt;=</span> <span class="n">current_date</span><span class="o">())</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Copy-pasted across 50 pipelines. No reuse. No tests. No automation.</p>
+<p>Then I built DQF (Data Quality Framework) + DPAT (Declarative Pipeline Assurance Tool).</p>
+<p><strong>The result:</strong></p>
+<ul>
+<li>Constraint-based validation (<code>.isNotNull.matchesRegex(...)</code>)</li>
+<li>YAML declarative checks (<code>expected_range: [50000, 60000]</code>)</li>
+<li>Automated CI/CD gates</li>
+<li>JSON reports + Slack alerts</li>
+<li>No more inline WHERE clauses</li>
+</ul>
+<p>This post shows you the complete implementation.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the data quality reality:</p>
+<p><strong>Before (inline chaos):</strong></p>
+<ul>
+<li>Quality checks scattered across code</li>
+<li>Copy-paste WHERE clauses everywhere</li>
+<li>No central validation</li>
+<li>Discover issues in production</li>
+<li>Manual testing</li>
+</ul>
+<p><strong>The cost:</strong></p>
+<ul>
+<li>NULL data in dashboards</li>
+<li>Stakeholder trust destroyed</li>
+<li>Hours debugging &ldquo;why did this pass?&rdquo;</li>
+<li>No reusability</li>
+<li>No automation</li>
+</ul>
+<p><strong>What I needed:</strong></p>
+<ul>
+<li>Reusable constraint library</li>
+<li>Declarative test definitions</li>
+<li>Automated execution</li>
+<li>Clear failure reporting</li>
+<li>CI/CD integration</li>
+</ul>
+<p>This is the framework that solved it.</p>
+<hr>
+<h2 id="part-1---what-the-framework-does">Part 1 - What the framework does</h2>
+<p>Think of this as <code>scalatest</code> meets <code>dbt tests</code> meets <strong>common sense</strong>:</p>
+<ul>
+<li>✅ Schema checks: missing columns, data types, required fields</li>
+<li>✅ Value constraints: uniqueness, nullability, allowed ranges</li>
+<li>✅ Volume &amp; frequency checks: &ldquo;is my partition even here?&rdquo;</li>
+<li>✅ Aggregation deltas: &ldquo;is this spike normal?&rdquo;</li>
+</ul>
+<hr>
+<h2 id="part-2---dpat-yaml-based-declarative-checks">Part 2 - DPAT: YAML-based declarative checks</h2>
+<p>Here’s a real example from our YAML-based DPAT engine:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">checks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">transactions_have_valid_amounts</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">range</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l">transaction_amount</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="m">0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="m">99999</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">daily_volume_sanity</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">row_count</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">expected_range</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="m">50000</span><span class="p">,</span><span class="w"> </span><span class="m">60000</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">warning</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>You define expectations. It tests them. CI/CD blocks if it must.</p>
+<hr>
+<h2 id="part-3---constraint-dsl-in-scala">Part 3 - Constraint DSL in Scala</h2>
+<p>Here’s how we express constraints in the DQ library:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="nc">Constraint</span>
+</span></span><span class="line"><span class="cl">  <span class="o">.</span><span class="n">on</span><span class="o">(</span><span class="s">&#34;user_id&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">.</span><span class="n">isNotNull</span>
+</span></span><span class="line"><span class="cl">  <span class="o">.</span><span class="n">and</span><span class="o">(</span><span class="s">&#34;email&#34;</span><span class="o">).</span><span class="n">matchesRegex</span><span class="o">(</span><span class="s">&#34;.+@.+\\..+&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">.</span><span class="n">and</span><span class="o">(</span><span class="s">&#34;signup_date&#34;</span><span class="o">).</span><span class="n">isInPast</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>You can attach them inline with dataframes or bind them to Spark Datasets with implicits.</p>
+<hr>
+<h2 id="part-4---failure-reporting-json--dashboards">Part 4 - Failure reporting (JSON + dashboards)</h2>
+<p>All test results emit to JSON, Slack webhooks, and Looker dashboards.</p>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;check&#34;</span><span class="p">:</span> <span class="s2">&#34;transactions_have_valid_amounts&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;status&#34;</span><span class="p">:</span> <span class="s2">&#34;FAILED&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;failures&#34;</span><span class="p">:</span> <span class="mi">328</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;details&#34;</span><span class="p">:</span> <span class="s2">&#34;328 rows exceeded max=99999&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Or you can just scroll through a <code>dq_results.html</code> report with filters by severity.</p>
+<hr>
+<h2 id="part-5---integration-patterns">Part 5 - Integration patterns</h2>
+<p>You can wire this into:</p>
+<ul>
+<li>Airflow DAGs (as standalone Python ops via REST)</li>
+<li>Spark ETL pipelines (Scala SDK)</li>
+<li>Shell scripts (CLI + exit codes)</li>
+<li>CI/CD (GitHub Actions / GitLab CI)</li>
+</ul>
+<hr>
+<h2 id="future-open-source-plans">Future: open source plans</h2>
+<p>This started internally, but parts of it are being modularized. The goal is to OSS:</p>
+<ul>
+<li>Reusable constraint library</li>
+<li>YAML-based test definition DSL</li>
+<li>CLI test runner + report UI</li>
+</ul>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>Building a data quality framework transformed how we ship pipelines.</p>
+<p><strong>Before:</strong></p>
+<ul>
+<li>Inline WHERE clauses everywhere</li>
+<li>No reusability</li>
+<li>Discover issues in production</li>
+<li>Manual testing</li>
+</ul>
+<p><strong>After:</strong></p>
+<ul>
+<li>Constraint-based validation</li>
+<li>YAML declarative checks</li>
+<li>Automated CI/CD gates</li>
+<li>Catch issues before deployment</li>
+</ul>
+<p>The key? <strong>Make quality checks first-class citizens</strong>, not afterthoughts.</p>
+<p>If you&rsquo;re still writing inline checks, stop. Your future self will thank you.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> Inline quality checks scattered across code, copy-pasted WHERE clauses, NULL data in production, no reusability</li>
+<li><strong>The solution:</strong> DQF (constraint library) + DPAT (YAML-based declarative checks) + CI/CD integration</li>
+<li><strong>DQF features:</strong> Schema validation, value constraints, volume checks, aggregation deltas, &ldquo;is my partition here?&rdquo;</li>
+<li><strong>DPAT example:</strong> YAML defines <code>range</code>, <code>row_count</code>, <code>not_null</code> checks with <code>severity: error/warning</code></li>
+<li><strong>Constraint DSL:</strong> <code>.on(&quot;user_id&quot;).isNotNull.and(&quot;email&quot;).matchesRegex(...).and(&quot;signup_date&quot;).isInPast</code></li>
+<li><strong>Scala integration:</strong> Attach constraints inline with DataFrames or bind to Datasets with implicits</li>
+<li><strong>Failure reporting:</strong> JSON output, Slack webhooks, Looker dashboards, HTML reports with severity filters</li>
+<li><strong>Integration points:</strong> Airflow DAGs (REST API), Spark ETL (Scala SDK), shell scripts (CLI), CI/CD (GitHub Actions)</li>
+<li><strong>Architecture:</strong> Define checks in YAML → DPAT engine validates → JSON results → CI/CD blocks if failed</li>
+<li><strong>Future:</strong> Open source plans for constraint library, YAML DSL, CLI runner, report UI</li>
+<li><strong>Bottom line:</strong> Stop writing inline quality checks - build reusable, testable, automated validation</li>
+<li><strong>Key insight:</strong> Quality gates as first-class citizens, not WHERE clause afterthoughts</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-07-dq-is-not-dairy-queen-building-a-data-quality-framework-dqf--dpat-in-prod.png" type="image/png"/></item><item><title>How I cut delivery errors by 82%: DPAT, gated CRQ, and data contracts in prod</title><link>https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/06/how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod/</guid><pubDate>Sun, 15 Jun 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>data-engineering</category><category>data-quality</category><category>ci-cd</category><category>data-contracts</category><category>spark</category><category>yaml</category><category>automation</category><category>production</category><category>mlops</category><description>Production-tested strategy to cut pipeline failures from 12% to 2% using YAML-based data quality checks (DPAT), CI/CD gates, and strict data contracts. Includes before/after metrics and architecture for self-healing pipelines in prod.</description><content:encoded><![CDATA[<p>You know that 3 AM page: &ldquo;The executive dashboard is empty. What happened?&rdquo;</p>
+<p>Your data pipeline failed. Again. Manual rollback time. Stakeholder emails. Root cause analysis. 3 hours of your life gone.</p>
+<p>For months, I lived this cycle:</p>
+<ul>
+<li><strong>12% delivery error rate</strong> (1 in 8 releases broke)</li>
+<li><strong>5 pipeline failures per week</strong></li>
+<li><strong>3 hours</strong> to fix each incident</li>
+<li><strong>Manual rollbacks</strong> every time</li>
+</ul>
+<p>Then I built DPAT (Declarative Pipeline Assurance Tool), gated our CI/CD, and enforced data contracts.</p>
+<p><strong>The result:</strong></p>
+<ul>
+<li>Errors dropped <strong>12% → 2%</strong> (82% reduction)</li>
+<li>Fixes went <strong>3 hours → 30 minutes</strong></li>
+<li>Failures: <strong>5/week → 0-1/week</strong></li>
+</ul>
+<p>This post shows you the complete implementation - YAML data quality checks, CI/CD gates, and data contract enforcement.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Here&rsquo;s the data pipeline reality:</p>
+<p><strong>Before (the chaos):</strong></p>
+<ul>
+<li>Ship fast, break things</li>
+<li>No quality gates</li>
+<li>Manual testing (when you remember)</li>
+<li>Discover issues in production</li>
+<li>3 AM firefights</li>
+</ul>
+<p><strong>The cost:</strong></p>
+<ul>
+<li>12% of releases fail</li>
+<li>3 hours per fix (minimum)</li>
+<li>Lost stakeholder trust</li>
+<li>Your sanity</li>
+</ul>
+<p><strong>What I needed:</strong></p>
+<ul>
+<li>Automated quality gates</li>
+<li>Fast failure detection</li>
+<li>Automatic rollback</li>
+<li>Clear ownership</li>
+<li>Less stress</li>
+</ul>
+<p>This is the system that solved it.</p>
+<hr>
+<h2 id="part-1---dpat-declarative-data-quality-checks-in-yaml">Part 1 - DPAT: declarative data quality checks in YAML</h2>
+<p>Define YAML checks like this:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">checks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;order_date_not_null&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="l">order_date</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">not_null</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;daily_volume_range&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">row_count</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">expected_range</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">1_000_000, 1_100_000 ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l">error</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then wired that into our Spark ETL:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">results</span> <span class="k">=</span> <span class="nc">DPAT</span><span class="o">.</span><span class="n">runChecks</span><span class="o">(</span><span class="n">df</span><span class="o">,</span> <span class="s">&#34;orders&#34;</span><span class="o">,</span> <span class="n">date</span> <span class="k">=</span> <span class="n">runDate</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">assert</span><span class="o">(</span><span class="n">results</span><span class="o">.</span><span class="n">isSuccess</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="part-2---gated-crq-quality-gates-in-cicd">Part 2 - Gated CRQ: quality gates in CI/CD</h2>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Run DPAT checks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">sbt &#34;runDPAT --date ${{ env.RUN_DATE }}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Gated CRQ</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.runDPAT.outcome == &#39;failure&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">exit 1</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Failed checks stop the build and prevent broken data releases.</p>
+<hr>
+<h2 id="part-3---data-contracts-clear-ownership-and-schema-enforcement">Part 3 - Data contracts: clear ownership and schema enforcement</h2>
+<p>We published data schema/contracts like:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Contract Name</th>
+					<th>Fields</th>
+					<th>Owner</th>
+					<th>Version</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>orders</td>
+					<td>12</td>
+					<td>DataOps Team</td>
+					<td>v1.3</td>
+			</tr>
+			<tr>
+					<td>customer_data</td>
+					<td>8</td>
+					<td>Analytics</td>
+					<td>v2.1</td>
+			</tr>
+	</tbody>
+</table>
+<p>Since enforcing those schemas, compatibility bugs dropped by <strong>45%</strong>.</p>
+<hr>
+<h2 id="the-results-before-vs-after">The results: before vs after</h2>
+<table>
+	<thead>
+			<tr>
+					<th>Metric</th>
+					<th>Before</th>
+					<th>After</th>
+					<th>Improvement</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Pipeline failures per week</td>
+					<td>5</td>
+					<td>0–1</td>
+					<td>80-100%</td>
+			</tr>
+			<tr>
+					<td>Daily error resolution time</td>
+					<td>3 hours</td>
+					<td>30 min</td>
+					<td>83%</td>
+			</tr>
+			<tr>
+					<td>Delivery error rate</td>
+					<td>12%</td>
+					<td>2%</td>
+					<td>82%</td>
+			</tr>
+	</tbody>
+</table>
+<p>That&rsquo;s how we cut delivery errors by 82%.</p>
+<hr>
+<h2 id="architecture-how-it-all-fits-together">Architecture: how it all fits together</h2>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">[Source System] → [Spark ETL Job] → DPAT Checks → Data Contract Validator → Data Lake
+</span></span><span class="line"><span class="cl">                            │
+</span></span><span class="line"><span class="cl">                            ↓ (on fail)
+</span></span><span class="line"><span class="cl">                  [CI/CD Rollback &amp; Alerts]</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>The flow:</strong></p>
+<ol>
+<li>Spark ETL processes data</li>
+<li>DPAT runs quality checks (nulls, volumes, ranges)</li>
+<li>Data contracts validate schemas</li>
+<li>On success → write to Data Lake</li>
+<li>On failure → rollback + alert</li>
+</ol>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>Building quality gates transformed our data platform.</p>
+<p><strong>Before:</strong></p>
+<ul>
+<li>12% failure rate</li>
+<li>3-hour firefights</li>
+<li>Manual rollbacks</li>
+<li>Lost trust</li>
+</ul>
+<p><strong>After:</strong></p>
+<ul>
+<li>2% failure rate</li>
+<li>30-minute fixes</li>
+<li>Automated everything</li>
+<li>Confidence restored</li>
+</ul>
+<p>The key? <strong>Shift left</strong> - catch issues before production, not after.</p>
+<hr>
+<h2 id="how-to-apply-this">How to apply this</h2>
+<p>If you&rsquo;re facing similar issues:</p>
+<ol>
+<li><strong>Build declarative checks</strong> - YAML-based quality rules</li>
+<li><strong>Gate your CI/CD</strong> - Failed checks = blocked deployment</li>
+<li><strong>Enforce data contracts</strong> - Clear ownership and schemas</li>
+<li><strong>Automate rollbacks</strong> - Don&rsquo;t rely on manual intervention</li>
+</ol>
+<p>Start small - one pipeline, one set of checks. Then expand.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li><strong>The problem:</strong> 12% delivery error rate, 5 failures/week, 3 hours per fix, manual rollbacks, 3 AM pages</li>
+<li><strong>The solution:</strong> DPAT (YAML quality checks) + Gated CRQ (CI/CD gates) + Data contracts (schema enforcement)</li>
+<li><strong>DPAT:</strong> Declare data quality rules in YAML (not_null, row_count ranges, custom validations)</li>
+<li><strong>Implementation:</strong> Spark ETL runs DPAT checks, asserts success before writing to Data Lake</li>
+<li><strong>Gated CRQ:</strong> CI/CD pipeline fails if DPAT checks fail, prevents broken releases</li>
+<li><strong>Data contracts:</strong> Published schemas with clear ownership, version control, compatibility validation</li>
+<li><strong>Architecture:</strong> Source → Spark → DPAT → Contract Validator → Lake (with rollback on failure)</li>
+<li><strong>Results:</strong> 12% → 2% error rate (82% drop), 5 → 0-1 failures/week, 3hr → 30min resolution time</li>
+<li><strong>Impact:</strong> Compatibility bugs dropped 45%, better confidence, automated enforcement, fewer firefights</li>
+<li><strong>Key lesson:</strong> Shift left - catch issues in CI/CD, not production</li>
+<li><strong>How to start:</strong> Build declarative checks, gate deployments, enforce contracts, automate rollbacks</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2025-06-how-i-cut-delivery-errors-by-82-dpat-gated-crq-and-data-contracts-in-prod.png" type="image/png"/></item></channel></rss>

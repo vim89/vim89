@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/random-forest/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/random-forest/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Forecasting at scale: demand prediction with Random Forests and neural nets</title><link>https://vitthalmirji.com/2025/05/forecasting-at-scale-demand-prediction-with-random-forests-and-neural-nets/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/05/forecasting-at-scale-demand-prediction-with-random-forests-and-neural-nets/</guid><pubDate>Fri, 02 May 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>supply chain</category><category>demand forecasting</category><category>random forest</category><category>neural networks</category><category>spark</category><category>data engineering</category><category>data lake</category><category>forecasting platform</category><category>time series</category><category>GCP</category><description>Building a demand forecasting system with Random Forest, ANN, and hybrid time-series models on Hadoop and Spark. Covers data ingestion, feature engineering, model training, validation, and rollout for large SKU catalogs and seasonality.</description><content:encoded><![CDATA[<h2 id="-why-this-post-exists">🎯 Why this post exists</h2>
+<p>Inventory decisions are where strategy meets survival. Demand forecasting isn&rsquo;t just a data science problem—it&rsquo;s the heartbeat of retail, logistics, and supply chain optimization.</p>
+<p>This post tells the story of how we built a modular, scalable <strong>Demand Forecasting Platform</strong> that uses <strong>Random Forest</strong>, <strong>Artificial Neural Networks</strong>, and <strong>Hybrid Time Series models</strong>—all running on top of a robust <strong>Data Lake</strong> infrastructure powered by <strong>Apache Hadoop</strong> and <strong>Spark</strong>.</p>
+<hr>
+<h2 id="-real-world-chaos-the-problem-statement">🚚 Real-World Chaos: The problem statement</h2>
+<p>Forecasting demand for every SKU across regions, seasons, and supply timelines is a nightmare. Every error costs time, money, and customer trust.</p>
+<p>We tackled this by building models to answer:</p>
+<ul>
+<li>Will this product sell next month?</li>
+<li>How much should we stock?</li>
+<li>Will this item become obsolete?</li>
+</ul>
+<hr>
+<h2 id="-system-architecture-at-a-glance">🧱 System architecture at a glance</h2>
+<pre class="mermaid">graph TD
+    A[Raw Data] --&gt; B[HDFS Storage]
+    B --&gt; C[Preprocessing on Spark]
+    C --&gt; D[Model Training]
+    D --&gt; E[Forecasting Output]
+    E --&gt; F[Dashboards, Alerts]
+</pre><hr>
+<h2 id="-phase-1-raw-data-to-gold">🧹 Phase 1: Raw data to gold</h2>
+<h3 id="-data-ingestion">📥 Data Ingestion</h3>
+<p>We collected:</p>
+<ul>
+<li>Historical sales (3 years)</li>
+<li>Stock movement logs</li>
+<li>Product metadata</li>
+<li>Customer classification</li>
+<li>Seasonal promotion flags</li>
+</ul>
+<h3 id="-exploratory-data-analysis-eda">🧪 Exploratory Data Analysis (EDA)</h3>
+<p>Sanity checks and patterns:</p>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">df</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">df</span><span class="p">[</span><span class="s1">&#39;category&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>We applied:</p>
+<ul>
+<li>Pearson/Spearman correlation checks</li>
+<li>Distribution analysis</li>
+<li>Outlier treatment (IQR-based)</li>
+<li>Stationarity tests (ADF)</li>
+</ul>
+<hr>
+<h2 id="-phase-2-forecasting-strategy">🧠 Phase 2: Forecasting strategy</h2>
+<p>We didn’t pick just one model. We created an <strong>ensemble strategy</strong> combining:</p>
+<ul>
+<li>Statistical models (ETS, ARIMA, Holt-Winters)</li>
+<li>Machine Learning (Random Forest)</li>
+<li>Deep Learning (Artificial Neural Networks)</li>
+</ul>
+<p>Each approach had its domain:</p>
+<ul>
+<li>Time series models → seasonal &amp; trend patterns</li>
+<li>ML classifiers → product obsolescence</li>
+<li>ANNs → nonlinear patterns and demand spikes</li>
+</ul>
+<hr>
+<h2 id="-hybrid-forecasting-logic">🔍 Hybrid forecasting logic</h2>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">hybrid_forecast</span> <span class="o">=</span> <span class="p">(</span><span class="n">arima_forecast</span> <span class="o">*</span> <span class="mf">0.4</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">ann_output</span> <span class="o">*</span> <span class="mf">0.6</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>The model pipeline:</p>
+<ul>
+<li>Lag features (7, 14, 28 days)</li>
+<li>Sliding windows</li>
+<li>Forecast horizon: 30 days</li>
+<li>Evaluation: MAPE, RMSE</li>
+</ul>
+<hr>
+<h2 id="-data-engineering-backbone">🧬 Data Engineering backbone</h2>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ spark-submit clean_data.py
+</span></span><span class="line"><span class="cl">$ spark-submit train_random_forest.py
+</span></span><span class="line"><span class="cl">$ spark-submit predict_ann.py</span></span></code></pre></td></tr></table>
+</div>
+</div><p>All models ran in <strong>batch mode</strong> orchestrated by <strong>Oozie</strong>, and outputs were stored in Hive for dashboards.</p>
+<hr>
+<h2 id="-random-forest-for-obsolescence">🧪 Random Forest for obsolescence</h2>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestClassifier</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">model</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Key Features:</p>
+<ul>
+<li>Time since last sale</li>
+<li>Category demand index</li>
+<li>Stockout frequency</li>
+<li>Geographic demand</li>
+</ul>
+<hr>
+<h2 id="-ann-for-demand-prediction">🤖 ANN for demand prediction</h2>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">keras.layers</span> <span class="kn">import</span> <span class="n">Dense</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">model</span> <span class="o">=</span> <span class="n">Sequential</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="n">input_dim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Tuned using:</p>
+<ul>
+<li>ReLU activation</li>
+<li>Adam optimizer</li>
+<li>30 epochs</li>
+</ul>
+<hr>
+<h2 id="-time-series-models">🧪 Time series models</h2>
+<p>ETS and ARIMA used via <code>statsmodels</code>.</p>
+<div class="highlight highlight-python" data-lang="python"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+</span></span><span class="line"><span class="cl"><span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s1">&#39;add&#39;</span><span class="p">,</span> <span class="n">seasonal</span><span class="o">=</span><span class="s1">&#39;add&#39;</span><span class="p">,</span> <span class="n">seasonal_periods</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">fit</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="-use-case-product-b---engine-oil-additive">📊 Use Case: Product B - Engine Oil Additive</h2>
+<p>Scenario:</p>
+<ul>
+<li>18-month sales history</li>
+<li>Sudden spikes near monsoon</li>
+<li>Southern region dominates demand</li>
+</ul>
+<p>Model predicted:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Month</th>
+					<th>Forecasted Demand</th>
+					<th>Model Used</th>
+					<th>Confidence</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Aug 2025</td>
+					<td>142</td>
+					<td>Hybrid (RF+ANN)</td>
+					<td>±4%</td>
+			</tr>
+			<tr>
+					<td>Sep 2025</td>
+					<td>110</td>
+					<td>Hybrid (RF+ANN)</td>
+					<td>±5%</td>
+			</tr>
+	</tbody>
+</table>
+<hr>
+<h2 id="-dashboard-integration">📈 Dashboard Integration</h2>
+<p>All output forecasts were published into:</p>
+<ul>
+<li>Tableau for visual insight</li>
+<li>Superset for stakeholder self-serve access</li>
+</ul>
+<p>Forecast deviation alerts were published via email &amp; SMS using custom logic.</p>
+<hr>
+<h2 id="-modular-design">📂 Modular design</h2>
+<p>Every step in the pipeline was modular:</p>
+<ul>
+<li>Ingestion node</li>
+<li>Preprocessing node</li>
+<li>Forecasting node</li>
+<li>Alerting node</li>
+</ul>
+<p>Can be independently replaced or improved.</p>
+<pre class="mermaid">graph LR
+    Ingestion[Ingestion Node] --&gt; Preprocessing[Preprocessing Node]
+    Preprocessing --&gt; Forecasting[Forecasting Node]
+    Forecasting --&gt; Alerting[Alerting Node]
+</pre><hr>
+<h2 id="-evaluation-metrics">🧮 Evaluation metrics</h2>
+<table>
+	<thead>
+			<tr>
+					<th>Model</th>
+					<th>RMSE</th>
+					<th>MAPE</th>
+					<th>Obsolescence Accuracy</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>ARIMA</td>
+					<td>22.3</td>
+					<td>14.2%</td>
+					<td>-</td>
+			</tr>
+			<tr>
+					<td>ANN</td>
+					<td>18.9</td>
+					<td>11.5%</td>
+					<td>-</td>
+			</tr>
+			<tr>
+					<td>Hybrid (RF+ANN)</td>
+					<td>16.2</td>
+					<td>9.1%</td>
+					<td>96.3%</td>
+			</tr>
+	</tbody>
+</table>
+<hr>
+<h2 id="-appendix-sample-forecast-output-json">📎 Appendix: Sample forecast output (JSON)</h2>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;product_id&#34;</span><span class="p">:</span> <span class="s2">&#34;ENG-OIL-ADDT123&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;forecast_next_30_days&#34;</span><span class="p">:</span> <span class="mi">138</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;model_used&#34;</span><span class="p">:</span> <span class="s2">&#34;Hybrid (RF + ANN)&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;confidence_interval&#34;</span><span class="p">:</span> <span class="s2">&#34;±4%&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;obsolete_risk&#34;</span><span class="p">:</span> <span class="s2">&#34;Low&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="-technical-learnings">🧠 Technical learnings</h2>
+<ul>
+<li>Feature engineering matters more than model choice</li>
+<li>Combining time-series and ML gives best of both worlds</li>
+<li>Spark + Hadoop made scaling data preprocessing easy</li>
+<li>Modular pipeline = easier model updates + CI/CD</li>
+</ul>
+<hr>
+<h2 id="-business-wins">💼 Business wins</h2>
+<ul>
+<li>28% drop in overstock</li>
+<li>35% better accuracy than old Excel-based systems</li>
+<li>Zero stockouts during peak sales week</li>
+<li>Data science + supply chain teams now speak the same language</li>
+</ul>
+<hr>
+<h2 id="-final-thoughts">💡 Final thoughts</h2>
+<p>You don’t need a PhD to build world-class forecasting.</p>
+<p>You need:</p>
+<ul>
+<li>Clean data</li>
+<li>Smart features</li>
+<li>Modular design</li>
+<li>Monitoring &amp; alerting</li>
+</ul>
+<p>And maybe, a sarcastic blog post to explain it.</p>
+<hr>
+<h2 id="-future-plans">🛠️ Future plans</h2>
+<ul>
+<li>Integrate Facebook Prophet &amp; DeepAR</li>
+<li>GPU training for ANN</li>
+<li>Dockerized microservices for forecasts</li>
+<li>Push-button retraining with Airflow</li>
+</ul>
+<hr>
+<h2 id="-feedback">🙌 Feedback?</h2>
+<p>Email: <a href="mailto:vitthalmirji@gmail.com">vitthalmirji@gmail.com</a>
+</p>
+
+<figure >
+    
+        <img src="/images/demand-pipeline.png"
+            alt="Image placeholder: from raw data to predictions"
+            
+             />
+    
+
+    
+        <figcaption>
+            
+                Model Pipeline Overview
+            
+
+            
+                <p style="margin: -0.5rem 0 0 0;">
+                    Image placeholder: from raw data to predictions
+
+
+                
+                
+                
+
+            </p>
+            
+        </figcaption>
+    
+</figure>
+
+
+<hr>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/2025-05-demand-forecasting-that-saved-inventory.png" type="image/png"/></item></channel></rss>

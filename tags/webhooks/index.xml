@@ -1,0 +1,1470 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/webhooks/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:32 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/webhooks/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Adding a serverless backend to Hugo: How I built payment flows without losing static site speed</title><link>https://vitthalmirji.com/2026/01/adding-a-serverless-backend-to-hugo-how-i-built-payment-flows-without-losing-static-site-speed/</link><guid isPermaLink="true">https://vitthalmirji.com/2026/01/adding-a-serverless-backend-to-hugo-how-i-built-payment-flows-without-losing-static-site-speed/</guid><pubDate>Sat, 24 Jan 2026 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>hugo</category><category>cloudflare-workers</category><category>effect-typescript</category><category>serverless</category><category>jamstack</category><category>backend</category><category>payment-gateway</category><category>typescript</category><category>d1</category><category>sqlite</category><category>type-safety</category><category>webhooks</category><category>cashfree</category><category>payu</category><description>Hugo is static HTML, so payments and webhooks need a backend. I added a Workers API with Effect TS, D1, and PayU/Cashfree while keeping GitHub Pages.</description><content:encoded><![CDATA[<p class="lead">You know how it goes. You build a Hugo site, it’s blazing fast, and then you add a services page.
+Now you need payments. Webhooks. Email confirmations. Suddenly your “static site” needs a backend.</p>
+
+
+<p>I run <code>vitthalmirji.com</code> on Hugo. For a while I used pre-created PayU/Cashfree links stored in YAML. It worked, but it
+was slow and error‑prone. Every new service meant logging into dashboards, creating links manually, and copying URLs.</p>
+<p>I wanted a real flow:</p>
+<ul>
+<li>create links dynamically,</li>
+<li>accept webhooks safely,</li>
+<li>store transaction history for accounting,</li>
+<li>keep the static site fast.</li>
+</ul>
+<p>This post is how I did it without turning Hugo into a server app.</p>
+<hr>
+<h2 id="why-hugo-cant-do-this">Why Hugo can’t do this</h2>
+<p>Hugo is a static site generator. It renders Markdown into HTML <strong>at build time</strong>. When a user visits your site, they’re
+just getting cached HTML files from a CDN. There’s no long‑running process that can call a payment API or accept
+webhooks.</p>
+<p>That’s why Hugo sites are fast. But it’s also why they can’t:</p>
+<ul>
+<li>run server-side logic at request time,</li>
+<li>receive payment gateway callbacks,</li>
+<li>store anything dynamic.</li>
+</ul>
+<p>So the real question is not “how do I make Hugo do payments?” It’s: <strong>how do I add a backend without ruining the static
+site?</strong></p>
+<hr>
+<h2 id="the-options-and-why-most-dont-work">The options (and why most don’t work)</h2>
+<p>I looked at four ways to “bolt on” a backend.</p>
+<h3 id="option-1-build-time-data-fetching">Option 1: Build-time data fetching</h3>
+<p>Hugo can fetch APIs at build time with <code>resources.GetRemote</code>:</p>
+<div class="highlight highlight-go" data-lang="go"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="p">{{</span><span class="w"> </span><span class="err">$</span><span class="nx">data</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">resources</span><span class="p">.</span><span class="nx">GetRemote</span><span class="w"> </span><span class="s">&#34;https://api.example.com/products&#34;</span><span class="w"> </span><span class="p">}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">{{</span><span class="w"> </span><span class="err">$</span><span class="nx">json</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="err">$</span><span class="nx">data</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nx">transform</span><span class="p">.</span><span class="nx">Unmarshal</span><span class="w"> </span><span class="p">}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">{{</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="err">$</span><span class="nx">json</span><span class="p">.</span><span class="nx">items</span><span class="w"> </span><span class="p">}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">&lt;</span><span class="nx">div</span><span class="p">&gt;{{</span><span class="w"> </span><span class="p">.</span><span class="nx">name</span><span class="w"> </span><span class="p">}}&lt;</span><span class="o">/</span><span class="nx">div</span><span class="p">&gt;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">{{</span><span class="w"> </span><span class="nx">end</span><span class="w"> </span><span class="p">}}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening:</p>
+<ul>
+<li>API fetch happens during <code>hugo build</code>.</li>
+<li>Data is baked into static HTML.</li>
+<li>Page loads never hit the API.</li>
+</ul>
+<p>This works for content that changes daily. It fails for payment links that need to be created <strong>per customer</strong> and
+webhooks that arrive <strong>after</strong> the build.</p>
+<h3 id="option-2-thirdparty-form-services">Option 2: Third‑party form services</h3>
+<p>Formspree, Netlify Forms, and friends are fine for a contact form. They aren’t payment backends. No webhook signature
+validation, no state machine, no transaction audit trail.</p>
+<h3 id="option-3-a-full-backend-server">Option 3: A full backend server</h3>
+<p>Yes, you can run a Go/Node server. But for a personal services page, it’s overkill:</p>
+<ul>
+<li>patching and security updates,</li>
+<li>scaling and health checks,</li>
+<li>long‑running processes,</li>
+<li>infrastructure overhead for a tiny API.</li>
+</ul>
+<h3 id="option-4-serverless-functions">Option 4: Serverless functions</h3>
+<p>Serverless functions are the sweet spot. You write a few endpoints, deploy them, and let the platform run them on
+demand.</p>
+<p>This is where Cloudflare Workers fit best for me: same vendor as my CDN/DNS, low cold‑start time, and easy routing from
+<code>/api/*</code>.</p>
+<hr>
+<h2 id="the-approach-i-settled-on">The approach I settled on</h2>
+<p>I kept the static site as‑is, and added a tiny backend that does only the dynamic parts. Two deployments, one repo,
+routed together at the edge.</p>
+<div class="admonition info">
+  <div class="admonition-title">Why this matters</div>
+  <div class="admonition-content">
+    The static site and the backend are separate deploys. If the backend fails, the site still loads. Payments degrade, not
+the whole site.
+  </div>
+</div>
+<h3 id="the-architecture-two-parts-one-codebase">The architecture (two parts, one codebase)</h3>
+<pre class="mermaid">flowchart TB
+    subgraph BROWSER[&#34;User’s browser&#34;]
+        USER[&#34;User visits site&#34;]
+    end
+
+    subgraph EDGE[&#34;Cloudflare edge&#34;]
+        ROUTER[&#34;Route by path&#34;]
+    end
+
+    subgraph STATIC[&#34;Static site (GitHub Pages)&#34;]
+        HTML[&#34;Hugo HTML + CSS + JS&#34;]
+    end
+
+    subgraph API[&#34;Workers backend&#34;]
+        WORKER[&#34;/api/* endpoints&#34;]
+    end
+
+    subgraph STORAGE[&#34;Cloudflare storage&#34;]
+        D1[&#34;D1 (SQLite)&#34;]
+        R2[&#34;R2 (files)&#34;]
+    end
+
+    subgraph EXTERNAL[&#34;External services&#34;]
+        PAYU[&#34;PayU&#34;]
+        CASHFREE[&#34;Cashfree&#34;]
+        RESEND[&#34;Resend email&#34;]
+    end
+
+    USER --&gt; ROUTER
+    ROUTER --&gt;|&#34; vitthalmirji.com/* &#34;| HTML
+    ROUTER --&gt;|&#34; vitthalmirji.com/api/* &#34;| WORKER
+    WORKER --&gt; D1
+    WORKER --&gt; R2
+    WORKER --&gt; PAYU
+    WORKER --&gt; CASHFREE
+    WORKER --&gt; RESEND
+    style USER fill: #e1f5ff, stroke: #0066cc, color: #000
+    style ROUTER fill: #fff4e1, stroke: #cc8800, color: #000
+    style HTML fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style WORKER fill: #f0e1ff, stroke: #8800cc, color: #000
+    style D1 fill: #e1f5ff, stroke: #0066cc, color: #000
+    style R2 fill: #e1f5ff, stroke: #0066cc, color: #000
+    style PAYU fill: #ffe1e1, stroke: #cc0000, color: #000
+    style CASHFREE fill: #ffe1e1, stroke: #cc0000, color: #000
+    style RESEND fill: #ffe1e1, stroke: #cc0000, color: #000
+</pre><p>Static stays on GitHub Pages. Dynamic calls go to Workers. Cloudflare routes the two behind the same domain.</p>
+<hr>
+<h2 id="why-i-chose-cloudflare-workers">Why I chose Cloudflare Workers</h2>
+<p>I was already using Cloudflare for DNS and CDN proxy, so Workers gave me:</p>
+<ul>
+<li><strong>No new vendor</strong> for hosting.</li>
+<li><strong>Simple routing</strong> from <code>/api/*</code>.</li>
+<li><strong>Edge execution</strong> close to users.</li>
+<li><strong>V8 isolate cold starts</strong> that feel instant.</li>
+</ul>
+<p>Here’s the quick comparison I used:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Platform</th>
+					<th>Cold start</th>
+					<th>Operational overhead</th>
+					<th>Fit for tiny APIs</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Cloudflare Workers</td>
+					<td>Very low</td>
+					<td>Low</td>
+					<td>Excellent</td>
+			</tr>
+			<tr>
+					<td>Netlify Functions</td>
+					<td>Medium</td>
+					<td>Low</td>
+					<td>Good</td>
+			</tr>
+			<tr>
+					<td>Vercel Functions</td>
+					<td>Medium</td>
+					<td>Low</td>
+					<td>Good</td>
+			</tr>
+			<tr>
+					<td>AWS Lambda</td>
+					<td>Variable</td>
+					<td>High</td>
+					<td>Overkill for small sites</td>
+			</tr>
+	</tbody>
+</table>
+<p>If a user is about to pay, I want the gateway call to be the slow part, not my runtime waking up.</p>
+<hr>
+<h2 id="the-backend-surface-area">The backend surface area</h2>
+<p>I forced myself to keep this tiny. The API is six endpoints.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Endpoint</th>
+					<th>Method</th>
+					<th>Caller</th>
+					<th>Protection</th>
+					<th>Purpose</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>/api/health</code></td>
+					<td>GET</td>
+					<td>Anyone</td>
+					<td>None</td>
+					<td>Health + DB init guard</td>
+			</tr>
+			<tr>
+					<td><code>/api/payment/create-link</code></td>
+					<td>POST</td>
+					<td>Browser</td>
+					<td>Rate limiting (edge)</td>
+					<td>Create PayU/Cashfree link</td>
+			</tr>
+			<tr>
+					<td><code>/api/card/verify/session</code></td>
+					<td>POST</td>
+					<td>Browser</td>
+					<td>Rate limiting (edge)</td>
+					<td>₹1 card verification session</td>
+			</tr>
+			<tr>
+					<td><code>/api/contact/submit</code></td>
+					<td>POST</td>
+					<td>Browser</td>
+					<td>Rate limiting (edge)</td>
+					<td>Contact form</td>
+			</tr>
+			<tr>
+					<td><code>/api/payment/webhook/payu</code></td>
+					<td>POST</td>
+					<td>PayU</td>
+					<td>Signature</td>
+					<td>Payment confirmation</td>
+			</tr>
+			<tr>
+					<td><code>/api/payment/webhook/cashfree</code></td>
+					<td>POST</td>
+					<td>Cashfree</td>
+					<td>Signature</td>
+					<td>Payment confirmation + card verify</td>
+			</tr>
+	</tbody>
+</table>
+<p>That’s the full backend. No user auth, no carts, no subscriptions. Just what the site needs.</p>
+<hr>
+<h2 id="why-i-used-effect-typescript">Why I used Effect TypeScript</h2>
+<p>Traditional serverless code hides errors inside <code>try/catch</code>. That’s risky for payment flows.</p>
+<p>Effect makes error types explicit and <strong>forces</strong> you to handle them. This matters when failures mean lost money.</p>
+<h3 id="the-contrast">The contrast</h3>
+<p>Promise‑style:</p>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">async</span> <span class="kd">function</span> <span class="nx">createPaymentLink</span><span class="p">(</span><span class="nx">request</span>: <span class="kt">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">body</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">request</span><span class="p">.</span><span class="nx">json</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">link</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">callGatewayAPI</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">await</span> <span class="nx">saveToDatabase</span><span class="p">(</span><span class="nx">link</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">Response</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span> <span class="nx">url</span>: <span class="kt">link</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="k">new</span> <span class="nx">Response</span><span class="p">(</span><span class="s2">&#34;Error&#34;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">status</span>: <span class="kt">500</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Effect‑style:</p>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">program</span>: <span class="kt">Effect.Effect</span><span class="p">&lt;</span><span class="nt">PaymentLink</span><span class="p">,</span> <span class="na">DatabaseError</span> <span class="err">|</span> <span class="na">GatewayError</span><span class="p">,</span> <span class="na">DatabaseService</span><span class="p">&gt;</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Effect</span><span class="p">.</span><span class="nx">gen</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">db</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">DatabaseService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">validation</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">ValidationService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">validatedBody</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">validateRequest</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">link</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">createGatewayLink</span><span class="p">(</span><span class="nx">validatedBody</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="nx">link</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">link</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening:</p>
+<ul>
+<li>The type signature <strong>lists possible errors</strong>.</li>
+<li>The compiler forces you to handle all of them.</li>
+<li>Dependencies are injected via <code>Context.Tag</code>.</li>
+</ul>
+<p>This is boring in the best way. Payments shouldn’t be “hope and pray” code.</p>
+<details class="details">
+  <summary>Details</summary>
+  <div class="details__body">Promises make it easy to ignore error cases and to pass dependencies by hand. Effect makes both explicit: errors in the
+type system, and services in the runtime layer. For a payment flow, that discipline is worth the extra setup.</div>
+</details>
+
+<hr>
+<h2 id="the-database-autoinit-with-a-guard">The database: auto‑init with a guard</h2>
+<p>I still use <code>CREATE TABLE IF NOT EXISTS</code>, but I <strong>don’t</strong> run it on every request anymore. I added a one‑time guard so
+only the first request in an isolate runs schema setup.</p>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kd">let</span> <span class="nx">initDone</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">let</span> <span class="nx">initInFlight</span>: <span class="kt">Promise</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">&gt;</span> <span class="o">|</span> <span class="kc">null</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">initializeOnce</span> <span class="o">=</span> <span class="p">(</span><span class="nx">db</span>: <span class="kt">D1Database</span><span class="p">)</span><span class="o">:</span> <span class="nx">Effect</span><span class="p">.</span><span class="nx">Effect</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">,</span> <span class="na">DatabaseError</span><span class="p">&gt;</span> <span class="o">=&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Effect</span><span class="p">.</span><span class="nx">tryPromise</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span><span class="o">:</span> <span class="kr">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="nx">initDone</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">initInFlight</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">initInFlight</span> <span class="o">=</span> <span class="nx">Effect</span><span class="p">.</span><span class="nx">runPromise</span><span class="p">(</span><span class="nx">initialize</span><span class="p">(</span><span class="nx">db</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="k">await</span> <span class="nx">initInFlight</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">initDone</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="k">catch</span><span class="o">:</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">new</span> <span class="nx">DatabaseError</span><span class="p">({</span> <span class="nx">message</span><span class="o">:</span> <span class="s2">&#34;Init failed&#34;</span><span class="p">,</span> <span class="nx">cause</span>: <span class="kt">error</span> <span class="p">}),</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening:</p>
+<ul>
+<li>First request triggers DB setup.</li>
+<li>Concurrent requests wait on the same promise.</li>
+<li>Later requests skip it entirely.</li>
+</ul>
+<p>This keeps the “self‑healing” property without paying the cost on every call.</p>
+<div class="admonition warning">
+  <div class="admonition-title">CREATE TABLE IF NOT EXISTS is not a migration system</div>
+  <div class="admonition-content">
+    This trick only helps for the initial schema. If you add a new column later, <code>CREATE TABLE IF NOT EXISTS</code> won’t
+magically backfill it.
+For schema evolution, you still want real D1 migrations (<code>ALTER TABLE</code>, backfills, indexes).
+  </div>
+</div>
+<details class="details">
+  <summary>Details</summary>
+  <div class="details__body"><div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Example: apply a migration file (replace with your DB name / env)</span>
+</span></span><span class="line"><span class="cl">npx -y wrangler d1 execute &lt;db-name&gt; --file workers/migrations/0002_add_expires_at.sql --env production</span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+</details>
+
+<h3 id="the-schema-i-ended-up-with">The schema I ended up with</h3>
+<p>At minimum, I need these tables:</p>
+<ul>
+<li><code>transactions</code> for payment links + status</li>
+<li><code>webhook_events</code> for idempotency and audit trail</li>
+<li><code>services</code> for service definitions and pricing</li>
+<li><code>contact_submissions</code> for the contact form</li>
+<li><code>card_verifications</code> for ₹1 pre‑auth + void tracking</li>
+</ul>
+<p>That last table is important. Card verification is a separate flow and deserves its own audit trail.</p>
+<h3 id="schema-snapshot-actual-sql">Schema snapshot (actual SQL)</h3>
+<p>Here’s the shape I’m actually running in D1 (trimmed to the essentials):</p>
+<div class="highlight highlight-sql" data-lang="sql"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">transactions</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">txn_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">service_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">amount</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">currency</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;INR&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway_response</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">payment_url</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">idempotency_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">email_sent_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">expires_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">updated_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">webhook_events</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">event_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">txn_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">payload_hash</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">received_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">services</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">price_inr</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">enabled</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">contact_submissions</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">ip_hash</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">card_verifications</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">order_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">amount</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">currency</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;INR&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_phone</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">cf_payment_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway_response</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">updated_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">voided_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening here:</p>
+<ul>
+<li><strong><code>transactions</code></strong> is the core ledger for payment links + status.</li>
+<li><strong><code>webhook_events</code></strong> is my idempotency wall for gateway retries.</li>
+<li><strong><code>services</code></strong> lets the backend own pricing (not the frontend).</li>
+<li><strong><code>contact_submissions</code></strong> is a small audit trail (no spam loss).</li>
+<li><strong><code>card_verifications</code></strong> isolates ₹1 pre‑auth from real payments.</li>
+</ul>
+<details class="details">
+  <summary>Details</summary>
+  <div class="details__body"><div class="highlight highlight-sql" data-lang="sql"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="c1">-- Transactions
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">transactions</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">txn_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">service_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">amount</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">currency</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;INR&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway_response</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">payment_url</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">idempotency_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">email_sent_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">expires_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">updated_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_transactions_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">transactions</span><span class="p">(</span><span class="n">status</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_transactions_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">transactions</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_transactions_idempotency</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">transactions</span><span class="p">(</span><span class="n">idempotency_key</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_transactions_txn_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">transactions</span><span class="p">(</span><span class="n">txn_id</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_transactions_expires</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">transactions</span><span class="p">(</span><span class="n">expires_at</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- Webhook events
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">webhook_events</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">event_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">txn_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">payload_hash</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">received_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_webhook_events_event_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">webhook_events</span><span class="p">(</span><span class="n">event_id</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_webhook_events_txn_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">webhook_events</span><span class="p">(</span><span class="n">txn_id</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_webhook_events_received</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">webhook_events</span><span class="p">(</span><span class="n">received_at</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- Contact submissions
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">contact_submissions</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">message</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">ip_hash</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_contact_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">contact_submissions</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- Services
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">services</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">description</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">price_inr</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">enabled</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="c1">-- Card verification
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">card_verifications</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">order_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">amount</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">currency</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;INR&#39;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">customer_phone</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">cf_payment_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">gateway_response</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">created_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">updated_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="n">voided_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_card_verifications_order_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">card_verifications</span><span class="p">(</span><span class="n">order_id</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_card_verifications_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">card_verifications</span><span class="p">(</span><span class="n">status</span><span class="p">);</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">idx_card_verifications_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">card_verifications</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This is the exact schema and index set from the migrations (initial schema + later <code>ALTER TABLE</code> for <code>expires_at</code>). It’s
+long, but it’s the truth on disk.</p></div>
+</details>
+
+<h3 id="the-data-model-visual">The data model (visual)</h3>
+<pre class="mermaid">erDiagram
+    TRANSACTIONS {
+        text id PK
+        text txn_id UK
+        text service_key
+        integer amount
+        text currency
+        text gateway
+        text status
+        text customer_email
+        text customer_name
+        text gateway_response
+        text payment_url
+        text idempotency_key UK
+        integer email_sent_at
+        integer expires_at
+        integer created_at
+        integer updated_at
+    }
+
+    WEBHOOK_EVENTS {
+        text id PK
+        text event_id UK
+        text gateway
+        text txn_id
+        text payload_hash
+        text status
+        integer received_at
+    }
+
+    SERVICES {
+        text key PK
+        text name
+        text description
+        integer price_inr
+        boolean enabled
+        integer created_at
+    }
+
+    CONTACT_SUBMISSIONS {
+        text id PK
+        text name
+        text email
+        text message
+        text ip_hash
+        integer created_at
+    }
+
+    CARD_VERIFICATIONS {
+        text id PK
+        text order_id UK
+        text gateway
+        integer amount
+        text currency
+        text status
+        text customer_email
+        text customer_name
+        text customer_phone
+        text cf_payment_id
+        text gateway_response
+        integer created_at
+        integer updated_at
+        integer voided_at
+    }
+
+    SERVICES ||--o{ TRANSACTIONS: priced_by
+    TRANSACTIONS ||--o{ WEBHOOK_EVENTS: updated_by
+    CARD_VERIFICATIONS ||--o{ WEBHOOK_EVENTS: audit
+</pre><p>What’s happening here:</p>
+<ul>
+<li><strong><code>services</code></strong> is the source of truth for pricing.</li>
+<li><strong><code>transactions</code></strong> are payment link sessions.</li>
+<li><code>expires_at</code> makes link reuse deterministic (don’t hand out stale links).</li>
+<li><strong><code>webhook_events</code></strong> give me idempotency + audit.</li>
+<li><strong><code>card_verifications</code></strong> are isolated from real money flows.</li>
+</ul>
+<hr>
+<h2 id="payment-links-dynamic-creation">Payment links: dynamic creation</h2>
+<p>This is the main endpoint the front‑end calls.</p>
+<p>Two small UX details that matter more than they sound:</p>
+<ul>
+<li>I set the link expiry to <strong>15 minutes</strong> and also append a human hint like “expires in 15 minutes” in the gateway
+description/purpose.</li>
+<li>I pass customer name/email/phone in the link creation request so the gateway page can prefill.</li>
+</ul>
+<h3 id="payment-link-lifecycle-visual">Payment link lifecycle (visual)</h3>
+<pre class="mermaid">flowchart TD
+    START[&#34;Browser submits /api/payment/create-link&#34;] --&gt; EDGE[&#34;Cloudflare rate limit (zone rule)&#34;]
+    EDGE --&gt; VALIDATE[&#34;Validate input (name/email/phone)&#34;]
+    VALIDATE --&gt; SERVICE[&#34;Load service + price from D1&#34;]
+    SERVICE --&gt; IDEMPOTENT{&#34;Idempotency key exists?&#34;}
+    IDEMPOTENT --&gt;|Yes| CACHED[&#34;Return cached payment_url&#34;]
+    IDEMPOTENT --&gt;|No| REUSE{&#34;Recent unexpired link (5-15m)?&#34;}
+    REUSE --&gt;|Yes| REUSED[&#34;Return recent payment_url&#34;]
+    REUSE --&gt;|No| GATEWAY[&#34;Select gateway (PayU/Cashfree)&#34;]
+    GATEWAY --&gt; LINK[&#34;Create link (expires in 15 min)&#34;]
+    LINK --&gt; STORE[&#34;Store transaction (expires_at) in D1&#34;]
+    STORE --&gt; RETURNURL[&#34;Set return URLs to /api/payment/return/*&#34;]
+    STORE --&gt; RESP[&#34;Return payment_url + link_id&#34;]
+    style START fill: #e1f5ff, stroke: #0066cc, color: #000
+    style EDGE fill: #fff4e1, stroke: #cc8800, color: #000
+    style VALIDATE fill: #fff4e1, stroke: #cc8800, color: #000
+    style IDEMPOTENT fill: #fff4e1, stroke: #cc8800, color: #000
+    style CACHED fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style SERVICE fill: #f0e1ff, stroke: #8800cc, color: #000
+    style REUSE fill: #fff4e1, stroke: #cc8800, color: #000
+    style REUSED fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style GATEWAY fill: #f0e1ff, stroke: #8800cc, color: #000
+    style LINK fill: #f0e1ff, stroke: #8800cc, color: #000
+    style STORE fill: #e1f5ff, stroke: #0066cc, color: #000
+    style RETURNURL fill: #f0e1ff, stroke: #8800cc, color: #000
+    style RESP fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><p>What’s happening here:</p>
+<ul>
+<li>Validation happens before any gateway call.</li>
+<li>Idempotency short‑circuits duplicates.</li>
+<li>Only the last step returns the link.</li>
+</ul>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">program</span> <span class="o">=</span> <span class="nx">Effect</span><span class="p">.</span><span class="nx">gen</span><span class="p">(</span><span class="kd">function</span><span class="o">*</span> <span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">validation</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">ValidationService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">db</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">DatabaseService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">payu</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">PayUService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">cashfree</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">CashfreeService</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">validatedBody</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">validateCreateLinkRequest</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">service</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">getService</span><span class="p">(</span><span class="nx">validatedBody</span><span class="p">.</span><span class="nx">service_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 1) Idempotency: exact same request should return exact same link
+</span></span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">existing</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">checkIdempotency</span><span class="p">(</span><span class="nx">validatedBody</span><span class="p">.</span><span class="nx">idempotency_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="nx">existing</span> <span class="o">&amp;&amp;</span> <span class="nx">existing</span><span class="p">.</span><span class="nx">payment_url</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">{</span> <span class="nx">success</span>: <span class="kt">true</span><span class="p">,</span> <span class="nx">payment_url</span>: <span class="kt">existing.payment_url</span><span class="p">,</span> <span class="nx">cached</span>: <span class="kt">true</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 2) Reuse: same customer + same service/amount within the same validity window
+</span></span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">recent</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">findRecentTransaction</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">validatedBody</span><span class="p">.</span><span class="nx">customer_email</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">service</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">service</span><span class="p">.</span><span class="nx">price_inr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">-</span> <span class="mi">15</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="nx">recent</span><span class="o">?</span><span class="p">.</span><span class="nx">payment_url</span> <span class="o">&amp;&amp;</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">-</span> <span class="nx">recent</span><span class="p">.</span><span class="nx">created_at</span> <span class="o">&gt;=</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">{</span> <span class="nx">success</span>: <span class="kt">true</span><span class="p">,</span> <span class="nx">payment_url</span>: <span class="kt">recent.payment_url</span><span class="p">,</span> <span class="nx">cached</span>: <span class="kt">true</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">gateway</span> <span class="o">=</span> <span class="nx">selectGateway</span><span class="p">(</span><span class="nx">service</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">paymentUrl</span> <span class="o">=</span> <span class="nx">gateway</span> <span class="o">===</span> <span class="s2">&#34;payu&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">?</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">payu</span><span class="p">.</span><span class="nx">createPaymentLink</span><span class="p">({</span> <span class="cm">/* ... */</span> <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="o">:</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">cashfree</span><span class="p">.</span><span class="nx">createPaymentLink</span><span class="p">({</span> <span class="cm">/* ... */</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">createTransaction</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">service_key</span>: <span class="kt">service.key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">amount</span>: <span class="kt">service.price_inr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">customer_email</span>: <span class="kt">validatedBody.customer_email</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">gateway</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">payment_url</span>: <span class="kt">paymentUrl</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">expires_at</span>: <span class="kt">Date.now</span><span class="p">()</span> <span class="o">+</span> <span class="mi">15</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">success</span>: <span class="kt">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">payment_url</span>: <span class="kt">paymentUrl</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">link_id</span>: <span class="kt">transaction.txn_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">gateway</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening:</p>
+<ul>
+<li>Validate input.</li>
+<li>Check idempotency key.</li>
+<li>Fetch service price from D1.</li>
+<li>Create a link in PayU or Cashfree.</li>
+<li>Store the transaction.</li>
+</ul>
+<p>This is why Effect helps: every failure case is explicit.</p>
+<hr>
+<h2 id="payment-ux-keep-the-user-calm">Payment UX: keep the user calm</h2>
+<p>The technical part is only half the job. The other half is: don’t make the user wonder if their payment “worked”.</p>
+<p>Here’s what I ended up doing:</p>
+<ol>
+<li>A dedicated <code>/pay</code> page that collects name/email/phone (so the gateway can prefill).</li>
+<li>A visible <strong>15-minute countdown</strong> while the link is being created.</li>
+<li>A <code>/pay/status</code> page that shows whatever the gateway returns on redirect (without exposing PII in query params).</li>
+</ol>
+<div class="admonition info">
+  <div class="admonition-title">Why a dedicated pay page</div>
+  <div class="admonition-content">
+    It keeps the Services page clean (tables, policies, links), and the payment page focused (form + one CTA).
+  </div>
+</div>
+<h3 id="redirect-loop-visual">Redirect loop (visual)</h3>
+<pre class="mermaid">sequenceDiagram
+    participant Browser
+    participant Worker as Workers API
+    participant Gateway as PayU/Cashfree
+    participant Status as /pay/status
+    Browser -&gt;&gt; Worker: POST /api/payment/create-link
+    Worker --&gt;&gt; Browser: payment_url (expires in 15 min)
+    Browser -&gt;&gt; Gateway: Redirect to payment_url
+    Gateway --&gt;&gt; Worker: Return callback (GET or POST)
+    Worker --&gt;&gt; Browser: 303 redirect to /pay/status (GET)
+    Browser -&gt;&gt; Status: GET /pay/status?gateway=...&amp;status=...
+</pre><h3 id="what-gets-prefilled-and-what-doesnt">What gets prefilled (and what doesn’t)</h3>
+<p><strong>Prefilled:</strong> customer name, email, phone.
+That means the gateway page feels “connected” to your site, not like a random checkout link.</p>
+<p><strong>Not included in redirects:</strong> email/phone/name.
+Return URLs carry only identifiers like <code>gateway</code>, <code>service</code>, <code>link_id</code> / <code>invoice</code> / <code>order_id</code>.</p>
+<details class="details">
+  <summary>Details</summary>
+  <div class="details__body">If you put PII in query strings, it will leak into logs, analytics, browser history, and screenshots. Don’t.</div>
+</details>
+
+<hr>
+<h2 id="webhooks-idempotent-and-statesafe">Webhooks: idempotent and state‑safe</h2>
+<p>Gateways retry webhooks. Some send duplicates. I store every webhook event with a hash and skip duplicates.</p>
+<h3 id="webhook-verification--processing-visual">Webhook verification + processing (visual)</h3>
+<pre class="mermaid">flowchart TD
+    START[&#34;Webhook arrives&#34;] --&gt; PARSE[&#34;Parse body&#34;]
+    PARSE --&gt; SIGN{&#34;Signature valid?&#34;}
+    SIGN --&gt;|No| REJECT[&#34;Reject (401)&#34;]
+    SIGN --&gt;|Yes| DEDUPE{&#34;Duplicate event?&#34;}
+    DEDUPE --&gt;|Yes| OK[&#34;Return 200 (already processed)&#34;]
+    DEDUPE --&gt;|No| STORE[&#34;Store webhook event (hash)&#34;]
+    STORE --&gt; LOAD[&#34;Load transaction / verification&#34;]
+    LOAD --&gt; STATE{&#34;Valid state transition?&#34;}
+    STATE --&gt;|No| BAD[&#34;Reject (400)&#34;]
+    STATE --&gt;|Yes| UPDATE[&#34;Update status in D1&#34;]
+    UPDATE --&gt; SIDEFX[&#34;Side effects (email / void)&#34;]
+    SIDEFX --&gt; DONE[&#34;Return 200 OK&#34;]
+    style START fill: #e1f5ff, stroke: #0066cc, color: #000
+    style PARSE fill: #fff4e1, stroke: #cc8800, color: #000
+    style SIGN fill: #fff4e1, stroke: #cc8800, color: #000
+    style REJECT fill: #ffe1e1, stroke: #cc0000, color: #000
+    style DEDUPE fill: #fff4e1, stroke: #cc8800, color: #000
+    style OK fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style STORE fill: #e1f5ff, stroke: #0066cc, color: #000
+    style LOAD fill: #f0e1ff, stroke: #8800cc, color: #000
+    style STATE fill: #fff4e1, stroke: #cc8800, color: #000
+    style BAD fill: #ffe1e1, stroke: #cc0000, color: #000
+    style UPDATE fill: #f0e1ff, stroke: #8800cc, color: #000
+    style SIDEFX fill: #f0e1ff, stroke: #8800cc, color: #000
+    style DONE fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><p>What’s happening here:</p>
+<ul>
+<li>Signature check is first to block spoofed payloads.</li>
+<li>Idempotency check stops retries from double-processing.</li>
+<li>State machine prevents invalid transitions.</li>
+</ul>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">isDuplicate</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">checkWebhookDuplicate</span><span class="p">(</span><span class="nx">eventId</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nx">isDuplicate</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="p">{</span> <span class="nx">message</span><span class="o">:</span> <span class="s2">&#34;Already processed&#34;</span><span class="p">,</span> <span class="nx">status</span>: <span class="kt">200</span> <span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>For payments, I also enforce a state machine:</p>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">isValidTransition</span> <span class="o">=</span> <span class="nx">stateMachine</span><span class="p">.</span><span class="nx">isValidTransition</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">transaction</span><span class="p">.</span><span class="nx">status</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">newStatus</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>That prevents nonsense like <code>success -&gt; pending</code> if a gateway sends weird retries.</p>
+<h3 id="transaction-state-machine-visual">Transaction state machine (visual)</h3>
+<pre class="mermaid">stateDiagram-v2
+    [*] --&gt; created
+    created --&gt; pending
+    created --&gt; expired
+    pending --&gt; success
+    pending --&gt; failed
+    pending --&gt; expired
+    success --&gt; refunded
+</pre><p>Why this matters:</p>
+<ul>
+<li>Webhooks are messy; gateways retry with different statuses.</li>
+<li>The state machine blocks invalid transitions by design.</li>
+</ul>
+<hr>
+<h2 id="card-verification-1-preauth--autovoid">Card verification: ₹1 pre‑auth + auto‑void</h2>
+<p>I needed a “verify card” flow that charges ₹1 and reverses it automatically. The Payment Links API doesn’t do that, so I
+added a <strong>separate Orders flow</strong> in Cashfree.</p>
+<h3 id="the-flow">The flow</h3>
+<pre class="mermaid">sequenceDiagram
+    participant Browser
+    participant Worker
+    participant Cashfree
+    participant D1
+    Browser -&gt;&gt; Worker: POST /api/card/verify/session
+    Worker -&gt;&gt; Cashfree: Create order (₹1, cc+dc)
+    Cashfree --&gt;&gt; Worker: payment_session_id
+    Worker -&gt;&gt; D1: insert card_verification
+    Worker --&gt;&gt; Browser: payment_session_id
+    Cashfree -&gt;&gt; Worker: webhook (AUTHORIZED/SUCCESS)
+    Worker -&gt;&gt; D1: update status
+    Worker -&gt;&gt; Cashfree: VOID authorization
+    Cashfree --&gt;&gt; Worker: void result
+    Worker -&gt;&gt; D1: mark voided
+</pre><h3 id="the-endpoint">The endpoint</h3>
+<div class="highlight highlight-typescript" data-lang="typescript"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">order</span> <span class="o">=</span> <span class="k">yield</span><span class="o">*</span> <span class="nx">cashfree</span><span class="p">.</span><span class="nx">createVerificationOrder</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">order_id</span><span class="o">:</span> <span class="sb">`verify_</span><span class="si">${</span><span class="nx">crypto</span><span class="p">.</span><span class="nx">generateUUID</span><span class="p">()</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">order_amount</span>: <span class="kt">1.0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">order_currency</span><span class="o">:</span> <span class="s2">&#34;INR&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">customer_details</span><span class="o">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">customer_id</span>: <span class="kt">customerEmail</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">customer_name</span>: <span class="kt">customerName</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">customer_email</span>: <span class="kt">customerEmail</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">customer_phone</span>: <span class="kt">customerPhone</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">order_note</span><span class="o">:</span> <span class="s2">&#34;Card verification (₹1 pre-auth; auto-void)&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">order_meta</span><span class="o">:</span> <span class="p">{</span> <span class="nx">payment_methods</span><span class="o">:</span> <span class="s2">&#34;cc,dc&#34;</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening:</p>
+<ul>
+<li>The browser gets a <strong>payment_session_id</strong>, not a link.</li>
+<li>The webhook updates status and immediately <strong>voids</strong> successful auths.</li>
+<li>All records are stored in <code>card_verifications</code>.</li>
+</ul>
+<div class="admonition warning">
+  <div class="admonition-title">Cashfree pre-auth must be enabled</div>
+  <div class="admonition-content">
+    This flow only works if Cashfree has pre‑authorisation enabled on your account. Without it, the VOID call fails.
+  </div>
+</div>
+<hr>
+<h2 id="storage-choices-what-goes-where">Storage choices (what goes where)</h2>
+<p>I kept storage simple and explicit.</p>
+<pre class="mermaid">flowchart TD
+    START[&#34;What are you storing?&#34;] --&gt; Q1{&#34;Need SQL + ACID?&#34;}
+    Q1 --&gt;|Yes| D1[&#34;D1 (transactions, services, webhooks)&#34;]
+    Q1 --&gt;|No| Q2{&#34;Binary files?&#34;}
+    Q2 --&gt;|Yes| R2[&#34;R2 (PDFs, files)&#34;]
+    Q2 --&gt;|No| Q3{&#34;Read-heavy cache?&#34;}
+    Q3 --&gt;|Yes| KV[&#34;KV (sessions, cached config)&#34;]
+    Q3 --&gt;|No| WARN[&#34;Don’t use KV for counters&#34;]
+    style START fill: #e1f5ff, stroke: #0066cc, color: #000
+    style Q1 fill: #fff4e1, stroke: #cc8800, color: #000
+    style Q2 fill: #fff4e1, stroke: #cc8800, color: #000
+    style Q3 fill: #fff4e1, stroke: #cc8800, color: #000
+    style D1 fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style R2 fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style KV fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style WARN fill: #ffe1e1, stroke: #cc0000, color: #000
+</pre><p>I don’t use KV for rate limiting. It’s eventually consistent, so counters are wrong during spikes. WAF rules are better
+for edge‑level protection.</p>
+<hr>
+<h2 id="the-antiabuse-layer">The anti‑abuse layer</h2>
+<p>Public endpoints attract bots. I layered protection:</p>
+<ol>
+<li><strong>Cloudflare rate limiting</strong> (zone rules) on public POST endpoints.</li>
+<li><strong>Idempotency + reuse guards</strong> inside the backend.</li>
+<li><strong>Turnstile (optional)</strong> if you can afford UX friction.</li>
+</ol>
+<p>This is the bare minimum. It’s enough for a services page without bringing in Durable Objects.</p>
+<div class="admonition info">
+  <div class="admonition-title">Why rate limiting first</div>
+  <div class="admonition-content">
+    I tried putting Turnstile everywhere. On paper it’s great. In practice, real browsers and privacy settings can make it
+flaky.
+Rate limiting is boring, predictable, and doesn’t ask the customer to “prove they’re human” when they just want to pay.
+  </div>
+</div>
+<h3 id="antiabuse-flow-visual">Anti‑abuse flow (visual)</h3>
+<pre class="mermaid">flowchart TD
+    REQ[&#34;Public POST request&#34;] --&gt; WAF[&#34;Edge rate limit (Cloudflare)&#34;]
+    WAF --&gt;|Throttled| THROTTLE[&#34;Reject request (429)&#34;]
+    WAF --&gt;|OK| MAYBE[&#34;Optional Turnstile (feature flag)&#34;]
+    MAYBE --&gt;|Disabled| IDEMP[&#34;Idempotency + reuse guards (payments only)&#34;]
+    MAYBE --&gt;|Enabled + fail| BLOCK[&#34;Reject request (403)&#34;]
+    MAYBE --&gt;|Enabled + pass| IDEMP[&#34;Idempotency + reuse guards (payments only)&#34;]
+    IDEMP --&gt;|Duplicate| CACHED[&#34;Return cached response&#34;]
+    IDEMP --&gt;|Fresh| PROCESS[&#34;Process request&#34;]
+    style REQ fill: #e1f5ff, stroke: #0066cc, color: #000
+    style WAF fill: #fff4e1, stroke: #cc8800, color: #000
+    style THROTTLE fill: #ffe1e1, stroke: #cc0000, color: #000
+    style MAYBE fill: #fff4e1, stroke: #cc8800, color: #000
+    style BLOCK fill: #ffe1e1, stroke: #cc0000, color: #000
+    style IDEMP fill: #f0e1ff, stroke: #8800cc, color: #000
+    style CACHED fill: #e1ffe1, stroke: #2d7a2d, color: #000
+    style PROCESS fill: #e1ffe1, stroke: #2d7a2d, color: #000
+</pre><p>What’s happening here:</p>
+<ul>
+<li>Rate limiting blocks cheap abuse at the edge.</li>
+<li>Backend guards keep link creation deterministic (idempotency, reuse window, expires_at).</li>
+<li>Turnstile stays available, but it’s not the only line of defence.</li>
+</ul>
+<hr>
+<h2 id="deployment-the-real-version">Deployment: the real version</h2>
+<p>Two pipelines. Same repo. Two deploys.</p>
+<h3 id="1-static-site-github-pages">1) Static site (GitHub Pages)</h3>
+<ul>
+<li>GitHub Actions builds Hugo</li>
+<li>Output is published to GitHub Pages (<code>vim89/vim89</code>)</li>
+<li>Cloudflare proxies it under <code>vitthalmirji.com</code></li>
+</ul>
+<h3 id="2-workers-backend">2) Workers backend</h3>
+<ul>
+<li>Deployed from <code>workers/</code> via <code>npm run deploy:production</code></li>
+<li>Uses <code>workers/wrangler.toml</code></li>
+<li>Routes <code>/api/*</code> to the Worker</li>
+</ul>
+<div class="admonition info">
+  <div class="admonition-title">One repo, two deploys</div>
+  <div class="admonition-content">
+    Static and backend are separate deploys. Same repo, same domain, different pipelines.
+  </div>
+</div>
+<p>Centralize config in one place so you don’t scatter IDs and secrets across docs.</p>
+<h4 id="deployment-grid-who-does-what">Deployment “grid” (who does what)</h4>
+<table>
+	<thead>
+			<tr>
+					<th>Part</th>
+					<th>Where it runs</th>
+					<th>What triggers deploy</th>
+					<th>Tooling</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Static site</td>
+					<td>GitHub Pages</td>
+					<td>GitHub Actions</td>
+					<td>Hugo + Pagefind</td>
+			</tr>
+			<tr>
+					<td>Backend API</td>
+					<td>Cloudflare Workers</td>
+					<td>Manual (from <code>workers/</code>)</td>
+					<td>Wrangler</td>
+			</tr>
+	</tbody>
+</table>
+<p>I kept Workers deploy manual on purpose. It avoids accidental API pushes on content‑only changes.</p>
+<h3 id="cicd-excerpt-static-site-pipeline">CI/CD excerpt (static site pipeline)</h3>
+<p>This is the actual GitHub Actions flow that builds and publishes the static site. I’ve kept the InfinityFree steps in
+the workflow for history, but they’re <strong>disabled by a flag</strong> and never run by default.</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.ref == &#39;refs/heads/master&#39; &amp;&amp; github.event_name != &#39;pull_request&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ENABLE_INFINITYFREE_DEPLOY</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;false&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="l">${{ steps.hugo-version.outputs.HUGO_VERSION }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --gc --minify --cleanDestinationDir</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npm test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npx -y pagefind --site public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-gh-pages@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">personal_token</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.PERSONAL_TOKEN }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">external_repository</span><span class="p">:</span><span class="w"> </span><span class="l">vim89/vim89</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>What’s happening here:</p>
+<ul>
+<li>It builds Hugo with a <strong>pinned version</strong> from <code>.github/hugo.env</code>.</li>
+<li>It runs tests and Pagefind for search.</li>
+<li>It publishes to <strong>GitHub Pages</strong> (external repo).</li>
+<li>InfinityFree deploy steps are present but gated by <code>ENABLE_INFINITYFREE_DEPLOY=false</code>.</li>
+</ul>
+<details class="details">
+  <summary>Details</summary>
+  <div class="details__body"><div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.ref == &#39;refs/heads/master&#39; &amp;&amp; github.event_name != &#39;pull_request&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">needs</span><span class="p">:</span><span class="w"> </span><span class="l">resume</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">ENABLE_INFINITYFREE_DEPLOY</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;false&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📥 Checkout code with submodules</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Resolve Hugo version</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">hugo-version</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          set -euo pipefail
+</span></span></span><span class="line"><span class="cl"><span class="sd">          . ./.github/hugo.env
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;HUGO_VERSION=${HUGO_VERSION}&#34; &gt;&gt; &#34;$GITHUB_OUTPUT&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">⚙️ Setup Hugo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="l">${{ steps.hugo-version.outputs.HUGO_VERSION }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🏗️ Build Hugo site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --gc --minify --cleanDestinationDir</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🧪 Run sanity tests</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npm test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install Pagefind and build search index</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          npx -y pagefind --site public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📦 Upload to GitHub Pages (gh-pages)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-gh-pages@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">personal_token</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.PERSONAL_TOKEN }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">external_repository</span><span class="p">:</span><span class="w"> </span><span class="l">vim89/vim89</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">force_orphan</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🚀 Package site for InfinityFree</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">env.ENABLE_INFINITYFREE_DEPLOY == &#39;true&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">./scripts/deploy.sh package</span></span></span></code></pre></td></tr></table>
+</div>
+</div></div>
+</details>
+
+<hr>
+<h2 id="what-im-not-building-scope-matters">What I’m not building (scope matters)</h2>
+<p><strong>Not building:</strong></p>
+<ul>
+<li>carts or subscriptions,</li>
+<li>user accounts,</li>
+<li>refunds and disputes,</li>
+<li>anything that needs long‑running jobs.</li>
+</ul>
+<p><strong>Building:</strong></p>
+<ul>
+<li>payment links,</li>
+<li>webhooks,</li>
+<li>logs and audit trails,</li>
+<li>a clean place for the contact form.</li>
+</ul>
+<p>Scope discipline is why this stays manageable.</p>
+<hr>
+<h2 id="the-honest-tradeoffs">The honest tradeoffs</h2>
+<h3 id="what-you-lose">What you lose</h3>
+<ul>
+<li><strong>Debugging is harder</strong>: you tail logs, you don’t step‑debug in prod.</li>
+<li><strong>Vendor coupling</strong>: D1/R2 are Cloudflare‑specific.</li>
+<li><strong>Limits exist</strong>: CPU time and DB size caps mean you can’t build everything here.</li>
+</ul>
+<h3 id="what-you-gain">What you gain</h3>
+<ul>
+<li><strong>No server ops</strong>: deploy and forget.</li>
+<li><strong>Fast by default</strong>: requests run at the edge.</li>
+<li><strong>Safer code</strong>: error handling is forced at compile time.</li>
+<li><strong>Minimal moving parts</strong>: fewer systems to keep alive.</li>
+</ul>
+<hr>
+<h2 id="what-id-do-differently-next-time">What I’d do differently next time</h2>
+<ul>
+<li>Start with a scope doc instead of tweaking as I go.</li>
+<li>Separate payment links and card verification earlier (it affects data model).</li>
+<li>Add the smoke‑test script on day one, not at the end.</li>
+</ul>
+<hr>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>Hugo is static HTML. Payments and webhooks need a backend.</li>
+<li>The clean split is: GitHub Pages for static, Workers for <code>/api/*</code>.</li>
+<li>Effect TypeScript makes errors explicit and forces proper handling.</li>
+<li>D1 can bootstrap schema once per isolate, but schema changes still need migrations (<code>ALTER TABLE</code>, backfills,
+indexes).</li>
+<li>Card verification is a separate Cashfree Orders flow (₹1 pre‑auth + auto‑void).</li>
+<li>Payment links expire in 15 minutes; store <code>expires_at</code> and reuse links only within a safe window.</li>
+<li>For abuse: rate limit at the edge first; keep Turnstile optional.</li>
+<li>Keep the scope tiny. That’s the whole point.</li>
+</ul>
+<hr>
+<h2 id="references">References</h2>
+<h3 id="core-tech">Core tech</h3>
+<ul>
+<li><a href="https://developers.cloudflare.com/workers/" rel="noopener external" target="_blank">Cloudflare Workers</a>
+</li>
+<li><a href="https://effect.website/" rel="noopener external" target="_blank">Effect TypeScript</a>
+</li>
+<li><a href="https://developers.cloudflare.com/d1/" rel="noopener external" target="_blank">D1</a>
+</li>
+<li><a href="https://developers.cloudflare.com/r2/" rel="noopener external" target="_blank">R2</a>
+</li>
+<li><a href="https://developers.cloudflare.com/waf/rate-limiting/" rel="noopener external" target="_blank">Cloudflare rate limiting</a>
+</li>
+<li><a href="https://developers.cloudflare.com/turnstile/" rel="noopener external" target="_blank">Turnstile (optional)</a>
+</li>
+</ul>
+<h3 id="hugo">Hugo</h3>
+<ul>
+<li><a href="https://gohugo.io/" rel="noopener external" target="_blank">Hugo static site generator</a>
+</li>
+<li><a href="https://gohugo.io/functions/resources/getremote/" rel="noopener external" target="_blank">resources.GetRemote</a>
+</li>
+</ul>
+<h3 id="payments">Payments</h3>
+<ul>
+<li><a href="https://docs.payu.in/" rel="noopener external" target="_blank">PayU docs</a>
+</li>
+<li><a href="https://docs.cashfree.com/" rel="noopener external" target="_blank">Cashfree docs</a>
+</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2026-01-adding-a-serverless-backend-to-hugo-how-i-built-payment-flows-without-losing-static-site-speed.png" type="image/png"/></item></channel></rss>

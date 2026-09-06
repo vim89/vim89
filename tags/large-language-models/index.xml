@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/large-language-models/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sun, 06 Sep 2026 21:26:31 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/large-language-models/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>llm4s.g8: a developer experience boost for LLM4S SDK (issue #94) for Scala devs</title><link>https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394-for-scala-devs/</link><guid isPermaLink="true">https://vitthalmirji.com/2025/07/llm4s.g8-a-developer-experience-boost-for-llm4s-sdk-issue-%2394-for-scala-devs/</guid><pubDate>Thu, 17 Jul 2025 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>llm4s</category><category>giter8</category><category>developer experience</category><category>open source</category><category>template</category><category>scala</category><category>language models</category><category>sdk</category><category>llm</category><category>large language models</category><category>gsoc</category><category>mentoring</category><description>How we turned Issue #94 into a smoother onboarding flow for llm4s. Covers the DX problem, giter8 template design, repo structure, and the decisions that reduce setup friction. Includes lessons on developer empathy and Scala SDK adoption.</description><content:encoded><![CDATA[<h2 id="-background">🎯 Background</h2>
+<h3 id="llm4s-github-repo"><a href="https://github.com/llm4s/llm4s/issues/94" rel="noopener external" target="_blank">llm4s: Github repo</a>
+</h3>
+<p>In the rapidly evolving landscape of software development, where artificial intelligence and language models are reshaping how we build applications, the <strong>LLM4S SDK</strong> stands out as a powerful toolkit for Scala developers eager to harness the potential of large language models. However, as with many sophisticated tools, the initial onboarding experience can often feel like navigating a labyrinth without a map. This was precisely the challenge highlighted in <strong>Issue #94</strong> on the <a href="https://github.com/llm4s/llm4s/issues/94" rel="noopener external" target="_blank">llm4s GitHub repo</a>
+:</p>
+<blockquote>
+  <p><em>&ldquo;Using LLM4S code generation requires understanding internal prompts and usage patterns that may not be intuitive for new users. The goal is to improve usability and ergonomics so that Scala developers can easily leverage the power of LLM4S.&rdquo;</em></p>
+
+</blockquote><p>This candid observation resonated deeply with the community and the core development team. While the SDK itself was robust and feature-rich, the friction in getting started was a significant barrier to adoption. It was clear that to unlock the true potential of LLM4S, we needed to transform the onboarding process from a daunting hurdle into a smooth, enjoyable journey.</p>
+<p>This blog post chronicles that transformation. It’s a story of turning complexity into clarity, of converting friction into flow, and of crafting not just code, but a developer experience that empowers and inspires. At the heart of this story lies <strong>Giter8</strong>, a Scala-based templating tool that enables rapid project scaffolding. By leveraging Giter8, we set out to create a starter template-<code>llm4s.g8</code>-that would serve as a beacon for new users, guiding them effortlessly into the world of LLM4S.</p>
+<h3 id="why-does-developer-experience-matter">Why does developer experience matter?</h3>
+<div class="admonition warning">
+  <div class="admonition-title">First impressions are permanent in open source</div>
+  <div class="admonition-content">
+    If a developer can&rsquo;t get your SDK running in 5 minutes, they leave and never come back. There are no second chances. Your documentation, your setup process, your first-run experience - these are your only shot at adoption. Make them count.
+  </div>
+</div>
+<p>Before diving into the nuts and bolts, it&rsquo;s worth reflecting on why developer experience (DX) is more than just a buzzword. A stellar DX can be the difference between a tool that&rsquo;s loved and widely adopted, and one that languishes in obscurity. It&rsquo;s about reducing cognitive load, eliminating guesswork, and enabling developers to focus on what truly matters: building innovative solutions.</p>
+<p>For LLM4S, which sits at the intersection of AI and Scala development, this means providing clear, idiomatic examples, seamless integration with existing workflows, and a project structure that “just works” out of the box. The <code>llm4s.g8</code> template was conceived as a direct response to these needs-a carefully crafted starter kit that embodies best practices, modern tooling, and a touch of developer empathy.</p>
+<hr>
+<h2 id="-building-the-llm4sg8-template">🛠 Building the <code>llm4s.g8</code> template</h2>
+<p>Embarking on the creation of the <code>llm4s.g8</code> template was no mere checkbox exercise. It was a journey marked by iterative refinement, thoughtful design decisions, and a relentless focus on real-world developer workflows. The process unfolded like a narrative of discovery, challenge, and eventual triumph.</p>
+<h3 id="the-initial-spark-identifying-core-pain-points">The initial spark: Identifying core pain points</h3>
+<p>The first step was to understand the pain points that new users faced. Through community discussions, issue threads, and direct feedback, several recurring themes emerged:</p>
+<ul>
+<li><strong>Opaque internal prompts:</strong> The SDK’s prompt engineering capabilities were powerful but required deep understanding of the underlying prompt structures.</li>
+<li><strong>Unintuitive usage patterns:</strong> Without a clear example or starter project, users found it difficult to piece together how to invoke and integrate LLM4S features.</li>
+<li><strong>Fragmented documentation:</strong> While comprehensive, the documentation lacked a cohesive “getting started” flow that tied concepts together in a practical manner.</li>
+<li><strong>IDE friction:</strong> The default project layout and dependencies sometimes clashed with common IDE expectations, leading to confusing errors or setup struggles.</li>
+</ul>
+<p>Armed with these insights, the team set out to build a solution that would address these issues head-on.</p>
+<h3 id="designing-the-template-more-than-just-code-generation">Designing the template: More than just code generation</h3>
+<div class="admonition tip">
+  <div class="admonition-title">Templates should ship production-ready examples</div>
+  <div class="admonition-content">
+    Don&rsquo;t generate TODO comments. Ship working code that calls real APIs, handles real errors, and demonstrates real patterns. Users learn by reading and modifying working code, not by filling in blanks. Make your template the best example in your documentation.
+  </div>
+</div>
+<p>The <code>llm4s.g8</code> template was envisioned as a multi-faceted toolkit:</p>
+<ul>
+<li><strong>A clean, runnable Scala project:</strong> From the first line of code to the last test, everything should work seamlessly.</li>
+<li><strong>Correct versions and compatibility:</strong> Scala 3, sbt, and JDK versions were carefully selected to maximize compatibility and future-proofing.</li>
+<li><strong>Practical examples:</strong> Including a working <code>Main.scala</code> and <code>PromptExecutor.scala</code> that demonstrate prompt execution using OpenAI’s API, complete with tracing and environment-based API key loading.</li>
+<li><strong>Testing and CI:</strong> Integration tests and GitHub Actions workflows to ensure reliability and quality.</li>
+<li><strong>Documentation:</strong> A comprehensive README that walks users through setup, structure, and publishing.</li>
+<li><strong>Cross-platform support:</strong> Ensuring the template works consistently on Windows, macOS, and Linux.</li>
+<li><strong>Formatting and style:</strong> Integration with scalafmt and MUnit to encourage best practices and maintain code quality.</li>
+</ul>
+<p>This was not just scaffolding; it was a developer experience manifesto.</p>
+<h3 id="overcoming-technical-challenges">Overcoming technical challenges</h3>
+<p>Creating a template that “just works” involved navigating several technical hurdles:</p>
+<ul>
+<li><strong>Template escaping issues:</strong> Giter8’s templating syntax can be tricky, especially when embedding code snippets that themselves contain template-like syntax. The team devised clever escaping strategies to ensure smooth generation.</li>
+<li><strong>Java version alignment:</strong> Ensuring the Java version used in the template matched the CI environment was crucial to avoid unexpected runtime issues.</li>
+<li><strong>CI reliability:</strong> Setting up GitHub Actions workflows that validate project generation, compilation, formatting, and testing required meticulous scripting and validation.</li>
+<li><strong>Dependency management:</strong> Adding missing dependencies such as <code>munit</code> for testing, and ensuring all libraries aligned with the Scala 3 ecosystem.</li>
+</ul>
+<p>Each challenge was met with a combination of technical rigor and collaborative problem-solving, embodying the spirit of open source development.</p>
+<h3 id="the-result-a-template-that-inspires-confidence">The result: A template that inspires confidence</h3>
+<p>After several iterations, testing cycles, and community feedback rounds, the <code>llm4s.g8</code> template emerged as a polished, reliable, and user-friendly starting point. It encapsulates the essence of LLM4S while lowering the barrier to entry for newcomers.</p>
+<hr>
+<h3 id="-core-deliverables">✅ Core deliverables</h3>
+<p><strong>Giter8 Template (<code>llm4s.g8</code>)</strong></p>
+<ul>
+<li>Generates a clean, runnable Scala project that users can immediately build and run.</li>
+<li>Uses correct Scala 3, sbt, and JDK versions to ensure compatibility and performance.</li>
+<li>Includes a working <code>Main.scala</code> and <code>PromptExecutor.scala</code> that demonstrate prompt execution via OpenAI, complete with tracing and environment-based API key loading (<code>OPENAI_API_KEY</code>).</li>
+<li>Provides integration tests and CI via GitHub Actions, validating code generation, compilation, formatting, and testing.</li>
+<li>Contains a detailed README with usage instructions, project structure overview, and publishing guidelines.</li>
+<li>Supports cross-platform builds and enforces formatting consistency using scalafmt and MUnit test scaffolding.</li>
+</ul>
+<p><strong>Main application &amp; prompt executor</strong></p>
+<p>The separation of concerns was a deliberate design choice to enhance clarity and maintainability. The <code>Main.scala</code> acts as the entry point, while <code>PromptExecutor.scala</code> encapsulates the logic for interacting with the OpenAI API and executing prompts.</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Main.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">main</span><span class="o">(</span><span class="n">args</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">prompt</span> <span class="k">=</span> <span class="n">args</span><span class="o">.</span><span class="n">headOption</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="s">&#34;Explain what a Monad is in Scala&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nc">PromptExecutor</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// PromptExecutor.scala
+</span></span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">PromptExecutor</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">run</span><span class="o">(</span><span class="n">prompt</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Placeholder for prompt execution logic using OpenAI API and tracing
+</span></span></span><span class="line"><span class="cl">    <span class="o">...</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This modular approach not only clarifies responsibilities but also facilitates testing and future extensions.</p>
+<hr>
+<h2 id="-directory-structure">📁 Directory structure</h2>
+<p>Every great journey needs a map. Here’s how the <code>llm4s.g8</code> template scaffolds your project, providing a clear, idiomatic foundation:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">.
+</span></span><span class="line"><span class="cl">├── build.sbt
+</span></span><span class="line"><span class="cl">├── project
+</span></span><span class="line"><span class="cl">│   ├── build.properties
+</span></span><span class="line"><span class="cl">│   ├── plugins.sbt
+</span></span><span class="line"><span class="cl">│   └── default.properties
+</span></span><span class="line"><span class="cl">├── src
+</span></span><span class="line"><span class="cl">│   ├── main
+</span></span><span class="line"><span class="cl">│   │   └── scala
+</span></span><span class="line"><span class="cl">│   │       ├── Main.scala
+</span></span><span class="line"><span class="cl">│   │       └── PromptExecutor.scala
+</span></span><span class="line"><span class="cl">│   └── test
+</span></span><span class="line"><span class="cl">│       └── scala
+</span></span><span class="line"><span class="cl">│           └── MainSpec.scala
+</span></span><span class="line"><span class="cl">├── .scalafmt.conf
+</span></span><span class="line"><span class="cl">├── .gitignore
+</span></span><span class="line"><span class="cl">├── .github
+</span></span><span class="line"><span class="cl">│   └── workflows
+</span></span><span class="line"><span class="cl">│       └── ci.yml
+</span></span><span class="line"><span class="cl">├── README.md
+</span></span><span class="line"><span class="cl">└── logback.xml</span></span></code></pre></td></tr></table>
+</div>
+</div><p>This structure is more than just folders-it&rsquo;s a launchpad for productivity, discoverability, and collaboration. Each piece is thoughtfully placed to minimize setup friction and maximize clarity.</p>
+<hr>
+<h2 id="-pre-commit-hook-setup">🛡 Pre-commit hook setup</h2>
+<p>Why wait until CI to catch formatting or linting issues? With pre-commit hooks, you get instant feedback before code even leaves your machine. This not only saves time but also keeps your main branch sparkling clean.</p>
+<p>The template recommends using <a href="https://pre-commit.com/" rel="noopener external" target="_blank">pre-commit</a>
+ to automate checks like scalafmt, whitespace, and more. Here’s a sample <code>.pre-commit-config.yaml</code>:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">repos</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l">https://github.com/scalameta/scalafmt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l">v3.7.14</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">scalafmt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">scalafmt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l">sbt scalafmtAll</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">language</span><span class="p">:</span><span class="w"> </span><span class="l">system</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">types</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">scala]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">repo</span><span class="p">:</span><span class="w"> </span><span class="l">https://github.com/pre-commit/pre-commit-hooks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rev</span><span class="p">:</span><span class="w"> </span><span class="l">v4.4.0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">hooks</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">end-of-file-fixer</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">trailing-whitespace</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Benefits:</strong></p>
+<ul>
+<li>🖖 Prevents silly mistakes before they reach CI.</li>
+<li>🚦 Encourages a culture of code quality and consistency.</li>
+<li>🦾 Automates the boring stuff so you can focus on building.</li>
+</ul>
+<p>To enable, simply run:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">pre-commit install</span></span></code></pre></td></tr></table>
+</div>
+</div><p>and enjoy seamless, automated code hygiene.</p>
+<hr>
+<h2 id="-buildsbt-overview">🧱 build.sbt overview</h2>
+<p>At the heart of every Scala project lies the <code>build.sbt</code>-your build’s spellbook. In the template, it’s crafted for clarity, flexibility, and Giter8 variable substitution:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">llm4sVersion</span> <span class="k">=</span> <span class="s">&#34;$llm4s_version$&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nc">ThisBuild</span> <span class="o">/</span> <span class="n">scalaVersion</span> <span class="k">:</span><span class="o">=</span> <span class="s">&#34;$scala_version$&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nc">ThisBuild</span> <span class="o">/</span> <span class="n">organization</span> <span class="k">:</span><span class="o">=</span> <span class="s">&#34;$organization$&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">lazy</span> <span class="k">val</span> <span class="n">root</span> <span class="k">=</span> <span class="o">(</span><span class="n">project</span> <span class="n">in</span> <span class="n">file</span><span class="o">(</span><span class="s">&#34;.&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">.</span><span class="n">settings</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">name</span> <span class="k">:</span><span class="o">=</span> <span class="s">&#34;$name$&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">    <span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;com.llm4s&#34;</span> <span class="o">%%</span> <span class="s">&#34;llm4s&#34;</span> <span class="o">%</span> <span class="n">llm4sVersion</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;org.typelevel&#34;</span> <span class="o">%%</span> <span class="s">&#34;cats-effect&#34;</span> <span class="o">%</span> <span class="s">&#34;$cats_effect_version$&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;org.scalameta&#34;</span> <span class="o">%%</span> <span class="s">&#34;munit&#34;</span> <span class="o">%</span> <span class="s">&#34;$munit_version$&#34;</span> <span class="o">%</span> <span class="nc">Test</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;com.typesafe.scala-logging&#34;</span> <span class="o">%%</span> <span class="s">&#34;scala-logging&#34;</span> <span class="o">%</span> <span class="s">&#34;$scala_logging_version$&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;ch.qos.logback&#34;</span> <span class="o">%</span> <span class="s">&#34;logback-classic&#34;</span> <span class="o">%</span> <span class="s">&#34;$logback_version$&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Highlights:</strong></p>
+<ul>
+<li>Uses Giter8 variables for easy future upgrades and customization.</li>
+<li>Clearly separates test and main dependencies.</li>
+<li>Ready for extension-just add modules or plugins as your project grows.</li>
+</ul>
+<hr>
+<h2 id="-defaultproperties-variables">⚙️ default.properties variables</h2>
+<p>The <code>project/default.properties</code> file is the template’s secret sauce for variable management. It defines default values that Giter8 uses for substitution throughout the template:</p>
+<div class="highlight highlight-properties" data-lang="properties"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-properties" data-lang="properties"><span class="line"><span class="cl"><span class="na">llm4s_version</span><span class="o">=</span><span class="s">0.7.0</span>
+</span></span><span class="line"><span class="cl"><span class="na">scala_version</span><span class="o">=</span><span class="s">3.3.3</span>
+</span></span><span class="line"><span class="cl"><span class="na">cats_effect_version</span><span class="o">=</span><span class="s">3.5.1</span>
+</span></span><span class="line"><span class="cl"><span class="na">munit_version</span><span class="o">=</span><span class="s">1.0.0-M10</span>
+</span></span><span class="line"><span class="cl"><span class="na">scala_logging_version</span><span class="o">=</span><span class="s">3.9.5</span>
+</span></span><span class="line"><span class="cl"><span class="na">logback_version</span><span class="o">=</span><span class="s">1.4.14</span>
+</span></span><span class="line"><span class="cl"><span class="na">organization</span><span class="o">=</span><span class="s">com.example</span>
+</span></span><span class="line"><span class="cl"><span class="na">name</span><span class="o">=</span><span class="s">llm4s-quickstart</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Usage:</strong><br>
+When you run <code>sbt new llm4s/llm4s.g8</code>, Giter8 replaces variables in <code>build.sbt</code>, <code>README.md</code>, and elsewhere with these values.<br>
+For example:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">val</span> <span class="n">llm4sVersion</span> <span class="k">=</span> <span class="s">&#34;$llm4s_version$&#34;</span> <span class="o">//</span> <span class="n">becomes</span> <span class="s">&#34;0.1.1&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This makes upgrades and customizations a breeze-just bump a version in one place!</p>
+<hr>
+<h2 id="-test-framework-integration">🧪 Test framework integration</h2>
+<p>Testing is not an afterthought-it’s baked in from the start. The template integrates <a href="https://scalameta.org/munit/" rel="noopener external" target="_blank">MUnit</a>
+ for lightning-fast, expressive Scala testing:</p>
+<p><strong>build.sbt:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">&#34;org.scalameta&#34;</span> <span class="o">%%</span> <span class="s">&#34;munit&#34;</span> <span class="o">%</span> <span class="s">&#34;$munit_version$&#34;</span> <span class="o">%</span> <span class="nc">Test</span>
+</span></span><span class="line"><span class="cl"><span class="n">testFrameworks</span> <span class="o">+=</span> <span class="k">new</span> <span class="nc">TestFramework</span><span class="o">(</span><span class="s">&#34;munit.Framework&#34;</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Example test:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">munit.FunSuite</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">MainSpec</span> <span class="k">extends</span> <span class="nc">FunSuite</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">test</span><span class="o">(</span><span class="s">&#34;addition works&#34;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">assertEquals</span><span class="o">(</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">4</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="n">test</span><span class="o">(</span><span class="s">&#34;Test Prompt executor&#34;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">prompt</span> <span class="k">=</span> <span class="s">&#34;Explain what a Monad is in Scala&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">val</span> <span class="n">response</span> <span class="k">=</span> <span class="nc">PromptExecutor</span><span class="o">.</span><span class="n">run</span><span class="o">(</span><span class="n">prompt</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">assert</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">nonEmpty</span><span class="o">,</span> <span class="s">&#34;Response should not be empty&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">assert</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;Incorrect API key provided: your-api*****here. You can find your API key at https://platform.openai.com/account/api-keys.&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Why MUnit?</strong></p>
+<ul>
+<li>🚀 Fast, zero-config, Scala 3-ready.</li>
+<li>🧪 Clean syntax and powerful assertions.</li>
+<li>🤝 Easy integration with sbt and CI.</li>
+</ul>
+<hr>
+<h2 id="-logging-support">🪵 Logging support</h2>
+<div class="admonition success">
+  <div class="admonition-title">Pre-configured logging saves debugging time</div>
+  <div class="admonition-content">
+    Nothing frustrates users more than cryptic errors with no logging context. Ship templates with logging already configured and integrated. When things go wrong (and they will), good logs are the difference between quick fixes and multi-hour debugging sessions.
+  </div>
+</div>
+<p>Every serious application needs robust logging. The template wires in <a href="https://logback.qos.ch/" rel="noopener external" target="_blank">logback-classic</a>
+ for powerful, production-grade logging, and <a href="https://github.com/lightbend/scala-logging" rel="noopener external" target="_blank">scala-logging</a>
+ for a delightfully idiomatic Scala API.</p>
+<p><strong>build.sbt:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="n">libraryDependencies</span> <span class="o">++=</span> <span class="nc">Seq</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;com.typesafe.scala-logging&#34;</span> <span class="o">%%</span> <span class="s">&#34;scala-logging&#34;</span> <span class="o">%</span> <span class="s">&#34;$scala_logging_version$&#34;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;ch.qos.logback&#34;</span> <span class="o">%</span> <span class="s">&#34;logback-classic&#34;</span> <span class="o">%</span> <span class="s">&#34;$logback_version$&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Usage:</strong></p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">com.typesafe.scalalogging.LazyLogging</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">object</span> <span class="nc">Main</span> <span class="k">extends</span> <span class="nc">LazyLogging</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">def</span> <span class="n">main</span><span class="o">(</span><span class="n">args</span><span class="k">:</span> <span class="kt">Array</span><span class="o">[</span><span class="kt">String</span><span class="o">])</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="o">(</span><span class="s">&#34;Application started!&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Extensibility:</strong><br>
+Want even richer, type-safe logging? Swap in <a href="https://github.com/7mind/izumi/tree/master/logstage" rel="noopener external" target="_blank">LogStage</a>
+ for next-level structured logging-your observability future is bright!</p>
+<hr>
+<h2 id="-github-actions-cicd-setup">🤖 GitHub Actions: CI/CD setup</h2>
+<p>No modern template is complete without CI/CD. The <code>llm4s.g8</code> template ships with a ready-to-go GitHub Actions workflow that validates every project build, test, and format check:</p>
+<p><strong>.github/workflows/ci.yml</strong></p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">llm4s project giter8 template test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">main, master ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">main, master ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">  </span><span class="c"># Allows manual triggering</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">validate-template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Test working of the llm4s.g8 template</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">fail-fast</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">matrix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">os</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">ubuntu-latest ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">scala</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="m">2.13.10</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">java</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="m">21</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">${{ matrix.os }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Checkout repository</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Set up Java</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-java@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">distribution</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;temurin&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">java-version</span><span class="p">:</span><span class="w"> </span><span class="l">${{ matrix.java }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">cache</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;sbt&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup sbt launcher</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">sbt/setup-sbt@v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Generate project from template</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          sbt new file://$GITHUB_WORKSPACE/llm4s.g8 \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --name=llm4s-template \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --package=org.llm4s.template \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --version=0.1.0-SNAPSHOT \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --llm4s_version=0.1.1 \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --scala_version=2.13.16 \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --munit_version=1.1.1 \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --directory=org.llm4s.template \
+</span></span></span><span class="line"><span class="cl"><span class="sd">          --force &lt;&lt;&lt; &#34;\n&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Check code formatting with scalafmt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          cd llm4s-template
+</span></span></span><span class="line"><span class="cl"><span class="sd">          sbt scalafmtCheckAll</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Run compile, test on generated template</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          cd llm4s-template
+</span></span></span><span class="line"><span class="cl"><span class="sd">          sbt compile test</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Result:</strong><br>
+Every push or PR is checked for compilation, formatting, and test success, giving you confidence and peace of mind-automatically.</p>
+<hr>
+<h2 id="-pluginssbt-plugin-magic">🔌 plugins.sbt: Plugin magic</h2>
+<p>SBT plugins unlock powerful capabilities. The template’s <code>project/plugins.sbt</code> brings in the essentials:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="n">addSbtPlugin</span><span class="o">(</span><span class="s">&#34;org.scalameta&#34;</span> <span class="o">%</span> <span class="s">&#34;sbt-scalafmt&#34;</span> <span class="o">%</span> <span class="s">&#34;2.5.2&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">addSbtPlugin</span><span class="o">(</span><span class="s">&#34;com.geirsson&#34;</span> <span class="o">%</span> <span class="s">&#34;sbt-ci-release&#34;</span> <span class="o">%</span> <span class="s">&#34;1.5.11&#34;</span><span class="o">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><strong>sbt-scalafmt:</strong> Enforces code style and formatting.</li>
+<li><strong>sbt-ci-release:</strong> Simplifies publishing to Maven Central and beyond.</li>
+</ul>
+<p>Want more? Just add your favorite plugins-SBT’s ecosystem is your playground.</p>
+<hr>
+<h2 id="-formatting-scalafmtconf">🎨 Formatting: scalafmt.conf</h2>
+<p>Code consistency is not just aesthetic-it’s a foundation for collaboration. The template includes a <code>.scalafmt.conf</code> with sensible defaults to keep your codebase tidy:</p>
+<pre tabindex="0"><code class="language-hocon" data-lang="hocon"># scalafmt configuration
+version = &#34;3.9.8&#34;
+runner.dialect = scala213
+maxColumn = 100
+style = defaultWithAlign
+rewrite.rules = [RedundantParens, RedundantBraces, SortImports, PreferCurlyFors]
+spaces.inImportCurlyBraces = true
+project.git = true
+rewrite.trailingCommas.style = multiple
+indentOperator.exemptScope = all
+
+# Optional enhancements
+align.preset = more
+
+# Scala‑3 specific (optional)
+rewrite.scala3.convertToNewSyntax = true
+rewrite.scala3.removeOptionalBraces = true
+
+# Token rewrites
+rewriteTokens {
+    &#34;⇒&#34; = &#34;=&gt;&#34;,
+    &#34;←&#34; = &#34;&lt;-&#34;,
+    &#34;→&#34; = &#34;-&gt;&#34;;
+}</code></pre><p><strong>Why it matters:</strong><br>
+With scalafmt, every contributor speaks the same code dialect. No more nitpicks-just clean, readable Scala everywhere.</p>
+<hr>
+<h2 id="-reflections--value">🔍 Reflections &amp; value</h2>
+<p>Building the <code>llm4s.g8</code> template was a journey that transcended mere coding. It was about empathy, community, and the art of crafting experiences that resonate with developers.</p>
+<h3 id="the-human-factor-empathy-in-developer-experience">The Human factor: Empathy in developer experience</h3>
+<p>The team recognized that behind every line of code is a developer-sometimes a novice, sometimes a seasoned expert-seeking to understand, experiment, and create. By focusing on empathy, the template was designed to speak the developer’s language, anticipate their needs, and smooth out rough edges.</p>
+<h3 id="value-delivered">Value delivered</h3>
+<ul>
+<li>🚀 <strong>Faster adoption:</strong> The one-command starter project slashed onboarding time from around 20 minutes to under 5, a transformational improvement.</li>
+<li>🧠 <strong>Cleaner learning curve:</strong> By providing idiomatic examples and clear structure, the template demystifies prompt engineering and SDK usage.</li>
+<li>🛠 <strong>IDE integration-ready:</strong> The project layout and dependencies are optimized for popular IDEs, reducing setup friction.</li>
+<li>✅ <strong>CI-tested reliability:</strong> Automated validation builds trust and confidence in the generated projects.</li>
+<li>🌍 <strong>Cross-platform consistency:</strong> Developers on any OS can expect the same seamless experience.</li>
+<li>📚 <strong>Documentation clarity:</strong> The README serves as a friendly guide, empowering users to explore and extend with ease.</li>
+</ul>
+<h3 id="beyond-the-code-community-and-collaboration">Beyond the code: Community and collaboration</h3>
+<p>The creation of <code>llm4s.g8</code> sparked vibrant discussions in the community, inspiring contributions, feedback, and shared learning. It became more than a template-it became a catalyst for collaboration and innovation.</p>
+<hr>
+<h2 id="-pull-request-summary-of-issue-94">📦 <a href="https://github.com/llm4s/llm4s/pull/101" rel="noopener external" target="_blank">Pull request</a>
+ summary of <a href="https://github.com/llm4s/llm4s/issues/94" rel="noopener external" target="_blank">Issue #94</a>
+</h2>
+<p>The pull request associated with Issue #94 represents a significant milestone in the LLM4S project’s evolution. It encapsulates the collective effort to simplify onboarding and improve usability.</p>
+<h3 id="-done">✅ Done</h3>
+<ul>
+<li><strong>Created <code>llm4s.g8</code>:</strong> A Giter8-based starter template aligned with LLM4S architecture, featuring Scala 3, sbt, and idiomatic directory layout.</li>
+<li><strong>Main.scala + PromptExecutor:</strong> A working CLI example demonstrating OpenAI prompt execution with tracing support.</li>
+<li><strong>CLI Support:</strong> Commands like <code>sbt run</code>, <code>sbt test</code>, and <code>scalafmtAll</code> work out of the box, with environment-based API key loading (<code>OPENAI_API_KEY</code>).</li>
+<li><strong>CI Integration:</strong> GitHub Actions workflows validate project generation, compilation, formatting, and testing.</li>
+<li><strong>Integration Testing:</strong> Includes scripted and Scala-based tests with cleanup mechanisms to ensure reliability.</li>
+<li><strong>README.md:</strong> Comprehensive usage instructions, directory structure overview, and publishing guide.</li>
+<li>Added <strong>IDE/editor-specific integration helpers</strong>, such as VSCode launch configurations.</li>
+<li>Developing optional template variants, including plugin-based or multi-module setups to cater to diverse use cases.</li>
+<li><strong>Logger:</strong> Added logger / logging support</li>
+<li><strong>pre‑commit:</strong> pre-commit hook setup for automated code checks and formatting.</li>
+<li>Publishing the template to a <strong>Giter8 registry</strong> for easier discovery and usage.</li>
+</ul>
+<h3 id="-why-it-matters">✅ Why it matters</h3>
+<ul>
+<li>Onboarding time reduced significantly, accelerating developer productivity.</li>
+<li>IDE-friendly scaffolding reduces cognitive load and setup errors.</li>
+<li>Templates encourage reuse, extension, and experimentation.</li>
+<li>Cross-platform and CI builds foster early trust and confidence.</li>
+</ul>
+<h3 id="-design--scope-questions">❓ Design &amp; Scope Questions</h3>
+<p>The journey continues with thoughtful questions to guide future directions:</p>
+<ul>
+<li><strong>Location:</strong> Should <code>llm4s.g8</code> reside under <code>sdk/</code> or be moved to a root-level <code>/templates/</code> directory for clearer structure and discoverability?</li>
+<li><strong>Vision Alignment:</strong> Does this approach fully capture LLM4S’s ergonomic goals, or are there opportunities to pivot or expand?</li>
+<li><strong>Template Scope:</strong> Should the project evolve into a family of templates (minimal, plugin-enabled, microservice-ready), or remain a canonical starting point?</li>
+<li><strong>Target Use Cases:</strong> Is the focus on CLI prototyping, code generation experimentation, or learning Scala with LLMs-and how can the template best serve these?</li>
+</ul>
+<hr>
+<h2 id="-pr-review--feedback">🧪 PR Review &amp; Feedback</h2>
+<p>The review process, enriched by Rory’s insights and Claude Code-assisted analysis, highlighted the strengths and areas for refinement.</p>
+<h3 id="-strengths">✅ Strengths</h3>
+<ul>
+<li>Addresses real onboarding friction with a practical solution.</li>
+<li>Solid Giter8 implementation with thoughtful template design.</li>
+<li>Comprehensive CI and testing coverage ensure reliability.</li>
+<li>Real-world prompt execution demo showcases SDK capabilities.</li>
+<li>GitHub Actions workflows validate project generation and build steps.</li>
+</ul>
+<h3 id="-suggestions">⚠️ Suggestions</h3>
+<ul>
+<li><strong>build.sbt:</strong> Adopt the <code>val llm4sVersion = &quot;$llm4s_version$&quot;</code> syntax for Giter8 variable substitution to improve template flexibility.</li>
+<li><strong>Test dependencies:</strong> Add <code>munit</code> to the build configuration to support testing.</li>
+<li><strong>Java version alignment:</strong> Ensure Java version consistency across CI and template output to prevent runtime issues.</li>
+</ul>
+<p>The feedback was embraced as an opportunity to polish and perfect the template further, reinforcing the commitment to quality.</p>
+<hr>
+<p>🧪 <strong>What’s next?</strong></p>
+<p>The journey of <code>llm4s.g8</code> is far from over. Future milestones include:</p>
+<ul>
+<li>Publishing the template to the official Giter8 registry, making it discoverable and easy to use.</li>
+<li>Introducing editor launch configurations for VSCode, IntelliJ, and other popular IDEs to streamline debugging and development.</li>
+<li>Exploring multiple presets and variants to cater to diverse developer needs-from minimal prototypes to plugin-enabled or microservice-ready templates.</li>
+</ul>
+<hr>
+<h2 id="-ci-build-logs">🔗 <a href="https://github.com/llm4s/llm4s/actions/workflows/llm4s-g8-template.yml" rel="noopener external" target="_blank">CI Build Logs</a>
+</h2>
+<h3 id="-want-to-try-it-out-or-contribute">👉 Want to try it out or contribute?</h3>
+<p>Dive in by cloning <code>llm4s.g8</code>, running:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sbt new llm4s/llm4s.g8</span></span></code></pre></td></tr></table>
+</div>
+</div><p>and start hacking away. Your feedback, contributions, and creativity are warmly welcomed as we continue to evolve this exciting project.</p>
+<hr>
+<p><strong>In Closing:</strong></p>
+<p>The creation of <code>llm4s.g8</code> is a testament to the power of community-driven innovation and the importance of putting developer experience front and center. By transforming onboarding pain points into a delightful, streamlined process, we have opened the door for more Scala developers to explore, experiment, and build with LLM4S. This is just the beginning of a new chapter-one where the synergy of human creativity and machine intelligence can truly flourish.</p>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/2025-07-llm4s-issue-94.png" type="image/png"/></item></channel></rss>
