@@ -1,0 +1,54 @@
+# Netlify/static host security headers configuration
+# These headers enhance security for the deployed site
+# https://docs.netlify.com/routing/headers/
+
+/*
+  # HSTS (HTTP Strict Transport Security)
+  # Force HTTPS for 1 year, include subdomains, allow preload listing
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+  # X-Frame-Options: Prevent clickjacking
+  X-Frame-Options: DENY
+
+  # X-Content-Type-Options: Prevent MIME sniffing
+  X-Content-Type-Options: nosniff
+
+  # X-XSS-Protection: Enable XSS filter (legacy browsers)
+  X-XSS-Protection: 1; mode=block
+
+  # Referrer-Policy: Control referrer information
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Permissions-Policy: Restrict browser features
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), autoplay=()
+
+  # CSP is set via Hugo meta tags (layouts/partials/security-headers.html)
+  # which is the single source of truth for Content-Security-Policy.
+  # The meta tag approach allows per-page CSP (e.g., Mermaid pages get unsafe-eval,
+  # payment pages get Cashfree/Turnstile domains).
+  # Do NOT duplicate CSP here -- it will conflict with the meta tag policy.
+  # See: docs/design/security-headers.md for the full rationale.
+  #
+  # frame-ancestors MUST be set here because meta tags cannot set it:
+  X-Frame-Options: DENY
+
+# Cache static assets for 1 year
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Don't cache HTML
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate

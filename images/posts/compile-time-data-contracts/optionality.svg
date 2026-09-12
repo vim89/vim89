@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420">
+  <style>
+    .title { font: 700 22px Inter, Segoe UI, Arial, sans-serif; }
+    .hdr { font: 600 16px Inter, Segoe UI, Arial, sans-serif; fill: #0b1f33; }
+    .cell { font: 15px Inter, Segoe UI, Arial, sans-serif; fill: #233; }
+    .box { fill: #f8fbff; stroke: #b7d2f0; stroke-width: 1; }
+    .arrow { stroke: #333; stroke-width: 1.6; marker-end: url(#arr); fill:none; }
+  </style>
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="30" class="title">Field vs Element Optionality</text>
+
+  <!-- Field optionality column -->
+  <g transform="translate(20,60)">
+    <rect class="box" x="0" y="0" width="520" height="300" rx="10"/>
+    <text class="hdr" x="20" y="36">Case class field (field optionality)</text>
+    <text class="cell" x="20" y="72">case class U(id: Long, note: Option[String])</text>
+
+    <rect class="box" x="20" y="96" width="480" height="70" rx="8"/>
+    <text class="cell" x="34" y="138">FieldShape(name="note", shape=String, hasDefault=?, isOptional=true)</text>
+
+    <line class="arrow" x1="260" y1="166" x2="260" y2="206"/>
+    <rect class="box" x="20" y="206" width="480" height="70" rx="8"/>
+    <text class="cell" x="34" y="248">StructShape([... FieldShape ...])</text>
+  </g>
+
+  <!-- Element optionality column -->
+  <g transform="translate(620,60)">
+    <rect class="box" x="0" y="0" width="560" height="300" rx="10"/>
+    <text class="hdr" x="20" y="36">Collection element (element optionality)</text>
+    <text class="cell" x="20" y="72">type T = List[Option[String]]</text>
+
+    <rect class="box" x="20" y="96" width="520" height="70" rx="8"/>
+    <text class="cell" x="34" y="138">SequenceShape(OptionalShape(String))</text>
+
+    <line class="arrow" x1="280" y1="166" x2="280" y2="206"/>
+    <rect class="box" x="20" y="206" width="520" height="70" rx="8"/>
+    <text class="cell" x="34" y="248">Represents List[Option[String]]</text>
+  </g>
+
+  <text class="cell" x="20" y="380">Under strict policies, List[Option[A]] ≠ List[A]. Field optionality is on the field; element optionality is inside the collection.</text>
+</svg>
+

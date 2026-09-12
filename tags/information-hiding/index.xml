@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/information-hiding/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 12 Sep 2026 21:43:38 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/information-hiding/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Stop reviewing for correctness only: a complexity-first design doctrine (and the skill/plugin that enforces it)</title><link>https://vitthalmirji.com/2026/09/software-design-depth-doctrine-fighting-complexity-in-code-review/</link><guid isPermaLink="true">https://vitthalmirji.com/2026/09/software-design-depth-doctrine-fighting-complexity-in-code-review/</guid><pubDate>Sat, 12 Sep 2026 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>software-architecture</category><category>code-review</category><category>software-design</category><category>complexity</category><category>deep-modules</category><category>information-hiding</category><category>error-handling</category><category>naming</category><category>comments</category><category>engineering-practices</category><category>staff-engineer</category><category>principal-engineer</category><category>claude-code</category><category>claude-skills</category><description>A personal design-review doctrine built from weeks of deliberately internalizing Ousterhout's ideas on software complexity - deep modules, information hiding, defining errors out of existence - until they became instinct, not a checklist.</description><content:encoded><![CDATA[<p class="lead"><p>You&rsquo;ve seen this PR. It compiles. Tests pass. The reviewer skims it, sees no obvious bug, drops an &ldquo;LGTM&rdquo; before their
+coffee gets cold. Six months later, nobody can touch that module without also touching four others, and the person
+who wrote it has moved teams - or, increasingly in 2026, asked an AI to write four teams&rsquo; worth of modules before
+lunch and moved on to the next ticket. Nothing was ever <em>wrong</em> with any single line. It just quietly became too
+expensive to change, and now it&rsquo;s becoming too expensive to change at a speed nobody budgeted for.</p>
+<p>That&rsquo;s the failure mode this doctrine targets. Not bugs - complexity. Complexity didn&rsquo;t get a new personality
+recently. It got a keyboard, a code-generation button, and a mandate from someone with a Director title who has never
+run <code>git blame</code> in their life.</p>
+</p>
+
+
+<p>Most review checklists optimize for one question: does this work? That&rsquo;s necessary and nowhere near sufficient. A
+change can be functionally correct and still make the system harder to reason about, harder to extend, harder to
+delete. Nobody writes that PR comment because &ldquo;does this work&rdquo; has no line item for &ldquo;does this make the next six
+months harder.&rdquo;</p>
+<p>I spent several weeks deliberately drilling this into habit - not skimming <em><a href="https://web.stanford.edu/~ouster/cgi-bin/aposd.php" rel="noopener external" target="_blank">A Philosophy of Software
+Design</a>
+</em> once and moving on, but applying its models against real
+pull requests and real designs until &ldquo;is this module deep or shallow&rdquo; stopped being a lookup and started being a
+reflex. This post is that doctrine: the mental model, not a book summary. Credit where it&rsquo;s due - the foundational
+framing (complexity as the root problem, deep modules, information hiding, defining errors out of existence) comes
+from <a href="https://web.stanford.edu/~ouster/cgi-bin/home.php" rel="noopener external" target="_blank">John Ousterhout</a>
+, professor at Stanford and creator of the Raft
+consensus algorithm and the Tcl scripting language. What follows is how I apply it.</p>
+<div class="admonition info">
+  <div class="admonition-title">What&#39;s in this post</div>
+  <div class="admonition-content">
+    <ul>
+<li>The complexity model I actually use in review: two causes, three symptoms, one formula</li>
+<li>Why AI-assisted &ldquo;vibe coding&rdquo; didn&rsquo;t invent a new failure mode - it just multiplied the same two root causes by an
+order of magnitude, with receipts</li>
+<li>Why the loudest cheerleaders for that math have never opened a diff, and what the doctrine says about their own
+favorite dashboard</li>
+<li>The 15 principles, compressed to what changes your next PR comment</li>
+<li>A red-flags checklist you can run against a diff in five minutes</li>
+<li>A before/after example showing a shallow module becoming deep</li>
+<li>How this is complementary to, not the same as, the <a href="/code-review-system/">code review operating system</a>
+ I wrote about
+earlier</li>
+<li>Where I packaged this as a skill/plugin, why that&rsquo;s the smaller part of this post, and what actually goes wrong
+when you rely on a skill to trigger itself</li>
+</ul>
+
+  </div>
+</div>
+<hr>
+<h2 id="the-problem-with-working-code">The problem with &ldquo;working code&rdquo;</h2>
+<p>Every engineer has approved a PR where the diff was small, the tests were green, and something still felt off. Usually
+that feeling has a name, and the name is one of three things:</p>
+<ul>
+<li><strong>Change amplification</strong> - a conceptually simple change (rename a status, add a field) forces edits in five unrelated
+files.</li>
+<li><strong>Cognitive load</strong> - to make a safe change, you have to hold six other modules in your head, even though none of them
+block you mechanically.</li>
+<li><strong>Unknown unknowns</strong> - you genuinely don&rsquo;t know what else needs to change, or even where to look, to do the task
+safely.</li>
+</ul>
+<p>None of these show up in a test suite. That&rsquo;s why &ldquo;working code&rdquo; is the wrong bar. The right bar is: does this
+decision reduce complexity, or does it just move the pain somewhere the tests can&rsquo;t see?</p>
+<p>Complexity itself isn&rsquo;t one big architectural sin. It&rsquo;s the sum of many small, individually-reasonable decisions:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">C = Σ (cp · tp)</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Each part&rsquo;s complexity (<code>cp</code>), weighted by how much time developers actually spend in that part (<code>tp</code>). This is why a
+sloppy shortcut in a file nobody touches is harmless, and the same shortcut in a hot module is a slow-motion incident.
+It also means no single PR creates a complexity crisis - and no single PR fixes one. That&rsquo;s the argument for an
+<strong>investment mindset</strong>: spend roughly 10-20% of your time on ongoing design improvement instead of always taking the
+fastest tactical path. Skip that consistently and you get what Ousterhout calls a &ldquo;tactical tornado&rdquo; - a codebase where
+every fix is fast and every fix makes the next one slower.</p>
+<p>Both symptoms above trace back to exactly two root causes:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Root cause</th>
+					<th>What it looks like</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Dependencies</strong></td>
+					<td>Code cannot be understood or safely changed in isolation - touching it means touching something else.</td>
+			</tr>
+			<tr>
+					<td><strong>Obscurity</strong></td>
+					<td>Important information exists but isn&rsquo;t visible where you need it - in the interface, the name, or the comment.</td>
+			</tr>
+	</tbody>
+</table>
+<pre class="mermaid">flowchart LR
+    DEP[&#34;Dependencies:&lt;br/&gt;can&#39;t change code&lt;br/&gt;in isolation&#34;] --&gt; COMPLEX[&#34;Complexity&lt;br/&gt;C = Σ (cp · tp)&#34;]
+    OBS[&#34;Obscurity:&lt;br/&gt;information exists&lt;br/&gt;but isn&#39;t visible&#34;] --&gt; COMPLEX
+    COMPLEX --&gt; CA[&#34;Change amplification&#34;]
+    COMPLEX --&gt; CL[&#34;Cognitive load&#34;]
+    COMPLEX --&gt; UU[&#34;Unknown unknowns&#34;]
+    style DEP fill: #ffe1e1, stroke: #cc0000, color: #000
+    style OBS fill: #ffe1e1, stroke: #cc0000, color: #000
+    style COMPLEX fill: #fff4e1, stroke: #cc8800, color: #000
+    style CA fill: #f0e1ff, stroke: #8800cc, color: #000
+    style CL fill: #f0e1ff, stroke: #8800cc, color: #000
+    style UU fill: #f0e1ff, stroke: #8800cc, color: #000
+</pre><p>Every technique below is just a way to cut dependencies, reduce obscurity, or both. If a proposed fix doesn&rsquo;t do
+either, it&rsquo;s not actually addressing complexity - it&rsquo;s rearranging it.</p>
+<hr>
+<h2 id="then-ai-happened-and-10x-became-the-optimistic-estimate">Then AI happened, and &ldquo;10x&rdquo; became the optimistic estimate</h2>
+<p>Everything above was already true before an LLM ever wrote a line of Scala. Then vibe coding showed up, and the
+complexity model didn&rsquo;t change - the inputs to it did, by roughly an order of magnitude, which is the polite way of
+saying it got much worse, and everyone with a keyboard now has the receipts to prove it.</p>
+<p>Apiiro analyzed tens of thousands of repositories and several thousand developers across Fortune 50 enterprises and
+found that the same AI tools driving <a href="https://apiiro.com/blog/4x-velocity-10x-vulnerabilities-ai-coding-assistants-are-shipping-more-risks/" rel="noopener external" target="_blank">4x commit velocity are shipping 10x more security
+findings</a>
+ -
+over 10,000 new findings per month by June 2025, up from roughly 1,000 in December 2024, and the curve is
+accelerating, not flattening. The flaws that grew fastest weren&rsquo;t typos - those actually dropped. It was the
+expensive kind: privilege-escalation paths up 322%, architectural design flaws up 153%, while pull-request volume
+<em>fell</em> by nearly a third, because AI-assisted commits got batched into fewer, larger, harder-to-review changes.
+Apiiro&rsquo;s own product manager put it plainly: &ldquo;AI is multiplying not one kind of vulnerability, but all of them at
+once.&rdquo; Translate that into the formula from the last section: nobody reduced <code>cp</code>. They just multiplied the number of
+<code>cp</code> terms being generated in parallel, faster than any review cadence built for humans was ever designed to absorb.</p>
+<p>Documentation gets it worse, not better, despite the AI - or because of it. Code changes faster than anyone updates
+the docs describing it, and the model writing the next round of code and docs is trained on, and prompted with,
+whatever&rsquo;s already there, stale or not. curl&rsquo;s maintainer eventually <a href="https://www.theregister.com/2025/07/15/curl_creator_mulls_nixing_bug/" rel="noopener external" target="_blank">shut down the project&rsquo;s six-year-old bug-bounty
+program in January 2026</a>
+ because, in his own
+telling, roughly 20% of submissions were AI-generated &ldquo;vulnerability reports&rdquo; - confident, well-formatted, and
+wrong - while only about 5% turned out to be real, a hit rate too low for any maintainer to keep triaging by hand. An
+<a href="https://arxiv.org/abs/2603.27249" rel="noopener external" target="_blank">arXiv study coding 1,154 Reddit and Hacker News posts on &ldquo;AI
+slop&rdquo;</a>
+ found the same complaint on loop across every project: not that the AI is
+slow, but that everything it produces <em>looks</em> reviewed and isn&rsquo;t - which is obscurity wearing a suit, at a scale
+no individual reviewer volunteered for. The paper&rsquo;s own framing for it is a tragedy of the commons: one person&rsquo;s
+productivity gain externalizes its cost onto every reviewer and maintainer downstream.</p>
+<p>None of this is an argument against using AI to write code. It&rsquo;s an argument that the two root causes of
+complexity - dependencies and obscurity - now compound at a speed no human review process was built for, and &ldquo;the
+model wrote it&rdquo; is not a design decision, a form of hiding, or an interface. It&rsquo;s just volume, generated faster than
+anyone can verify it&rsquo;s not garbage.</p>
+<h3 id="and-the-people-cheering-loudest-have-never-opened-a-diff">And the people cheering loudest have never opened a diff</h3>
+<p>Here&rsquo;s the part that never makes the all-hands deck. A lot of the loudest &ldquo;we&rsquo;re AI-first now&rdquo; energy isn&rsquo;t coming
+from engineers weighing whether the resulting modules are deep or shallow - it&rsquo;s coming from Directors, Senior
+Directors, Engineering Managers, Product Managers, and stakeholders whose entire interface with the codebase is a
+velocity chart and a slide that says &ldquo;40% of code is now AI-generated,&rdquo; 44-point font, italicized for emphasis.</p>
+<p>Run that dashboard through the doctrine&rsquo;s own test: can someone use it correctly without learning how the thing
+underneath it actually works? For most &ldquo;AI adoption %&rdquo; metrics, that&rsquo;s a hard no. Which makes the dashboard itself a
+textbook shallow module - a big, confident interface that costs almost nothing to learn and hides absolutely nothing
+about whether the code behind it is any good, because the person who built the interface never learned what &ldquo;good&rdquo;
+would look like to begin with. They didn&rsquo;t shorten the distance between the metric and the truth. They just added a
+name.</p>
+<p>That&rsquo;s not a personality flaw. It&rsquo;s the exact pattern this doctrine already named, applied top-down instead of found
+bottom-up. A mandate to &ldquo;ship more with AI&rdquo; is a <strong>dependency</strong> an entire engineering org can no longer change in
+isolation - every team has to route around it - issued by someone with zero visibility into whether the resulting
+throughput is deep functionality or ten thousand duplicated lines waiting for their CVE number. <a href="https://www.benzinga.com/news/topics/26/04/51687565/reddit-ceo-steve-huffman-says-ai-could-make-engineers-50-100-or-even-10x-more-productive-so-well-just-build-more-stuff" rel="noopener external" target="_blank">Reddit&rsquo;s own CEO
+said the quiet part out loud in
+2026</a>
+:
+his team&rsquo;s bottleneck moved to code review, in his words, &ldquo;because we can produce so much code&rdquo; - a straight
+admission that the org can now generate <code>cp</code> faster than anyone can verify it isn&rsquo;t garbage, and the proposed fix is
+rarely &ldquo;review more carefully.&rdquo; <a href="https://www.aol.com/finance/coinbase-ceo-urged-engineers-ai-160644050.html" rel="noopener external" target="_blank">Coinbase&rsquo;s CEO gave engineers a week to adopt AI tooling and fired the ones who
+didn&rsquo;t</a>
+, which is an efficient way to
+select for compliance and select against the one skill this entire doctrine is actually about: judging whether an
+interface hides what it claims to.</p>
+<p>None of this is subtle once you&rsquo;ve sat through enough of these town halls. A certain kind of shameless, jumped-up
+leader sprinkles &ldquo;AI&rdquo; over every sentence the way a diner sprinkles the same coriander-chutney garnish on every dish
+on the menu - not because the dish needs it, but because it&rsquo;s cheap, it&rsquo;s visible, and it makes the plate look like
+something happened. AI-first decks, AI-first OKRs, AI-first town halls, AI-everywhere-all-the-time: garnish, not
+substance, and the substance was never theirs to provide in the first place. Then, at 2 a.m. when the thing built on
+that garnish falls over - or eighteen months later when the tech-debt bill from Apiiro&rsquo;s 10x number actually comes
+due - the same people who have never opened a diff page the developers, and L2/L3 straight out of bed, with a
+straight face, like it&rsquo;s a shock, like they had nothing whatsoever to do with the mandate that produced it. That&rsquo;s
+the whole move: take credit for the interface, hide none of the cost, and hand the pager to whoever&rsquo;s on call.</p>
+<p>So the next time a Director asks why velocity didn&rsquo;t 10x the way the AI vendor&rsquo;s slide promised, you now have the
+honest answer, and it isn&rsquo;t a soft one: the model was never the constraint. Judging depth always was, and no amount
+of leadership enthusiasm for a shallow adoption-rate metric changes the two things that were always going to decide
+the outcome - dependencies and obscurity. It just adds a third, larger, more confident source of both, mandated from
+a level of the org chart that has never had to hide a single piece of information behind an interface in its life.</p>
+<p>In plenty of places, that mandate isn&rsquo;t a suggestion anymore - using AI to write code is now compulsory, handed down
+from exactly the level of the org that just got roasted above. You don&rsquo;t get a vote on the mandate. You still get a
+vote on whether you can tell the difference between what it produces and what actually belongs in your codebase.
+That&rsquo;s what the rest of this post, and the skill/plugin at the end of it, is for: a mental model for fighting
+complexity that works whether the diff in front of you came from a colleague or a language model - offered as a
+complement to your own judgment, not a replacement for it.</p>
+<hr>
+<h2 id="the-15-principles-compressed">The 15 principles, compressed</h2>
+<p>I don&rsquo;t recite all fifteen in review. In practice, five or six carry most of the weight on any given PR. Here&rsquo;s the
+full list - treat it as a reference, not a script:</p>
+<ol>
+<li>Complexity is incremental: sweat the small stuff.</li>
+<li>Working code isn&rsquo;t enough - it must also be well-designed.</li>
+<li>Make continual small investments to improve system design.</li>
+<li>Modules should be deep.</li>
+<li>Interfaces should make the most common usage as simple as possible.</li>
+<li>A simple interface matters more than a simple implementation.</li>
+<li>General-purpose modules are deeper.</li>
+<li>Separate general-purpose code from special-purpose code.</li>
+<li>Different layers should have different abstractions.</li>
+<li>Pull complexity downward (into the implementation, away from callers).</li>
+<li>Define errors (and special cases) out of existence.</li>
+<li>Design it twice.</li>
+<li>Comments should describe things that are not obvious from the code.</li>
+<li>Software should be designed for ease of reading, not ease of writing.</li>
+<li>The increments of software development should be abstractions, not features.</li>
+</ol>
+<p>The one that changes the most review comments in practice is #4: <strong>modules should be deep</strong>. A deep module has a
+simple interface hiding substantial functionality. A shallow module has an interface that costs almost as much to
+learn as the implementation behind it - you&rsquo;ve added a name without hiding anything, which is pure overhead.</p>
+<hr>
+<h2 id="deep-vs-shallow-with-a-real-example">Deep vs. shallow, with a real example</h2>
+<p>Here&rsquo;s a pattern from <code>org.llm4s.core.safety.Safety</code> (the same codebase I use for <a href="/code-review-system/">review guideline
+examples</a>
+) - a small function that&rsquo;s a good example of the difference.</p>
+<p><strong>Shallow version</strong> - the interface barely hides anything; the caller still has to think about <code>Try</code>, <code>Success</code>,
+<code>Failure</code>, and how to map exceptions to your error type, every time:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="c1">// Shallow: caller does all the real work
+</span></span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">runAndWrap</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">thunk</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="n">A</span><span class="o">)</span><span class="k">:</span> <span class="kt">Either</span><span class="o">[</span><span class="kt">Throwable</span>, <span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="k">try</span> <span class="nc">Right</span><span class="o">(</span><span class="n">thunk</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">catch</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="n">e</span><span class="k">:</span> <span class="kt">Throwable</span> <span class="o">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Every call site repeats the mapping logic
+</span></span></span><span class="line"><span class="cl"><span class="n">runAndWrap</span><span class="o">(</span><span class="n">parseConfig</span><span class="o">())</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">v</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">v</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">e</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="nc">ConfigError</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="n">getMessage</span><span class="o">,</span> <span class="nc">Some</span><span class="o">(</span><span class="n">e</span><span class="o">)))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Deep version</strong> - the interface is one call; everything about <code>Try</code>, exception mapping, and the shape of the domain
+error is hidden inside:</p>
+<div class="highlight highlight-scala" data-lang="scala"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl"><span class="k">def</span> <span class="n">safely</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">thunk</span><span class="k">:</span> <span class="o">=&gt;</span> <span class="n">A</span><span class="o">)(</span><span class="k">implicit</span> <span class="n">em</span><span class="k">:</span> <span class="kt">ErrorMapper</span> <span class="o">=</span> <span class="nc">DefaultErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span>
+</span></span><span class="line"><span class="cl">  <span class="n">fromTry</span><span class="o">(</span><span class="nc">Try</span><span class="o">(</span><span class="n">thunk</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="n">fromTry</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">t</span><span class="k">:</span> <span class="kt">Try</span><span class="o">[</span><span class="kt">A</span><span class="o">])(</span><span class="k">implicit</span> <span class="n">em</span><span class="k">:</span> <span class="kt">ErrorMapper</span> <span class="o">=</span> <span class="nc">DefaultErrorMapper</span><span class="o">)</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="n">t</span> <span class="k">match</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Success</span><span class="o">(</span><span class="n">v</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Right</span><span class="o">(</span><span class="n">v</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="nc">Failure</span><span class="o">(</span><span class="n">e</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">Left</span><span class="o">(</span><span class="n">em</span><span class="o">(</span><span class="n">e</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Call site: one line, no exception-handling knowledge required
+</span></span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">config</span><span class="k">:</span> <span class="kt">Result</span><span class="o">[</span><span class="kt">Config</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Safety</span><span class="o">.</span><span class="n">safely</span><span class="o">(</span><span class="n">parseConfig</span><span class="o">())</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Nothing about <code>Try</code>, pattern matching on <code>Success</code>/<code>Failure</code>, or how exceptions become domain errors leaks into the
+caller. That&rsquo;s the whole test for depth: <strong>can someone use this correctly without learning how it works?</strong> If the
+answer is no, the module is shallow no matter how clean the code inside it looks.</p>
+<p>This is also principle #11 in action - <strong>define errors out of existence</strong>. <code>ErrorMapper</code> isn&rsquo;t a try/catch scattered
+at every call site; it&rsquo;s a single seam where &ldquo;how do exceptions become our error type&rdquo; gets decided once, and every
+caller inherits that decision for free.</p>
+<hr>
+<h2 id="the-red-flags-checklist">The red-flags checklist</h2>
+<p>This is the part I actually run against a diff. Each row is a checkable symptom, not a vague smell - if you can point
+to the line, you can write the comment.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Red flag</th>
+					<th>Symptom to look for</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><strong>Shallow module</strong></td>
+					<td>Interface isn&rsquo;t much simpler than the implementation behind it.</td>
+			</tr>
+			<tr>
+					<td><strong>Information leakage</strong></td>
+					<td>The same design decision (a file format, a data layout) is baked into more than one module.</td>
+			</tr>
+			<tr>
+					<td><strong>Temporal decomposition</strong></td>
+					<td>Code structure mirrors execution order (&ldquo;first read, then parse, then write&rdquo;) instead of knowledge boundaries.</td>
+			</tr>
+			<tr>
+					<td><strong>Overexposure</strong></td>
+					<td>Using a common feature requires learning about rarely-used features first.</td>
+			</tr>
+			<tr>
+					<td><strong>Pass-through method</strong></td>
+					<td>A method does almost nothing but forward its arguments to another method with a similar signature.</td>
+			</tr>
+			<tr>
+					<td><strong>Repetition</strong></td>
+					<td>The same nontrivial code appears over and over.</td>
+			</tr>
+			<tr>
+					<td><strong>Special-general mixture</strong></td>
+					<td>Special-purpose logic is tangled into general-purpose code instead of cleanly separated.</td>
+			</tr>
+			<tr>
+					<td><strong>Conjoined methods</strong></td>
+					<td>Two methods are so coupled you can&rsquo;t understand one without reading the other, with nothing marking the connection.</td>
+			</tr>
+			<tr>
+					<td><strong>Comment repeats code</strong></td>
+					<td>Everything the comment says is already obvious from the adjacent code.</td>
+			</tr>
+			<tr>
+					<td><strong>Interface contaminated by implementation</strong></td>
+					<td>An interface-level comment leaks implementation details the caller never needed.</td>
+			</tr>
+			<tr>
+					<td><strong>Vague name</strong></td>
+					<td>A name is so generic it conveys almost no information (<code>result</code>, <code>data</code>, <code>tmp</code>, <code>handle</code>).</td>
+			</tr>
+			<tr>
+					<td><strong>Hard to pick a name</strong></td>
+					<td>Struggling to name something cleanly usually means the thing itself isn&rsquo;t cleanly designed.</td>
+			</tr>
+			<tr>
+					<td><strong>Hard to describe</strong></td>
+					<td>If documenting something completely requires a long comment, the abstraction is probably wrong.</td>
+			</tr>
+			<tr>
+					<td><strong>Nonobvious code</strong></td>
+					<td>A reader can&rsquo;t tell what a piece of code does or why just by reading it.</td>
+			</tr>
+	</tbody>
+</table>
+<p>Each row is a symptom, not the disease. The follow-up question is always the same: <em>what dependency or obscurity is
+actually causing this, and does my proposed fix remove it or just relocate it?</em> If a reviewer just says &ldquo;this method is
+shallow&rdquo; and stops there, that&rsquo;s a lazier version of &ldquo;LGTM.&rdquo; The useful comment names what the method should absorb or
+hide instead.</p>
+<hr>
+<h2 id="how-this-differs-from-a-review-checklist">How this differs from a review checklist</h2>
+<p>The <a href="/code-review-system/">code review operating system</a>
+ I wrote about covers the <em>process</em>: severity rubrics, CI
+gates, PR workflow, comment templates. This doctrine is upstream of that - it&rsquo;s what should be in your head <em>before</em>
+you write the comment, whether you&rsquo;re reviewing someone else&rsquo;s PR or designing your own module. A severity rubric
+tells you a missing error type is a must-fix. This doctrine tells you <em>why</em> - because an untyped exception at a domain
+boundary is obscurity (the failure modes aren&rsquo;t visible in the type) turning into change amplification (every caller
+has to guess what can go wrong).</p>
+<p>Concretely, I use it in three moments:</p>
+<ol>
+<li><strong>Designing something new</strong> - before writing an implementation, I ask what this module should hide, and design the
+interface around hiding it. Then I sketch at least two substantially different approaches (design it twice)
+before committing to either. If I can&rsquo;t write a one-paragraph interface comment without getting long-winded, that&rsquo;s
+a sign the abstraction is wrong, not that I need to write harder.</li>
+<li><strong>Reviewing existing code</strong> - walk the diff against the red-flags table above. For each hit, trace it back to
+dependency-or-obscurity and name the fix, not just the symptom.</li>
+<li><strong>Naming and commenting</strong> - a name that&rsquo;s hard to choose cleanly is telling you the underlying thing isn&rsquo;t cleanly
+designed. A comment that just restates the code is telling you the code needs a better name, not a comment.</li>
+</ol>
+<hr>
+<h2 id="packaging-it-a-skillplugin-the-complementary-part">Packaging it: a skill/plugin (the complementary part)</h2>
+<p>Once this became habitual, the natural next step was making it available where I actually do design review now - as a
+skill/plugin (built for Claude Code, since that&rsquo;s the coding assistant I use) so it triggers automatically on the
+phrases that actually show up in review: &ldquo;is this a good design,&rdquo; &ldquo;does this class do too much,&rdquo; &ldquo;how should I
+structure this.&rdquo;</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/plugin marketplace add vim89/software-design-depth-doctrine-skill
+</span></span><span class="line"><span class="cl">/plugin install software-design-depth-doctrine@software-design-depth-doctrine-skill</span></span></code></pre></td></tr></table>
+</div>
+</div><a href="https://github.com/vim89/software-design-depth-doctrine-skill" target="_blank" rel="noopener">
+🔗 View on GitHub: vim89/software-design-depth-doctrine-skill
+</a>
+<p>To be clear about what this is and isn&rsquo;t: the plugin is a convenience, not the point. It doesn&rsquo;t know anything the
+doctrine above doesn&rsquo;t already say - it just means I don&rsquo;t have to re-explain &ldquo;deep modules&rdquo; from scratch every time I
+ask my coding assistant to review a diff. If you don&rsquo;t use a tool that supports this kind of skill/plugin, the
+doctrine still applies exactly the same way it did before I automated the reminder. The mental model is the artifact.
+The skill is a delivery mechanism for a mental model I&rsquo;d already spent weeks internalizing - it doesn&rsquo;t shortcut that
+part for you.</p>
+<p>One honest caveat, because I&rsquo;ve been burned by the opposite claim before: description-based skill triggering isn&rsquo;t
+reliable by default. Glean&rsquo;s production data (covered in <a href="/harness-engineering/">my harness-engineering post</a>
+) showed
+that simply making a skill <em>available</em> initially <strong>dropped</strong> correct routing by about 20% in their evals, and it only
+recovered once they added explicit negative examples (&ldquo;don&rsquo;t call this for X, do Y instead&rdquo;) to the skill description.
+I hit the same thing at a much smaller scale while writing this skill&rsquo;s description - the router sometimes reached
+for it on plain refactoring questions that had nothing to do with module depth. The fix isn&rsquo;t a bigger model or a
+cleverer prompt; it&rsquo;s a narrower, more negatively-specified description.</p>
+<p>If you install this and want it to fire every time rather than sometimes, don&rsquo;t rely on the description at all - just
+say &ldquo;use the software-design-depth-doctrine skill&rdquo; in your prompt. That&rsquo;s the same reliability lever from that post:
+explicit invocation beats hoping the router guesses right. For a single-user skill like this one, a missed trigger
+just means you re-ask; it&rsquo;s not the kind of failure mode you&rsquo;d tolerate in a team-wide rollout, but it&rsquo;s worth knowing
+about before you assume the skill is &ldquo;always on.&rdquo;</p>
+<hr>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://web.stanford.edu/~ouster/cgi-bin/aposd.php" rel="noopener external" target="_blank">A Philosophy of Software Design</a>
+ - John Ousterhout. The source
+of every principle in this doctrine: complexity as the root problem, deep modules, information hiding, defining
+errors out of existence.</li>
+<li><a href="https://web.stanford.edu/~ouster/cgi-bin/home.php" rel="noopener external" target="_blank">John Ousterhout</a>
+ - Stanford professor, creator of Raft and Tcl.</li>
+<li>Apiiro: &ldquo;4x velocity, 10x vulnerabilities&rdquo;
+<a href="https://apiiro.com/blog/4x-velocity-10x-vulnerabilities-ai-coding-assistants-are-shipping-more-risks/" rel="noopener external" target="_blank">https://apiiro.com/blog/4x-velocity-10x-vulnerabilities-ai-coding-assistants-are-shipping-more-risks/</a>
+) -
+the Fortune 50 data behind the AI-complexity numbers above.</li>
+<li>curl mulls nixing bug bounty awards to stop AI slop
+<a href="https://www.theregister.com/2025/07/15/curl_creator_mulls_nixing_bug/" rel="noopener external" target="_blank">https://www.theregister.com/2025/07/15/curl_creator_mulls_nixing_bug/</a>
+
+the maintainer-burden story behind the AI-documentation paradox.</li>
+<li><a href="https://arxiv.org/abs/2603.27249" rel="noopener external" target="_blank">&ldquo;An Endless Stream of AI Slop&rdquo;</a>
+ - Baltes, Cheong, Treude. 1,154 Reddit/HN posts
+coded into the tragedy-of-the-commons framing referenced above.</li>
+<li><a href="https://www.benzinga.com/news/topics/26/04/51687565/reddit-ceo-steve-huffman-says-ai-could-make-engineers-50-100-or-even-10x-more-productive-so-well-just-build-more-stuff" rel="noopener external" target="_blank">Reddit CEO Steve Huffman on AI and code review becoming the bottleneck</a>
+</li>
+<li><a href="https://www.aol.com/finance/coinbase-ceo-urged-engineers-ai-160644050.html" rel="noopener external" target="_blank">Coinbase&rsquo;s CEO fired engineers who didn&rsquo;t adopt AI tooling within a week</a>
+</li>
+<li><a href="/code-review-system/">Code review operating system</a>
+ - the process layer this doctrine sits upstream of.</li>
+<li><a href="/harness-engineering/">Harness engineering: why skills don&rsquo;t trigger themselves</a>
+ - Glean&rsquo;s skill-routing data
+referenced above.</li>
+<li><a href="https://github.com/vim89/software-design-depth-doctrine-skill" target="_blank" rel="noopener">
+🔗 View on GitHub: vim89/software-design-depth-doctrine-skill
+</a> - the skill/plugin packaging this
+doctrine (built for Claude Code).</li>
+</ul>
+<hr>
+<h2 id="tldr">TL;DR</h2>
+<ul>
+<li>&ldquo;Working code&rdquo; is not the bar. Complexity - change amplification, cognitive load, unknown unknowns - accumulates
+from many small decisions, and it has exactly two root causes: dependencies and obscurity.</li>
+<li>AI-assisted coding didn&rsquo;t invent a third root cause. It multiplies the same two by an order of magnitude - see
+Apiiro&rsquo;s 10x security-finding spike and curl&rsquo;s AI-slop-driven bug-bounty shutdown - faster than any human review
+cadence was built to absorb.</li>
+<li>An &ldquo;AI adoption %&rdquo; slide is a shallow module: a big, confident interface that hides nothing about whether the code
+behind it is any good, because whoever built the interface never learned what &ldquo;good&rdquo; looks like. A mandate built on
+it is a dependency and an obscurity, both issued from a level of the org that&rsquo;s never had to hide anything behind
+an interface in its life.</li>
+<li>Every design technique in this doctrine is just a way to cut one of those two things. If a proposed fix doesn&rsquo;t, it&rsquo;s
+rearranging complexity, not removing it.</li>
+<li>The single highest-leverage question in review is: <em>is this module deep?</em> A simple interface hiding real
+functionality beats a shallow one that mirrors its implementation.</li>
+<li>Use the red-flags checklist as a five-minute pass over a diff - each row names a checkable symptom, and the useful
+review comment always traces the symptom back to its cause.</li>
+<li>This doctrine sits upstream of process (severity rubrics, CI gates, comment templates) - it&rsquo;s what decides <em>why</em>
+something is a must-fix, not just <em>that</em> it is.</li>
+<li>I packaged it as a <a href="https://github.com/vim89/software-design-depth-doctrine-skill" rel="noopener external" target="_blank">skill/plugin</a>
+ (built for Claude
+Code) for my own workflow. Use it if it helps; the doctrine works with or without it.</li>
+<li>Skill triggering by description alone isn&rsquo;t reliable - if you want it every time, ask for it by name instead of
+hoping it fires.</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2026-09-software-design-depth-doctrine-fighting-complexity-in-code-review.png" type="image/png"/></item></channel></rss>
