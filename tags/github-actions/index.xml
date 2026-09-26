@@ -1,0 +1,2016 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Vitthal Mirji</title><link>https://vitthalmirji.com/tags/github-actions/</link><description>Technical articles on Scala, data engineering, functional programming, and software architecture by Vitthal Mirji.</description><language>en-us</language><copyright>Vitthal Mirji</copyright><managingEditor>vitthalmirji@gmail.com (Vitthal Mirji)</managingEditor><lastBuildDate>Sat, 26 Sep 2026 20:36:54 +0000</lastBuildDate><atom:link href="https://vitthalmirji.com/tags/github-actions/index.xml" rel="self" type="application/rss+xml"/><image><url>https://vitthalmirji.com/images/default-og.png</url><title>Vitthal Mirji</title><link>https://vitthalmirji.com/</link></image><item><title>Build static first: when Hugo and GitHub Pages are enough, and when Cloudflare helps</title><link>https://vitthalmirji.com/2026/09/build-static-first-when-hugo-and-github-pages-are-enough-and-when-cloudflare-helps/</link><guid isPermaLink="true">https://vitthalmirji.com/2026/09/build-static-first-when-hugo-and-github-pages-are-enough-and-when-cloudflare-helps/</guid><pubDate>Mon, 21 Sep 2026 09:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>hugo</category><category>github-pages</category><category>github-actions</category><category>static-site</category><category>ci-cd</category><category>cloudflare-workers</category><category>typescript</category><category>pagefind</category><category>personal-website</category><category>technical-writing</category><category>web-development</category><category>devops</category><description>When Hugo plus GitHub Pages is enough, when it is not, and how this site grew into CI/CD, search, validation, and a small Cloudflare backend.</description><content:encoded><![CDATA[<p class="lead"><p>In 2020, I wrote about leaving WordPress because I was tired of fighting editors, plugins, PHP, databases, and 40-second page loads.</p>
+<p>Hugo fixed the first pain: write Markdown, build static HTML, deploy it somewhere boring.</p>
+<p>This is the sequel to <a href="/2020/05/goodbye-wordpress-hello-hugo-nginx-with-fast-builds-and-sane-deploys-today/">Goodbye, WordPress: hello Hugo + nginx with fast builds and sane deploys today</a>
+.</p>
+<p>It covers the setup I would build today, when I would use it, and how this site grew into CI/CD, search, validation, generated data, and a small Cloudflare backend.</p>
+</p>
+
+
+<blockquote class="alert alert-note">
+  <p class="alert-heading">
+    Note
+  </p>
+  <p>This article has two parts. Part 1 is the simple version: Hugo, GitHub Actions, GitHub Pages, and a short backend summary for when static HTML is no longer enough.
+Part 2 is the grown-up version: how this site grew into validation, search, generated data, CI/CD, and a small Cloudflare backend.
+This is not a &ldquo;copy my entire repo&rdquo; article. That would be the wrong lesson.</p>
+</blockquote><div class="admonition info">
+  <div class="admonition-title">Courtesy note</div>
+  <div class="admonition-content">
+    <a href="https://www.linkedin.com/in/chandra-vanipenta-2963505/" rel="noopener external" target="_blank">Chandra Vanipenta</a>
+ acknowledged the original idea with review and feedback. That nudge helped me finally sit down and draft this sequel.
+  </div>
+</div>
+<hr>
+<h2 id="why-i-am-writing-part-2">Why I am writing part 2</h2>
+<p>The original article was about escape velocity. WordPress was solving a problem I no longer had.</p>
+<p>I did not need a database query to render a blog post. I did not need a plugin ecosystem to paste a code block. I definitely did not need an admin dashboard that made writing feel like data entry with extra sadness.</p>
+<p>I wanted this:</p>
+<ul>
+<li>write locally,</li>
+<li>preview locally,</li>
+<li>keep content in Git,</li>
+<li>push once,</li>
+<li>let automation publish the site.</li>
+</ul>
+<p>Hugo gave me that. Six years later, the better lesson is:</p>
+<p><strong>A static site can stay simple for a long time if you keep runtime behaviour at the edges.</strong></p>
+<p>Hugo owns content and pages. GitHub Actions owns repeatable builds. GitHub Pages owns static hosting. Cloudflare Workers owns the few API paths that need secrets, state, or webhooks.</p>
+<p>No one piece is magical. The setup works because each piece has a boring job.</p>
+<hr>
+<h2 id="part-1---the-simple-version-hugo--github-pages-first">Part 1 - The simple version: Hugo + GitHub Pages first</h2>
+<p>Let&rsquo;s separate the two stories clearly.</p>
+<p>Start here before copying any mature personal-site setup:</p>
+<ul>
+<li>Hugo for content and static rendering,</li>
+<li>GitHub Actions for repeatable CI/CD,</li>
+<li>GitHub Pages for static hosting,</li>
+<li>a tiny backend summary only for cases where static HTML stops being honest.</li>
+</ul>
+<p>For a blog, portfolio, docs site, project site, or technical writing home, this may be the whole setup. No Worker. No D1. No scheduled data pipeline. No cleverness tax.</p>
+<hr>
+<h2 id="why-hugo-still-makes-sense">Why Hugo still makes sense</h2>
+<p>Hugo turns content, templates, data files, assets, and config into static output: HTML, CSS, JavaScript, RSS, sitemap, and custom formats.</p>
+<p>The important bit is not that Hugo is written in Go. The important bit is the publishing model.</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Content + templates + data -&gt; static files -&gt; CDN/static host</span></span></code></pre></td></tr></table>
+</div>
+</div><p>That model removes noise:</p>
+<ul>
+<li>no production database for ordinary posts,</li>
+<li>no admin login to protect,</li>
+<li>no runtime rendering for the same article again and again,</li>
+<li>no plugin update treadmill just to keep a blog online.</li>
+</ul>
+<p>For engineers, the workflow also feels natural. Markdown is diffable. Frontmatter is clear. Page bundles keep assets near the article. Pull requests can review prose, diagrams, and metadata like code.</p>
+<p>That is the real win. Not &ldquo;static sites are cool&rdquo;. Static sites are boring. Boring is the point.</p>
+<hr>
+<h2 id="what-a-wider-check-changes-about-the-when">What a wider check changes about the when</h2>
+<p>I checked wider usage before writing this: personal sites, docs, portfolios, static blogs, Git-backed publishing, and small business sites. The useful pattern was not &ldquo;Hugo is best&rdquo;. It was this:</p>
+<table>
+	<thead>
+			<tr>
+					<th>What people like</th>
+					<th>What it really means for the decision</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Hugo is fast and low-maintenance</td>
+					<td>Use it when most pages can be generated ahead of time</td>
+			</tr>
+			<tr>
+					<td>Markdown content is portable</td>
+					<td>Use it when authors are comfortable with files and Git</td>
+			</tr>
+			<tr>
+					<td>GitHub Pages is cheap and simple</td>
+					<td>Use it when static hosting is enough</td>
+			</tr>
+			<tr>
+					<td>Themes and layouts are flexible</td>
+					<td>Use it when you want control and can tolerate template work</td>
+			</tr>
+			<tr>
+					<td>No database means less maintenance</td>
+					<td>Use it when runtime state is not central to the product</td>
+			</tr>
+			<tr>
+					<td>Hugo does not include a CMS</td>
+					<td>Avoid bare Hugo when non-technical editors need visual publishing</td>
+			</tr>
+			<tr>
+					<td>Static sites do not have runtime APIs by default</td>
+					<td>Add Workers/serverless only at the dynamic boundary</td>
+			</tr>
+	</tbody>
+</table>
+<p>That is why the <code>WHEN</code> section matters more than the setup commands. Most bad design starts when we choose a tool because it can do something, not because the problem needs it.</p>
+<hr>
+<h2 id="when-hugo--github-cicd--github-pages-is-the-right-choice">When Hugo + GitHub CI/CD + GitHub Pages is the right choice</h2>
+<p>Use this stack when your site is mostly content and your publishing flow matters more than runtime features.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Use it when</th>
+					<th>Why it fits</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>You are building a personal blog</td>
+					<td>Markdown, Git history, local preview, low hosting cost</td>
+			</tr>
+			<tr>
+					<td>You need a portfolio or professional site</td>
+					<td>Static pages are fast, simple, and easy to serve behind a custom domain</td>
+			</tr>
+			<tr>
+					<td>You write technical articles</td>
+					<td>Code blocks, diagrams, page bundles, taxonomies, and internal links all fit naturally</td>
+			</tr>
+			<tr>
+					<td>You maintain project docs</td>
+					<td>Version-controlled content and repeatable builds beat hand-edited web pages</td>
+			</tr>
+			<tr>
+					<td>You want low maintenance</td>
+					<td>No CMS database, no PHP runtime, no plugin patching for normal content</td>
+			</tr>
+			<tr>
+					<td>You like Git-based review</td>
+					<td>Articles can move through branches, PRs, and CI checks</td>
+			</tr>
+			<tr>
+					<td>You publish from one main author or a small technical team</td>
+					<td>Everyone can work with Markdown, frontmatter, and local preview</td>
+			</tr>
+			<tr>
+					<td>You want cheap hosting</td>
+					<td>GitHub Pages can host static output; usually the domain is the only unavoidable cost</td>
+			</tr>
+			<tr>
+					<td>Your data can be generated at build time</td>
+					<td>Scripts can write JSON/YAML data before Hugo renders pages</td>
+			</tr>
+	</tbody>
+</table>
+<p>The key condition: <strong>Markdown and Git must be acceptable</strong>. For a developer, Hugo feels freeing. For a non-technical editor who wants a visual CMS, bare Hugo may feel like homework.</p>
+<hr>
+<h2 id="when-not-to-use-this-stack">When not to use this stack</h2>
+<p>This is where people over-sell static sites. Hugo is not an app framework. GitHub Pages is not an app platform. GitHub Actions is not a database.</p>
+<p>You can stretch the stack, but at some point you are just hiding an app inside a build pipeline.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Avoid it when</th>
+					<th>Better direction</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Non-technical editors need a visual publishing UI</td>
+					<td>WordPress, Ghost, hosted CMS, or Git-backed CMS</td>
+			</tr>
+			<tr>
+					<td>Content changes per user at request time</td>
+					<td>Full-stack app or API-backed frontend</td>
+			</tr>
+			<tr>
+					<td>You need user accounts and permissions</td>
+					<td>Dynamic backend with auth</td>
+			</tr>
+			<tr>
+					<td>You need dashboards or admin workflows</td>
+					<td>Application framework, not only Hugo</td>
+			</tr>
+			<tr>
+					<td>You need ecommerce/cart/order management</td>
+					<td>Shopify, WooCommerce, or custom app</td>
+			</tr>
+			<tr>
+					<td>You need real-time data</td>
+					<td>Runtime API, websocket/service layer, or app framework</td>
+			</tr>
+			<tr>
+					<td>You hate touching templates</td>
+					<td>Website builder or managed CMS</td>
+			</tr>
+			<tr>
+					<td>You need complex form workflows</td>
+					<td>Backend service, serverless functions, or form provider</td>
+			</tr>
+	</tbody>
+</table>
+<p>The failure mode is not &ldquo;this is impossible&rdquo;. You can add JavaScript, APIs, CMSs, webhooks, scheduled jobs, and serverless functions. The problem starts when the mental model stops being static, but the setup still pretends it is.</p>
+<div class="admonition warning">
+  <div class="admonition-title">Static sites have a boundary</div>
+  <div class="admonition-content">
+    The danger is not one API call. The danger is every page depending on runtime state, browser-side secrets, and build tricks nobody remembers.
+  </div>
+</div>
+<p>If you are building an app, build an app. If you are building content, start static.</p>
+<hr>
+<h2 id="how-the-simple-version-works">How the simple version works</h2>
+<p>This is the version I would recommend to someone starting today.</p>
+<pre class="mermaid">flowchart LR
+    A[&#34;Write Markdown&lt;br/&gt;in site/content&#34;] --&gt; B[&#34;Push to GitHub&#34;]
+    B --&gt; C[&#34;GitHub Actions&#34;]
+    C --&gt; D[&#34;Hugo build&#34;]
+    D --&gt; E[&#34;Optional Pagefind&lt;br/&gt;search index&#34;]
+    E --&gt; F[&#34;GitHub Pages&#34;]
+    F --&gt; G[&#34;Custom domain&#34;]
+
+    style A fill:#e1f5ff,stroke:#0066cc,color:#000
+    style B fill:#fff4e1,stroke:#cc8800,color:#000
+    style C fill:#f0e1ff,stroke:#8800cc,color:#000
+    style D fill:#f0e1ff,stroke:#8800cc,color:#000
+    style E fill:#fff4e1,stroke:#cc8800,color:#000
+    style F fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style G fill:#e1ffe1,stroke:#2d7a2d,color:#000
+</pre><p>The flow:</p>
+<ol>
+<li>Hugo source lives in the repo.</li>
+<li>Articles live as Markdown page bundles.</li>
+<li>GitHub Actions runs the build.</li>
+<li>Hugo writes static output.</li>
+<li>Optional search/indexing runs after the build.</li>
+<li>GitHub Pages serves the generated files.</li>
+</ol>
+<p>That is enough for a serious personal site.</p>
+<p>The minimal repository can be as small as this:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">my-site/
+</span></span><span class="line"><span class="cl">├── site/
+</span></span><span class="line"><span class="cl">│   ├── content/
+</span></span><span class="line"><span class="cl">│   │   └── posts/
+</span></span><span class="line"><span class="cl">│   ├── layouts/
+</span></span><span class="line"><span class="cl">│   ├── static/
+</span></span><span class="line"><span class="cl">│   ├── themes/
+</span></span><span class="line"><span class="cl">│   └── hugo.toml
+</span></span><span class="line"><span class="cl">├── .github/
+</span></span><span class="line"><span class="cl">│   └── workflows/
+</span></span><span class="line"><span class="cl">│       └── deploy.yml
+</span></span><span class="line"><span class="cl">└── README.md</span></span></code></pre></td></tr></table>
+</div>
+</div><p>You do not need a monorepo, five workflows, or a backend on day one. You need one working path from Markdown to the live site.</p>
+<hr>
+<h2 id="diy-path-from-zero-to-github-pages">DIY path: from zero to GitHub Pages</h2>
+<p>If you are starting fresh or moving from another host, use this path. I am assuming you already have:</p>
+<ul>
+<li>a GitHub account,</li>
+<li>Git installed,</li>
+<li>Hugo installed,</li>
+<li>a domain name if you want a custom domain.</li>
+</ul>
+<p>No domain yet? Use <code>https://&lt;username&gt;.github.io/&lt;repo&gt;/</code> first. Get the site live before touching DNS.</p>
+<h3 id="step-1---create-the-repository">Step 1 - Create the repository</h3>
+<p>Create an empty GitHub repository. Skip the GitHub UI README if you plan to push a local Hugo site into it; that avoids one early merge.</p>
+<p>Locally:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">mkdir my-site
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> my-site
+</span></span><span class="line"><span class="cl">git init</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Result: <code>my-site</code> is your source repo. Git tracks Hugo files and workflows. CI will create <code>public/</code>, so do not commit it.</p>
+<h3 id="step-2---create-the-hugo-site">Step 2 - Create the Hugo site</h3>
+<p>You can keep Hugo at the repository root. I prefer <code>site/</code> because it leaves room for scripts, workflows, or backend code later:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo new site site
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> site</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Result: Hugo creates the site under <code>site/</code>. Future scripts or backend code can live beside it.</p>
+<h3 id="step-3---add-a-theme">Step 3 - Add a theme</h3>
+<p>Use one theme. Keep it boring first.</p>
+<p>Example with a theme submodule:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git submodule add https://github.com/theNewDynamic/gohugo-theme-ananke.git site/themes/ananke</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then set it in <code>site/hugo.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="nx">baseURL</span> <span class="p">=</span> <span class="s2">&#34;https://&lt;username&gt;.github.io/&lt;repo&gt;/&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">languageCode</span> <span class="p">=</span> <span class="s2">&#34;en-us&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">title</span> <span class="p">=</span> <span class="s2">&#34;My site&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">theme</span> <span class="p">=</span> <span class="s2">&#34;ananke&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>The theme gives Hugo templates and styling.</li>
+<li><code>baseURL</code> must match the deployed URL.</li>
+<li>If you later use a custom domain, update <code>baseURL</code> to that domain.</li>
+</ul>
+<blockquote class="alert alert-tip">
+  <p class="alert-heading">
+    Tip
+  </p>
+  <p>If your repository is named <code>&lt;username&gt;.github.io</code>, your default URL is usually <code>https://&lt;username&gt;.github.io/</code>. If it is a project repository, the default URL is usually <code>https://&lt;username&gt;.github.io/&lt;repo&gt;/</code>. This matters for <code>baseURL</code>.</p>
+</blockquote><h3 id="step-4---create-a-first-post">Step 4 - Create a first post</h3>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo new posts/hello-hugo/index.md</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Edit the generated file:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;Hello Hugo&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2026-09-21T09:00:00Z</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">draft</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nn">---</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Then add a few paragraphs below the frontmatter.</p>
+<ul>
+<li><code>index.md</code> creates a page bundle.</li>
+<li>Page bundles make it easy to keep images and article files together later.</li>
+<li><code>draft: false</code> means the post can appear in production builds.</li>
+</ul>
+<h3 id="step-5---test-locally">Step 5 - Test locally</h3>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo server -D</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Open the local URL Hugo prints, usually <code>http://localhost:1313/</code>.</p>
+<ul>
+<li><code>hugo server</code> starts a local preview server.</li>
+<li><code>-D</code> includes drafts while previewing.</li>
+<li>If the site does not work locally, do not debug GitHub Actions yet. Fix local first.</li>
+</ul>
+<h3 id="step-6---ignore-generated-output">Step 6 - Ignore generated output</h3>
+<p>From the repository root, create <code>.gitignore</code>:</p>
+<pre tabindex="0"><code class="language-gitignore" data-lang="gitignore">site/public/
+site/resources/_gen/
+.hugo_build.lock</code></pre><ul>
+<li><code>public/</code> is generated output.</li>
+<li>GitHub Actions will rebuild it.</li>
+<li>You commit source, not build artifacts.</li>
+</ul>
+<h3 id="step-7---add-the-github-actions-workflow">Step 7 - Add the GitHub Actions workflow</h3>
+<p>Create <code>.github/workflows/deploy.yml</code>:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Deploy Hugo site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">main]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">permissions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l">read</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pages</span><span class="p">:</span><span class="w"> </span><span class="l">write</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">id-token</span><span class="p">:</span><span class="w"> </span><span class="l">write</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">concurrency</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l">pages</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">cancel-in-progress</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Checkout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">fetch-depth</span><span class="p">:</span><span class="w"> </span><span class="m">0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Hugo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;0.165.0&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">working-directory</span><span class="p">:</span><span class="w"> </span><span class="l">site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --minify --gc --cleanDestinationDir</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Upload Pages artifact</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/upload-pages-artifact@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">site/public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">github-pages</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l">${{ steps.deployment.outputs.page_url }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">needs</span><span class="p">:</span><span class="w"> </span><span class="l">build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Deploy to GitHub Pages</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/deploy-pages@v4</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Result: the workflow checks out the repo, builds <code>site/public</code>, uploads the Pages files, and deploys them.</p>
+<h3 id="step-8---enable-github-pages">Step 8 - Enable GitHub Pages</h3>
+<p>In the GitHub repository:</p>
+<ol>
+<li>Go to <code>Settings</code>.</li>
+<li>Open <code>Pages</code>.</li>
+<li>Under source, choose GitHub Actions.</li>
+<li>Push to <code>main</code>.</li>
+<li>Open the Actions tab and watch the workflow.</li>
+</ol>
+<p>If the workflow passes, your site should be live at the Pages URL.</p>
+<h3 id="step-9---add-a-custom-domain">Step 9 - Add a custom domain</h3>
+<p>If you own a domain, configure it after the default GitHub Pages URL works.</p>
+<p>At a high level:</p>
+<ol>
+<li>Add the custom domain in GitHub Pages settings.</li>
+<li>Configure DNS at your domain provider.</li>
+<li>Wait for DNS to settle.</li>
+<li>Enable HTTPS in GitHub Pages.</li>
+<li>Update <code>baseURL</code> in <code>site/hugo.toml</code>.</li>
+</ol>
+<p>Result: GitHub Pages serves the same files through your domain. Hugo uses <code>baseURL</code> for canonical links, RSS, social preview URLs, and absolute links.</p>
+<div class="admonition warning">
+  <div class="admonition-title">Do not debug everything at once</div>
+  <div class="admonition-content">
+    First make Hugo work locally. Then make GitHub Actions build. Then make GitHub Pages serve the default URL. Then add the custom domain. If you mix all four at once, every error looks like every other error.
+  </div>
+</div>
+<hr>
+<h2 id="what-this-looks-like-in-my-repo">What this looks like in my repo</h2>
+<p>The DIY path above is the beginner version. My repo is the grown-up version, so do not copy it blindly. These snippets are trimmed from the real source, with account names, personal workflows, and secrets removed.</p>
+<p>At the root, scripts delegate into the Hugo site workspace:</p>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;private&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;packageManager&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm@9.15.0&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;engines&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;node&#34;</span><span class="p">:</span> <span class="s2">&#34;&gt;=20&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;workspaces&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;site&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;workers&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;packages/*&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">],</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;scripts&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;dev&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm --filter site run dev&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm --filter site run build&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;test&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm --filter site run test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build:hugo&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm --filter site run build:hugo&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build:search&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm --filter site run build:search&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>The root repo only coordinates commands.</li>
+<li>Hugo still lives under <code>site/</code>.</li>
+<li>A beginner can ignore the workspace and run Hugo directly inside <code>site/</code>.</li>
+<li>Once the repo grows, root scripts keep commands predictable.</li>
+</ul>
+<p>Inside <code>site/package.json</code>, the actual build is still boring:</p>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;scripts&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;dev&#34;</span><span class="p">:</span> <span class="s2">&#34;hugo server -D&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm run og:generate &amp;&amp; hugo --minify --gc --cleanDestinationDir &amp;&amp; pnpm exec pagefind --site public&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build:hugo&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm run og:generate &amp;&amp; hugo --minify --gc --cleanDestinationDir&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;build:search&#34;</span><span class="p">:</span> <span class="s2">&#34;pnpm exec pagefind --site public&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;test&#34;</span><span class="p">:</span> <span class="s2">&#34;./tests/sanity/html-validation.test.sh&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><code>dev</code> is still the normal Hugo local server.</li>
+<li><code>build:hugo</code> renders the static site.</li>
+<li><code>build</code> adds two earned extras: generated OG images and Pagefind search.</li>
+<li><code>test</code> runs a small sanity check after rendering.</li>
+</ul>
+<p>The real <code>hugo.toml</code> has more settings now, but the important part is this:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="nx">baseURL</span> <span class="p">=</span> <span class="s2">&#34;https://example.com/&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">title</span> <span class="p">=</span> <span class="s2">&#34;Example site&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">theme</span> <span class="p">=</span> <span class="s2">&#34;ink-free&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">enableRobotsTXT</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl"><span class="nx">enableGitInfo</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="nx">frontmatter</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">lastmod</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;lastmod&#34;</span><span class="p">,</span> <span class="s2">&#34;:git&#34;</span><span class="p">,</span> <span class="s2">&#34;date&#34;</span><span class="p">,</span> <span class="s2">&#34;publishDate&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">date</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;date&#34;</span><span class="p">,</span> <span class="s2">&#34;publishDate&#34;</span><span class="p">,</span> <span class="s2">&#34;lastmod&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="nx">permalinks</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">posts</span> <span class="p">=</span> <span class="s2">&#34;/:year/:month/:title&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="nx">outputs</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">home</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;html&#34;</span><span class="p">,</span> <span class="s2">&#34;rss&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">taxonomy</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;html&#34;</span><span class="p">,</span> <span class="s2">&#34;rss&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">term</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;html&#34;</span><span class="p">,</span> <span class="s2">&#34;rss&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="nx">params</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">mainSections</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;posts&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">enablePagefind</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">images</span> <span class="p">=</span> <span class="p">[</span><span class="s2">&#34;/images/default-og.png&#34;</span><span class="p">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><code>baseURL</code> is the production URL.</li>
+<li><code>enableGitInfo</code> lets Hugo use Git history for last-modified dates.</li>
+<li><code>permalinks</code> preserves stable post URLs.</li>
+<li><code>outputs</code> keeps HTML and RSS explicit.</li>
+<li><code>params.images</code> gives Open Graph/social cards a default image.</li>
+</ul>
+<p>The production workflow is also the simple workflow with extra checks added:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">build, test, audit &amp; deploy site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">master ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/content/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/data/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/themes/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/static/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/assets/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/layouts/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;site/hugo.toml&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;.github/workflows/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;0.165.0&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install dependencies</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">pnpm install --frozen-lockfile</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Build Hugo site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">working-directory</span><span class="p">:</span><span class="w"> </span><span class="l">site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --gc --minify --cleanDestinationDir</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Run sanity tests</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">pnpm --filter site run test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Build search index</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">working-directory</span><span class="p">:</span><span class="w"> </span><span class="l">site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npx -y pagefind --site public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Publish static output</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-gh-pages@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l">./site/public</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>The trigger is scoped to site-related files.</li>
+<li>The workflow checks out the theme submodule.</li>
+<li>Hugo builds <code>site/public</code>.</li>
+<li>Sanity tests run before publishing.</li>
+<li>Pagefind indexes the rendered site.</li>
+<li>The publishing step uploads only static output.</li>
+</ul>
+<p>The point is the shape, not my exact deploy target.</p>
+<hr>
+<h2 id="build-order-cicd-and-hosting">Build order, CI/CD, and hosting</h2>
+<p>Start with the parts that shorten the path from writing to publishing.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Build first</th>
+					<th>Delay until it hurts</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Local Hugo server</td>
+					<td>Search</td>
+			</tr>
+			<tr>
+					<td>Clean content layout</td>
+					<td>Custom render hooks</td>
+			</tr>
+			<tr>
+					<td>One theme or small theme fork</td>
+					<td>OG image automation</td>
+			</tr>
+			<tr>
+					<td>Basic GitHub Actions deploy</td>
+					<td>Multiple workflows</td>
+			</tr>
+			<tr>
+					<td>Custom domain and HTTPS</td>
+					<td>Backend APIs</td>
+			</tr>
+			<tr>
+					<td>RSS, sitemap, and validation</td>
+					<td>Generated data pipelines</td>
+			</tr>
+	</tbody>
+</table>
+<p>GitHub Actions should do one clean build: checkout, install Hugo, build <code>site/public</code>, publish generated output. Local machines lie; CI starts from scratch.</p>
+<p>GitHub Pages should only serve built files:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">GitHub Actions builds.
+</span></span><span class="line"><span class="cl">GitHub Pages serves.</span></span></code></pre></td></tr></table>
+</div>
+</div><p>For a new site, use the official Pages Actions flow. Move to a <code>gh-pages</code> branch or separate hosting repo only when source and published output must live separately.</p>
+<p>For a custom domain: configure DNS, add the domain in Pages settings, enable HTTPS, then update <code>baseURL</code>. If <code>baseURL</code> is wrong, RSS, canonical URLs, social preview images, and absolute links quietly break.</p>
+<hr>
+<h2 id="when-a-backend-becomes-necessary">When a backend becomes necessary</h2>
+<p>Most blogs do not need a backend. Add one only when a feature crosses the static-site boundary:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Need</th>
+					<th>Why static HTML is not enough</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Contact forms</td>
+					<td>You need spam protection, validation, and email/server-side delivery</td>
+			</tr>
+			<tr>
+					<td>Payments</td>
+					<td>Secrets, gateway calls, transaction state, and webhooks cannot live in the browser</td>
+			</tr>
+			<tr>
+					<td>Webhooks</td>
+					<td>External services need a server endpoint to call</td>
+			</tr>
+			<tr>
+					<td>Bot protection</td>
+					<td>Verification must happen server-side</td>
+			</tr>
+			<tr>
+					<td>Private API tokens</td>
+					<td>Anything secret must stay out of the built site</td>
+			</tr>
+			<tr>
+					<td>Stored state</td>
+					<td>Static files cannot safely record transactions or submissions</td>
+			</tr>
+			<tr>
+					<td>Scheduled data refresh</td>
+					<td>Build-time scripts can help, but runtime or scheduled jobs may be cleaner</td>
+			</tr>
+	</tbody>
+</table>
+<p>Cloudflare Workers fit when you want a small API near a static site without managing a server. Workers give you routes, serverless functions, D1 for small SQL state, R2 for object storage, and secrets outside the static build.</p>
+<p>The rule I like:</p>
+<p><strong>Keep the site static. Put runtime behaviour behind <code>/api/*</code>.</strong></p>
+<p>That gives you a clean boundary.</p>
+<div class="admonition tip">
+  <div class="admonition-title">A practical backend rule</div>
+  <div class="admonition-content">
+    If a feature needs secrets, stored state, webhook handling, or server-side checks, it belongs behind an API boundary. If it only needs content and links, keep it inside Hugo.
+  </div>
+</div>
+<hr>
+<h2 id="how-to-add-a-backend-without-ruining-the-static-site">How to add a backend without ruining the static site</h2>
+<p>The backend should not take over the site. For this site, the production shape is:</p>
+<pre class="mermaid">flowchart TD
+    A[&#34;Reader requests page&#34;] --&gt; B[&#34;GitHub Pages&lt;br/&gt;static Hugo output&#34;]
+    A --&gt; C[&#34;/api/* request&#34;]
+    C --&gt; D[&#34;Cloudflare Worker&#34;]
+    D --&gt; E[&#34;D1&lt;br/&gt;small SQL state&#34;]
+    D --&gt; F[&#34;R2&lt;br/&gt;object/archive storage&#34;]
+    D --&gt; G[&#34;External services&lt;br/&gt;email, gateway, verification&#34;]
+
+    style A fill:#e1f5ff,stroke:#0066cc,color:#000
+    style B fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style C fill:#fff4e1,stroke:#cc8800,color:#000
+    style D fill:#f0e1ff,stroke:#8800cc,color:#000
+    style E fill:#e1f5ff,stroke:#0066cc,color:#000
+    style F fill:#e1f5ff,stroke:#0066cc,color:#000
+    style G fill:#ffe1e1,stroke:#cc0000,color:#000
+</pre><p>The static site and API deploy separately:</p>
+<ul>
+<li>Hugo can build without backend secrets.</li>
+<li>The backend can deploy without rebuilding every article.</li>
+<li><code>/api/*</code> has its own health checks and tests.</li>
+<li>Cloudflare secrets stay in Cloudflare.</li>
+<li>GitHub Pages remains a static host, not a confused application runtime.</li>
+</ul>
+<p>The current backend uses TypeScript, Hono, Effect, Cloudflare Workers, D1, and R2. The libraries matter less than the split:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Static content -&gt; Hugo + GitHub Pages
+</span></span><span class="line"><span class="cl">Dynamic edge   -&gt; Cloudflare Worker under /api/*
+</span></span><span class="line"><span class="cl">Stored state   -&gt; D1/R2, only where needed
+</span></span><span class="line"><span class="cl">Secrets        -&gt; Worker/GitHub/Cloudflare secret stores, never Hugo content</span></span></code></pre></td></tr></table>
+</div>
+</div><p>That split is also how payment-style flows stay sane:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Static page      -&gt; shows content, buttons, and client-safe metadata
+</span></span><span class="line"><span class="cl">Worker endpoint  -&gt; validates request, talks to provider, handles webhooks
+</span></span><span class="line"><span class="cl">D1/R2            -&gt; stores only the state the site actually needs
+</span></span><span class="line"><span class="cl">Secrets          -&gt; stay in Cloudflare, never in Hugo, Markdown, or browser JS</span></span></code></pre></td></tr></table>
+</div>
+</div><p>I would not start here. I would start static and add this only when the first real runtime need appears.</p>
+<hr>
+<h2 id="part-2---the-grown-up-version-what-this-site-became">Part 2 - The grown-up version: what this site became</h2>
+<p>Now for the grown-up version. Do not copy this on day one. This is what appears after repeated pain becomes visible: search, validation, social previews, generated data, and a few runtime APIs.</p>
+<hr>
+<h2 id="what-this-site-grew-into">What this site grew into</h2>
+<p>The current site is still static at the core, but the build and support work around it are more serious:</p>
+<ul>
+<li>Hugo site under <code>site/</code></li>
+<li>theme as a submodule,</li>
+<li>site-level layout overrides,</li>
+<li>custom render hooks for links, tables, blockquotes, and Mermaid,</li>
+<li>shortcodes for article formatting and site features,</li>
+<li>content validation for frontmatter quality,</li>
+<li>Open Graph image generation,</li>
+<li>Pagefind static search,</li>
+<li>RSS, sitemap, <code>llms.txt</code>, and SEO partials,</li>
+<li>GitHub Actions for deploy, validation, accessibility, Lighthouse, backups, and generated data,</li>
+<li>TypeScript tooling for generated data workflows,</li>
+<li>Cloudflare Worker backend for runtime API paths,</li>
+<li>payment/webhook-style flows kept behind the Worker boundary,</li>
+<li>D1 and R2 for small stored backend state,</li>
+<li>docs and playbooks to keep decisions out of my head.</li>
+</ul>
+<p>The current shape looks like this:</p>
+<pre class="mermaid">flowchart TD
+    A[&#34;Markdown articles&lt;br/&gt;site/content&#34;] --&gt; B[&#34;GitHub repository&#34;]
+    B --&gt; C[&#34;GitHub Actions&lt;br/&gt;site deploy&#34;]
+    C --&gt; D[&#34;OG image sync&#34;]
+    D --&gt; E[&#34;Hugo build&#34;]
+    E --&gt; F[&#34;Pagefind index&#34;]
+    F --&gt; G[&#34;GitHub Pages&#34;]
+
+    H[&#34;Scheduled/generated data&#34;] --&gt; I[&#34;YAML/JSON snapshots&lt;br/&gt;site/data&#34;]
+    I --&gt; E
+
+    J[&#34;Cloudflare Worker&#34;] --&gt; K[&#34;/api/*&#34;]
+    K --&gt; L[&#34;D1&#34;]
+    K --&gt; M[&#34;R2&#34;]
+    K --&gt; N[&#34;External services&#34;]
+
+    O[&#34;Docs and playbooks&#34;] --&gt; B
+
+    style A fill:#e1f5ff,stroke:#0066cc,color:#000
+    style B fill:#fff4e1,stroke:#cc8800,color:#000
+    style C fill:#f0e1ff,stroke:#8800cc,color:#000
+    style D fill:#f0e1ff,stroke:#8800cc,color:#000
+    style E fill:#f0e1ff,stroke:#8800cc,color:#000
+    style F fill:#fff4e1,stroke:#cc8800,color:#000
+    style G fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style H fill:#e1f5ff,stroke:#0066cc,color:#000
+    style I fill:#e1f5ff,stroke:#0066cc,color:#000
+    style J fill:#f0e1ff,stroke:#8800cc,color:#000
+    style K fill:#fff4e1,stroke:#cc8800,color:#000
+    style L fill:#e1f5ff,stroke:#0066cc,color:#000
+    style M fill:#e1f5ff,stroke:#0066cc,color:#000
+    style N fill:#ffe1e1,stroke:#cc0000,color:#000
+    style O fill:#e1ffe1,stroke:#2d7a2d,color:#000
+</pre><p>This came from repeated pain:</p>
+<ul>
+<li>I needed better social previews, so OG automation appeared.</li>
+<li>I needed search without a server, so Pagefind fit.</li>
+<li>I needed consistent article metadata, so validation became useful.</li>
+<li>I needed generated public data, so scheduled workflows wrote Hugo data files.</li>
+<li>I needed runtime API behaviour, so Cloudflare Workers took <code>/api/*</code>.</li>
+<li>I needed to remember how all this works, so docs became part of the system.</li>
+</ul>
+<p>That is the healthy order: pain first, automation second.</p>
+<div class="admonition success">
+  <div class="admonition-title">The useful pattern</div>
+  <div class="admonition-content">
+    Every extra part paid rent: search helped discovery, validation caught content mistakes, OG images improved sharing, and Workers handled runtime API edges.
+  </div>
+</div>
+<hr>
+<h2 id="what-i-would-do-again">What I would do again</h2>
+<p>If I rebuilt this site today, I would keep these:</p>
+<table>
+	<thead>
+			<tr>
+					<th>Choice</th>
+					<th>Why I would keep it</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Hugo for content rendering</td>
+					<td>Fast, flexible, good enough for deep technical writing</td>
+			</tr>
+			<tr>
+					<td>Markdown page bundles</td>
+					<td>Articles and assets stay together</td>
+			</tr>
+			<tr>
+					<td>GitHub Actions</td>
+					<td>Repeatable builds beat local-only deploys</td>
+			</tr>
+			<tr>
+					<td>GitHub Pages for static output</td>
+					<td>Simple, cheap, boring hosting</td>
+			</tr>
+			<tr>
+					<td>Pagefind</td>
+					<td>Static search without running a search backend</td>
+			</tr>
+			<tr>
+					<td>Content validation</td>
+					<td>Broken metadata is easier to catch before publishing</td>
+			</tr>
+			<tr>
+					<td>OG image automation</td>
+					<td>Social previews should not be manual work forever</td>
+			</tr>
+			<tr>
+					<td>Separate <code>/api/*</code> backend</td>
+					<td>Runtime behaviour stays out of static rendering</td>
+			</tr>
+			<tr>
+					<td>Docs near the code</td>
+					<td>Future debugging starts with memory, not archaeology</td>
+			</tr>
+	</tbody>
+</table>
+<p>The underrated part is validation. Hosting gets attention, but long-running sites quietly collect broken metadata: missing authors, long descriptions, uneven tags, bad image fields, broken slugs. A boring validator catches that early.</p>
+<hr>
+<h2 id="what-i-would-delay">What I would delay</h2>
+<p>I would delay almost everything else.</p>
+<table>
+	<thead>
+			<tr>
+					<th>Delay this</th>
+					<th>Until</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Monorepo structure</td>
+					<td>You have multiple real packages or workflows</td>
+			</tr>
+			<tr>
+					<td>Backend API</td>
+					<td>Static HTML cannot safely solve the feature</td>
+			</tr>
+			<tr>
+					<td>Multiple deploy workflows</td>
+					<td>One workflow becomes too noisy</td>
+			</tr>
+			<tr>
+					<td>Heavy theme fork</td>
+					<td>You know what the theme cannot do</td>
+			</tr>
+			<tr>
+					<td>Custom shortcodes everywhere</td>
+					<td>Native Markdown stops being readable</td>
+			</tr>
+			<tr>
+					<td>Generated data pipelines</td>
+					<td>Manual update becomes repeated pain</td>
+			</tr>
+			<tr>
+					<td>Payment or webhook setup</td>
+					<td>You actually need server-side transactions</td>
+			</tr>
+			<tr>
+					<td>Complex analytics/ads/monetization</td>
+					<td>You have traffic worth measuring</td>
+			</tr>
+	</tbody>
+</table>
+<p>Automation feels productive. Sometimes it is. Sometimes it is just a neat way to avoid writing the next article. The best stack keeps the writing path short.</p>
+<hr>
+<h2 id="the-decision-rule-i-use-now">The decision rule I use now</h2>
+<p>Here is the decision tree:</p>
+<pre class="mermaid">flowchart TD
+    A[&#34;Do you mostly publish content?&#34;] --&gt;|Yes| B[&#34;Use Hugo&#34;]
+    A --&gt;|No| C[&#34;Build an app&#34;]
+
+    B --&gt; D[&#34;Can editors work with Git/Markdown?&#34;]
+    D --&gt;|Yes| E[&#34;Use GitHub Actions + GitHub Pages&#34;]
+    D --&gt;|No| F[&#34;Add a Git-backed CMS or choose a CMS&#34;]
+
+    E --&gt; G[&#34;Need secrets, forms, payments, or webhooks?&#34;]
+    G --&gt;|No| H[&#34;Stay fully static&#34;]
+    G --&gt;|Yes| I[&#34;Add backend under /api/*&#34;]
+
+    I --&gt; J[&#34;Keep static and dynamic deploys separate&#34;]
+
+    style A fill:#fff4e1,stroke:#cc8800,color:#000
+    style B fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style C fill:#ffe1e1,stroke:#cc0000,color:#000
+    style D fill:#fff4e1,stroke:#cc8800,color:#000
+    style E fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style F fill:#fff4e1,stroke:#cc8800,color:#000
+    style G fill:#fff4e1,stroke:#cc8800,color:#000
+    style H fill:#e1ffe1,stroke:#2d7a2d,color:#000
+    style I fill:#f0e1ff,stroke:#8800cc,color:#000
+    style J fill:#e1f5ff,stroke:#0066cc,color:#000
+</pre><p>That is the practical answer:</p>
+<p><strong>Use the static model while the problem is static. Add runtime pieces only where static stops being honest.</strong></p>
+<hr>
+<h2 id="references">References</h2>
+<ul>
+<li><a href="https://gohugo.io/" rel="noopener external" target="_blank">Hugo official site</a>
+ - Hugo positioning, features, community, speed, asset pipeline, and use cases.</li>
+<li><a href="https://gohugo.io/hosting-and-deployment/hosting-on-github/" rel="noopener external" target="_blank">Hugo: Host on GitHub Pages</a>
+ - Official deployment guidance for Hugo and GitHub Pages.</li>
+<li><a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site" rel="noopener external" target="_blank">GitHub Pages publishing source docs</a>
+ - GitHub Pages publishing model and GitHub Actions support.</li>
+<li><a href="https://developers.cloudflare.com/" rel="noopener external" target="_blank">Cloudflare Developer Docs</a>
+ - Workers, static assets, D1, R2, and serverless primitives.</li>
+<li><a href="https://hboe.no/" rel="noopener external" target="_blank">Building a personal website with Hugo and GitHub Pages</a>
+ - Practical example with similar needs: fast, low maintenance, Markdown, version control, automated deploy, low cost.</li>
+<li><a href="https://discourse.gohugo.io/" rel="noopener external" target="_blank">Hugo Discourse</a>
+ - Community forum and recurring discussions around Hugo usage, hosting, themes, and maintenance.</li>
+<li><a href="https://www.reddit.com/r/gohugo/" rel="noopener external" target="_blank">r/gohugo</a>
+ - Practical questions and trade-offs around Hugo&rsquo;s fit for static blogs, docs, portfolios, CMS workflows, and runtime limits.</li>
+</ul>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li>Hugo is a strong fit when the site is mostly content.</li>
+<li>GitHub Actions makes builds repeatable.</li>
+<li>GitHub Pages is enough for static hosting.</li>
+<li>Add search, validation, OG images, and generated data only when the site needs them.</li>
+<li>Add a backend only for secrets, state, forms, payments, webhooks, or runtime APIs.</li>
+<li>Keep runtime behaviour behind <code>/api/*</code>.</li>
+<li>Start static. Evolve only after the pain is real.</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2026-09-build-static-first-when-hugo-and-github-pages-are-enough-and-when-cloudflare-helps.png" type="image/png"/></item><item><title>Goodbye, WordPress: hello Hugo + nginx with fast builds and sane deploys today</title><link>https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/</link><guid isPermaLink="true">https://vitthalmirji.com/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/</guid><pubDate>Thu, 21 May 2020 00:00:00 +0000</pubDate><dc:creator>vitthal-mirji</dc:creator><category>linux</category><category>web</category><category>hugo</category><category>html</category><category>css</category><category>go</category><category>ci/cd</category><category>github actions</category><category>javascript</category><description>Deep-dive guide to migrating from WordPress to Hugo. Fix 40-second page loads and 2.5MB transfers with static HTML, GitHub Actions CI/CD, and nginx deployment. Includes export strategy, theme customization, and a secure deployment setup.</description><content:encoded><![CDATA[<p>You know how it goes - you&rsquo;re trying to publish a blog post, the WordPress editor is crawling, you paste in some code and the WYSIWYG editor mangles it completely, and you end up manually editing HTML at midnight just to get syntax highlighting working. Again.</p>
+<p>That was my life for 4 years.</p>
+<p>I kept telling myself &ldquo;it&rsquo;s fine&rdquo; - until I actually measured it. 2.5MB transfer, 47 network requests, and <strong>40 seconds</strong> to load a single page on a slow connection. My plain HTML homepage? 32KB and 0.3 seconds.</p>
+<p>This post shows you how I ditched WordPress for Hugo, a static site generator that turns markdown into blazing-fast HTML - and deployed it with GitHub Actions and nginx. No more database, no more PHP, no more 2 AM debugging sessions.</p>
+<p>Working migration scripts and deployment pipeline: All the code you need is in this post.</p>
+<hr>
+<h2 id="why-this-matters">Why this matters</h2>
+<p>Look, I&rsquo;m not a web developer. I picked WordPress 4 years ago because it was the only CMS I knew. It worked&hellip; until it didn&rsquo;t.</p>
+<p>Here&rsquo;s what I was fighting:</p>
+<p><strong>The technical pain:</strong></p>
+<ul>
+<li>2.5MB transfer and 47 network requests per page load</li>
+<li>40-second load times on slow connections (yes, really)</li>
+<li>PHP + MariaDB + nginx stack just to serve some blog posts</li>
+<li>Security vulnerabilities every few months</li>
+<li>No version control for content</li>
+</ul>
+<p><strong>The workflow pain (and this was the real killer):</strong></p>
+<ol>
+<li>Write content locally in vim (because the online editor is unusable)</li>
+<li>Copy-paste into WordPress and watch it mangle the formatting</li>
+<li>Manually fix broken code blocks with a syntax highlighter plugin</li>
+<li>Edit the generated HTML by hand</li>
+<li>Cry and drink</li>
+<li>Repeat this every 3 months</li>
+</ol>
+<p>I accept judgment for this workflow. It&rsquo;s worse than writing Confluence pages on dial-up.</p>
+<p>And here&rsquo;s the thing - my plain HTML homepage loads 32KB in 0.3 seconds on the same connection. The blog? 2.5MB and 40 seconds. That&rsquo;s an 8,000% size increase for&hellip; a blog.</p>
+<p>AWS published <a href="https://aws.amazon.com/blogs/architecture/wordpress-best-practices-on-aws/" rel="noopener external" target="_blank">this architecture diagram</a>
+ for running WordPress at scale. It&rsquo;s horrifying. Load balancers, RDS instances, ElastiCache, S3, CloudFront - all to serve markdown content.</p>
+<p>There had to be a better way.</p>
+<hr>
+<h2 id="what-well-build">What we&rsquo;ll build</h2>
+<p>Here&rsquo;s the migration plan:</p>
+<ol>
+<li><strong>Export</strong> all WordPress posts to markdown</li>
+<li><strong>Set up Hugo</strong> as the static site generator</li>
+<li><strong>Customize a theme</strong> (remove all external CDN dependencies, add TOC, improve syntax highlighting)</li>
+<li><strong>Migrate content</strong> with scripts to fix broken formatting</li>
+<li><strong>Deploy with GitHub Actions</strong> and nginx</li>
+<li><strong>Secure deployment</strong> with restricted SSH access</li>
+</ol>
+<p><strong>The result?</strong> Write in markdown locally, push to Git, auto-deploy to production. No database, no PHP, no security updates, no 40-second page loads.</p>
+<p>Let&rsquo;s build it.</p>
+<hr>
+<h2 id="part-1---the-wordpress-nightmare-why-i-had-to-leave">Part 1 - The WordPress nightmare: why I had to leave</h2>
+<p>The WordPress pain points weren&rsquo;t just about performance. They were about the entire development experience.</p>
+<p><strong>What drove me crazy:</strong></p>
+<ul>
+<li><strong>No offline work</strong> - Everything happens in a web browser connected to the server</li>
+<li><strong>WYSIWYG hell</strong> - No markdown support, no vim bindings, everything is mouse-driven</li>
+<li><strong>Slow everything</strong> - Navigation, updates, previews all crawl</li>
+<li><strong>Plugin roulette</strong> - Syntax highlighting plugins fight with each other</li>
+<li><strong>No collaboration</strong> - Accepting feedback requires manual work, no pull requests</li>
+<li><strong>Bot spam</strong> - Constant comment spam to clean up</li>
+<li><strong>Template limitations</strong> - WordPress templates are hard to customize without breaking things</li>
+</ul>
+<p>But the workflow was what finally broke me. Writing locally, copying to WordPress, watching it destroy my formatting, manually fixing HTML&hellip; this isn&rsquo;t 2005.</p>
+<p>I wanted: Write markdown in vim → push to Git → see it live. That&rsquo;s it.</p>
+<hr>
+<h2 id="part-2---static-site-generators-the-mental-model">Part 2 - Static site generators: the mental model</h2>
+<p>Here&rsquo;s the key insight: most blogs don&rsquo;t need a database and server-side rendering for every page load. The content doesn&rsquo;t change between requests.</p>
+<p><strong>How static site generators work:</strong></p>
+<ol>
+<li>You write content in markdown files</li>
+<li>The generator reads the files and applies templates</li>
+<li>It outputs plain HTML/CSS/JS</li>
+<li>You serve the static files (no database, no PHP)</li>
+</ol>
+<p><strong>Why this works:</strong></p>
+<ul>
+<li><strong>Fast</strong> - No database queries, no PHP execution, just static files</li>
+<li><strong>Secure</strong> - No login pages, no SQL injection, no PHP vulnerabilities</li>
+<li><strong>Version control</strong> - Everything is text files in Git</li>
+<li><strong>Portable</strong> - Works on any web server (nginx, Apache, S3, GitHub Pages)</li>
+<li><strong>Offline work</strong> - Write locally, preview locally, push when ready</li>
+</ul>
+<p>The workflow becomes:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Write markdown → Run generator → Deploy static HTML</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Instead of:</p>
+<div class="highlight highlight-text" data-lang="text"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Log into WordPress → Fight WYSIWYG → Manually fix HTML → Hope it works</span></span></code></pre></td></tr></table>
+</div>
+</div><p>There are several options: Jekyll (Ruby), Hugo (Go), Gatsby (React), 11ty (JavaScript). I chose Hugo because it&rsquo;s a single binary with no dependencies, it&rsquo;s fast, and it has good themes.</p>
+<hr>
+<h2 id="part-3---hugo-setup-getting-started">Part 3 - Hugo setup: getting started</h2>
+<p>Hugo is a static site generator written in Go. It&rsquo;s a single binary with no dependencies. No Ruby gems, no Node modules, no Python packages. Just download and run.</p>
+<p>Why Hugo over Jekyll or Gatsby? Simple:</p>
+<ul>
+<li><strong>One binary</strong> - No runtime dependencies</li>
+<li><strong>Fast builds</strong> - Go is compiled, not interpreted</li>
+<li><strong>Good templates</strong> - Nice MIT-licensed themes available</li>
+<li><strong>Simple syntax</strong> - Easy to learn even for non-web-devs</li>
+</ul>
+<p>I saw it on HackerNews years ago and bookmarked it. Finally got around to using it.</p>
+<h3 id="installing-hugo">Installing Hugo</h3>
+<p>Grab the latest binary for your platform from GitHub:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget https://github.com/gohugoio/hugo/releases/download/v0.70.0/hugo_0.70.0_Linux-64bit.tar.gz
+</span></span><span class="line"><span class="cl">tar xvf hugo_0.70.0_Linux-64bit.tar.gz</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Put it somewhere on your <code>$PATH</code> and you&rsquo;re done. No <code>gem install</code>, no <code>npm install</code>, no dependency hell.</p>
+<h3 id="creating-the-site">Creating the site</h3>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo new site vitthalmirji.com</span></span></code></pre></td></tr></table>
+</div>
+</div><p>This creates the basic structure. Now edit <code>config.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="nx">baseURL</span> <span class="p">=</span> <span class="s2">&#34;https://vitthalmirji.com/&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">languageCode</span> <span class="p">=</span> <span class="s2">&#34;en-us&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">title</span> <span class="p">=</span> <span class="s2">&#34;Vitthal Mirji&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">theme</span> <span class="p">=</span> <span class="s2">&#34;ink-free&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>That&rsquo;s it for basic setup. Now we need content and a theme.</p>
+<h3 id="local-testing">Local testing</h3>
+<p>Hugo has a built-in dev server with auto-reload:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">hugo server -D</span></span></code></pre></td></tr></table>
+</div>
+</div><p>This starts a local server on <code>localhost:1313</code>. Every time you save a file, the browser refreshes automatically. No build step, no manual refresh.</p>
+<p>The <code>-D</code> flag includes drafts. Super useful for previewing work-in-progress posts.</p>
+<hr>
+<h2 id="part-4---migrating-wordpress-content">Part 4 - Migrating WordPress content</h2>
+<p>Now comes the fun part: getting all those old WordPress posts out.</p>
+<h3 id="exporting-wordpress-posts-to-markdown">Exporting WordPress posts to markdown</h3>
+<p>I need to export all old blog posts to markdown. There&rsquo;s a great little <a href="https://github.com/lonekorean/wordpress-export-to-markdown" rel="noopener external" target="_blank">tool</a>
+ by <code>lonekorean</code> on GitHub that does exactly this.</p>
+<p>First, export your WordPress content (Tools → Export in WordPress admin). You&rsquo;ll get an XML file.</p>
+<p>Then run the converter:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/lonekorean/wordpress-export-to-markdown
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> wordpress-export-to-markdown
+</span></span><span class="line"><span class="cl">npm install
+</span></span><span class="line"><span class="cl">node index.js</span></span></code></pre></td></tr></table>
+</div>
+</div><p>It&rsquo;ll prompt you for the WordPress XML file and output directory. The tool generates markdown files with front matter.</p>
+<blockquote>
+  <p>Hugo has <a href="https://gohugo.io/tools/migrations/" rel="noopener external" target="_blank">other migration tools</a>
+ available, but since I&rsquo;d customized WordPress heavily, this one worked best for me. Your mileage may vary.</p>
+
+</blockquote><p>After that, copy the generated files to Hugo&rsquo;s <code>content/posts/</code> directory.</p>
+<h3 id="the-problems-with-exported-content">The problems with exported content</h3>
+<p>Due to my &ldquo;interesting&rdquo; WordPress configuration, the exported posts needed help:</p>
+<ul>
+<li>GitHub Gists not rendered</li>
+<li>Internal syntax formatting caused everything to be escaped with <code>\</code>, breaking code</li>
+<li>Headlines missing</li>
+<li>Tags missing</li>
+<li>Descriptions missing</li>
+</ul>
+<p>Yeah, it was a mess.</p>
+<hr>
+<h2 id="part-5---theme-customization">Part 5 - Theme customization</h2>
+<p>We also need a theme. Hugo&rsquo;s default is&hellip; minimal.</p>
+<p>My requirements:</p>
+<ul>
+<li><strong>No external CDNs</strong> - No googleapis, no Google Analytics, no trackers</li>
+<li><strong>Simple interface</strong> - Clean, without hiding information</li>
+<li><strong>Fast on slow connections</strong> - Remember those 40-second WordPress pages?</li>
+</ul>
+<p>I chose <a href="https://github.com/knadh/hugo-ink" rel="noopener external" target="_blank">hugo-ink</a>
+ by <code>knadh</code>, but customized it heavily. This became a fork called <a href="https://github.com/vim89/ink-free" rel="noopener external" target="_blank">ink-free</a>
+.</p>
+<h3 id="what-i-changed">What I changed</h3>
+<p><strong>Removed privacy invasions:</strong></p>
+<ul>
+<li>All references to Google&rsquo;s font CDN (fonts are now local)</li>
+<li>Analytics code (even if it was toggled off)</li>
+</ul>
+<p><strong>Fixed usability issues:</strong></p>
+<ul>
+<li>Tags display inline instead of as a list</li>
+<li>Syntax highlighting background changed (was grey on grey - unreadable)</li>
+<li>Added a back button to all posts</li>
+<li>Added TOC (table of contents) controlled by a variable</li>
+<li>Added word count, tags, and read time to post previews</li>
+</ul>
+<p><strong>Added random footer messages:</strong>
+This was the fun part. Hugo&rsquo;s templating language (based on Go) lets you pipe commands. I wanted random silly messages at the end of posts:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl"><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&#34;back&#34;</span><span class="p">&gt;</span>
+</span></span><span class="line"><span class="cl">  {{ if isset .Site.Params &#34;footers&#34; }}
+</span></span><span class="line"><span class="cl">    {{ if ne .Type &#34;page&#34; }}
+</span></span><span class="line"><span class="cl">      Next time, we&#39;ll talk about <span class="p">&lt;</span><span class="nt">i</span><span class="p">&gt;</span>&#34;{{ range .Site.Params.footers | shuffle | first 1 }}{{ . }}&#34;<span class="p">&lt;/</span><span class="nt">i</span><span class="p">&gt;</span>{{ end }}
+</span></span><span class="line"><span class="cl">    {{ end }}
+</span></span><span class="line"><span class="cl">  {{ end }}
+</span></span><span class="line"><span class="cl"><span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This picks a random message from <code>config.toml</code> and displays it. Messages like &ldquo;What Tiger King can teach us about x86 Assembly&rdquo; or &ldquo;Why Spark&rsquo;s lazy evaluation is basically procrastination with a PhD&rdquo;.</p>
+<p>Most theme changes were simple HTML and CSS. Even as someone who&rsquo;s not a web dev, Hugo&rsquo;s templates are straightforward:</p>
+<div class="highlight highlight-css" data-lang="css"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-css" data-lang="css"><span class="line"><span class="cl"><span class="p">.</span><span class="nc">tag-li</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">display</span><span class="p">:</span><span class="kc">inline</span> <span class="cp">!important</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">.</span><span class="nc">back</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">padding-top</span><span class="p">:</span> <span class="mi">1</span><span class="kt">em</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">font-size</span><span class="p">:</span> <span class="mi">1</span><span class="kt">em</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>The result:</p>
+<p><picture><source type="image/avif" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_b0bb7e5c399b8087.avif 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_6dfa3107ab86cdba.avif 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_cf245ea9ae780539.avif 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_3f7ed6c1deaa04ba.avif 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_79459283fb8c4b06.webp 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_3cd0fbbec30b207e.webp 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_f694206043b6bbe3.webp 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_bc0b3e6e9d8a139.webp 1600w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_b920b33263619972.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_90ffc2b11939e5b.png 800w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_2bb7f2def2a7e02a.png 1200w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_7eadb8d8264b273e.png 1600w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/after_hu_10c7c586862c39f1.jpg" alt="After theme customization" loading="lazy" width="800" height="394">
+    </picture></p>
+<p>Check out the theme here: <a href="https://github.com/vim89/ink-free" rel="noopener external" target="_blank">ink-free on GitHub</a>
+</p>
+<hr>
+<h2 id="part-6---fixing-exported-content-with-scripts">Part 6 - Fixing exported content with scripts</h2>
+<p>Remember those export problems? Time to fix them.</p>
+<p>The WordPress exporter gave me markdown files, but they were broken:</p>
+<ul>
+<li>GitHub Gists embedded as <code>&lt;script&gt;</code> tags (Hugo needs shortcodes)</li>
+<li>Code blocks escaped with <code>\</code> everywhere</li>
+<li>Missing metadata</li>
+</ul>
+<h3 id="fixing-github-gists">Fixing GitHub Gists</h3>
+<p>WordPress had this:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl"><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&#34;https://gist.github.com/vim89/8dcc79ab16daf5fcdda3df1a4ccc183a.js&#34;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Hugo needs this:</p>
+<div class="highlight highlight-html" data-lang="html"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-html" data-lang="html"><span class="line"><span class="cl">{{<span class="p">&lt;</span> <span class="nt">gist</span> <span class="na">vim89</span> <span class="na">8dcc79ab16daf5fcdda3df1a4ccc183a</span> <span class="p">&gt;</span>}}</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Doing this by hand for dozens of posts? No thanks. Let&rsquo;s script it:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">grep <span class="s2">&#34;gist.github.com&#34;</span> *.md <span class="p">|</span> <span class="k">while</span> <span class="nb">read</span> -r line <span class="p">;</span> <span class="k">do</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">guser</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="si">${</span><span class="nv">line</span><span class="si">}</span><span class="s2">&#34;</span> <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f4<span class="k">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">gist</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="s2">&#34;</span><span class="si">${</span><span class="nv">line</span><span class="si">}</span><span class="s2">&#34;</span> <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f5 <span class="p">|</span> sed -E <span class="s1">&#39;s/(\.js).+//g&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">repl</span><span class="o">=</span><span class="s2">&#34;{{/* gist &#34;</span><span class="si">${</span><span class="nv">guser</span><span class="si">}</span><span class="s2">&#34; &#34;</span><span class="si">${</span><span class="nv">gist</span><span class="si">}</span><span class="s2">&#34; */&gt;}}&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># Get line number</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">ln</span><span class="o">=</span><span class="k">$(</span>grep -n <span class="s2">&#34;</span><span class="nv">$line</span><span class="s2">&#34;</span> *.md <span class="p">|</span> cut -d : -f 1<span class="k">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># Replace</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Replace line </span><span class="nv">$ln</span><span class="s2"> with </span><span class="si">${</span><span class="nv">repl</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">  sed -Ei <span class="s2">&#34;</span><span class="nv">$ln</span><span class="s2"> s#.*#</span><span class="si">${</span><span class="nv">repl</span><span class="si">}</span><span class="s2">#g&#34;</span> *.md
+</span></span><span class="line"><span class="cl"><span class="k">done</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This finds all Gist URLs, extracts the username and Gist ID, and replaces them with Hugo shortcodes. Saved me hours of manual editing.</p>
+<h3 id="vs-code-shortcuts-for-hugo-syntax">VS Code shortcuts for Hugo syntax</h3>
+<p>I added keyboard shortcuts in VS Code to quickly insert Hugo&rsquo;s syntax highlighter blocks. In <code>keybindings.json</code>:</p>
+<div class="highlight highlight-json" data-lang="json"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">[</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;key&#34;</span><span class="p">:</span> <span class="s2">&#34;ctrl+1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;editor.action.insertSnippet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;when&#34;</span><span class="p">:</span> <span class="s2">&#34;editorTextFocus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;snippet&#34;</span><span class="p">:</span> <span class="s2">&#34;{&lt; highlight bash \&#34;linenos=table\&#34; &gt;}&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;key&#34;</span><span class="p">:</span> <span class="s2">&#34;ctrl+2&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;editor.action.insertSnippet&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;when&#34;</span><span class="p">:</span> <span class="s2">&#34;editorTextFocus&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;args&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;snippet&#34;</span><span class="p">:</span> <span class="s2">&#34;{&lt; / highlight &gt;}&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now <code>Ctrl+1</code> opens a syntax block, <code>Ctrl+2</code> closes it. Small productivity win.</p>
+<h3 id="preserving-urls-seo-matters">Preserving URLs (SEO matters)</h3>
+<p>I don&rsquo;t want to break existing links. People have bookmarked posts, shared them, indexed them in search engines.</p>
+<p>Hugo needs to generate the same URLs WordPress used. In <code>config.toml</code>:</p>
+<div class="highlight highlight-toml" data-lang="toml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">permalinks</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">posts</span> <span class="p">=</span> <span class="s2">&#34;/:year/:month/:title&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This matches WordPress&rsquo;s default permalink structure. No 301 redirects needed.</p>
+<h3 id="verifying-the-migration">Verifying the migration</h3>
+<p>How do I know all URLs match? I wrote a quick Go script to compare RSS feeds - WordPress&rsquo;s export vs Hugo&rsquo;s generated feed:</p>
+<div class="highlight highlight-go" data-lang="go"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;os&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;fmt&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="s">&#34;github.com/mmcdole/gofeed&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">feed</span><span class="w"> </span><span class="o">*</span><span class="nx">gofeed</span><span class="p">.</span><span class="nx">Feed</span><span class="p">)</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">output</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">post</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">feed</span><span class="p">.</span><span class="nx">Items</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">output</span><span class="p">[</span><span class="nx">post</span><span class="p">.</span><span class="nx">Link</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">post</span><span class="p">.</span><span class="nx">Title</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">output</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="nx">path</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="nx">gofeed</span><span class="p">.</span><span class="nx">Feed</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">fp</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">gofeed</span><span class="p">.</span><span class="nf">NewParser</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">file</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nf">Open</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">defer</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">feed</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">fp</span><span class="p">.</span><span class="nf">Parse</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">feed</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">compareUrls</span><span class="p">(</span><span class="nx">local</span><span class="p">,</span><span class="w"> </span><span class="nx">remote</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">allFound</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="nx">k</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">local</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">remote</span><span class="p">[</span><span class="nx">k</span><span class="p">];</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;✓ Found %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;✗ Missing: %s\n&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">k</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nx">allFound</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">allFound</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">remoteFeed</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="s">&#34;./wordpress.xml&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">localFeed</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">readFeed</span><span class="p">(</span><span class="s">&#34;../public/index.xml&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">remote</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">remoteFeed</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">local</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">mapToUrl</span><span class="p">(</span><span class="nx">localFeed</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;All URLs match:&#34;</span><span class="p">,</span><span class="w"> </span><span class="nf">compareUrls</span><span class="p">(</span><span class="nx">local</span><span class="p">,</span><span class="w"> </span><span class="nx">remote</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>Running this found a couple of posts with mismatched URLs:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">✗ Missing: https://vitthalmirji.com/blog/2020/02/how-a-broken-memory-module-hid-in-plain-sight/
+</span></span><span class="line"><span class="cl">✗ Missing: https://vitthalmirji.com/blog/2019/12/tensorflow-on-edge-building-a-smart-security-camera/</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Fixed those manually. (Psst, don&rsquo;t check the Git commits.)</p>
+<p>There were more adjustments - re-embedding videos, fixing image paths - but this covered the bulk of it. I&rsquo;ll spare you the tedious details.</p>
+<hr>
+<h2 id="part-7---deployment-with-github-actions">Part 7 - Deployment with GitHub Actions</h2>
+<p>Now for the fun part - automated deployment.</p>
+<p>The goal: Every git push to master should automatically build and deploy the site to my nginx server. No manual steps, no FTP clients, no SSH sessions.</p>
+<p>I could use GitHub Pages, but I want to keep everything on my own server. Plus, I&rsquo;m already running nginx and Docker there.</p>
+<p><strong>The deployment flow:</strong></p>
+<ol>
+<li>Git push triggers GitHub Actions</li>
+<li>Checkout code (including theme submodule)</li>
+<li>Download Hugo binary</li>
+<li>Build static HTML/CSS/JS</li>
+<li>Deploy via SCP to server (in a restricted chroot jail for security)</li>
+<li>Optional: Trigger any server-side updates (Docker container refreshes, etc.)</li>
+</ol>
+<p>For CI/CD, I have two free options: Travis CI or GitHub Actions. I chose GitHub Actions to avoid yet another external service. Everything stays within GitHub.</p>
+<h3 id="creating-the-workflow">Creating the workflow</h3>
+<p>Create <code>.github/workflows/workflow.yml</code>:</p>
+<div class="highlight highlight-yaml" data-lang="yaml"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">build, test, audit &amp; deploy vitthalmirji.com site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">master, main ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="l">master, main ]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">build-test-audit-deploy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📥 Checkout code with submodules</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">submodules</span><span class="p">:</span><span class="w"> </span><span class="l">recursive</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">⚙️ Setup Hugo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-hugo@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">hugo-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;0.148.1&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">extended</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">✅ Validate taxonomies via taxlimits.yaml</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          valid_terms=$(yq e &#39;.tags + .categories + .series&#39; data/taxlimits.yaml | sed &#39;s/- //g&#39;)
+</span></span></span><span class="line"><span class="cl"><span class="sd">          find content -name &#34;*.md&#34; | while read -r md; do
+</span></span></span><span class="line"><span class="cl"><span class="sd">            for term in $(grep -E &#39;^(tags|categories|series):&#39; -A3 &#34;$md&#34; | sed -n &#39;s/- //p&#39;); do
+</span></span></span><span class="line"><span class="cl"><span class="sd">              if ! grep -qx &#34;$term&#34; &lt;&lt;&lt; &#34;$valid_terms&#34;; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">                echo &#34;❌ Invalid taxonomy term &#39;$term&#39; in $md&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">                exit 1
+</span></span></span><span class="line"><span class="cl"><span class="sd">              fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">            done
+</span></span></span><span class="line"><span class="cl"><span class="sd">          done</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🏗️ Build Hugo site</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">hugo --gc --minify</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">🚦 Run Lighthouse audits</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">treosh/lighthouse-ci-action@v12</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">urls</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;https://vitthalmirji.com&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">uploadArtifacts</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Node.js</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-node@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">node-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;20&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install Pa11y CLI</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">npm install -g pa11y-ci</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Cache Node.js dependencies</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/cache@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">~/.npm</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">${{ runner.os }}-node-${{ hashFiles(&#39;**/package-lock.json&#39;) }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">restore-keys</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            ${{ runner.os }}-node-</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">♿ Run accessibility checks (Pa11y)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">PUPPETEER_EXECUTABLE_PATH=$(which chromium-browser || which chromium || true) \</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="l">npx pa11y-ci --chrome-launcher-flags=&#34;--no-sandbox&#34; --config .github/workflows/.pa11yci.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">continue-on-error</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📦 Upload to GitHub Pages (gh-pages)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">peaceiris/actions-gh-pages@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">personal_token</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.PERSONAL_TOKEN }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">publish_dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">external_repository</span><span class="p">:</span><span class="w"> </span><span class="l">vim89/vim89</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">📤 Deploy to InfinityFree via FTP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">SamKirkland/FTP-Deploy-Action@v4.3.5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_HOST }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_USERNAME }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.FTP_PASSWORD }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">local-dir</span><span class="p">:</span><span class="w"> </span><span class="l">./public/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server-dir</span><span class="p">:</span><span class="w"> </span><span class="l">/htdocs/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">dangerous-clean-slate</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p><picture><source type="image/avif" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_c7e20a360fe55606.avif 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_d6c987bd4919af1f.avif 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/webp" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_712dd82869437359.webp 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_a05d6f3ba5d1348.webp 800w" sizes="(max-width: 800px) 100vw, 800px"><source type="image/png" srcset="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_c6026f5de2e441b4.png 400w, /2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_68ed265be1c4e3d6.png 800w" sizes="(max-width: 800px) 100vw, 800px"><img src="/2020/05/goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today/images/deploy_hu_7c30d2007a45cf95.jpg" alt="Successful GitHub Actions deployment" loading="lazy" width="800" height="974">
+    </picture></p>
+<blockquote>
+  <p><strong>Note on SCP Actions:</strong> I tried using pre-configured SCP Actions from the GitHub marketplace. They either didn&rsquo;t support key passphrases or had terrible debug logs. After fighting &ldquo;Exit code 1&rdquo; errors despite successful connections (verified in <code>syslog</code> and <code>auth.log</code>), I gave up and wrote the bash deployment myself. If you know what causes that error, let me know!</p>
+
+</blockquote><hr>
+<h2 id="part-8---security-locking-down-deployment">Part 8 - Security: locking down deployment</h2>
+<p>Here&rsquo;s the problem: GitHub Actions needs SSH access to deploy files. But giving full SSH access to an automated system? That&rsquo;s a security nightmare.</p>
+<p>The solution: Create a restricted user that can <em>only</em> upload files via SCP. No shell, no commands, no lateral movement.</p>
+<h3 id="setting-up-rssh-restricted-shell">Setting up rssh (restricted shell)</h3>
+<p><code>rssh</code> is a restricted shell that only allows SCP/SFTP. No bash, no command execution.</p>
+<p><strong>Create the deployment user:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">useradd -m -d /home/github github
+</span></span><span class="line"><span class="cl">passwd github</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Lock down permissions:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Make home directory owned by root (prevents user from writing there)</span>
+</span></span><span class="line"><span class="cl">sudo chown -R root:github /home/github
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Only allow writes to .ssh for key management</span>
+</span></span><span class="line"><span class="cl">sudo chown github:github /home/github/.ssh
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Give write access only to the deployment target directory</span>
+</span></span><span class="line"><span class="cl">sudo mkdir -p /var/www/vitthalmirji.com
+</span></span><span class="line"><span class="cl">sudo chown github:github /var/www/vitthalmirji.com</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Compile and install rssh:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget http://prdownloads.sourceforge.net/rssh/rssh-2.3.4.tar.gz
+</span></span><span class="line"><span class="cl">tar -xvf rssh-2.3.4.tar.gz
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> rssh-2.3.4
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">./configure
+</span></span><span class="line"><span class="cl">make
+</span></span><span class="line"><span class="cl">sudo make install</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Configure rssh:</strong></p>
+<p>Edit <code>/usr/local/etc/rssh.conf</code>:</p>
+<div class="highlight highlight-ini" data-lang="ini"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="na">user</span> <span class="o">=</span> <span class="s">&#34;github:022:00001:/var/www/vitthalmirji.com&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>This configuration means:</p>
+<ul>
+<li><strong>username</strong>: <code>github</code> (the restricted user)</li>
+<li><strong>umask</strong>: <code>022</code> (files created with rw-r&ndash;r&ndash; permissions)</li>
+<li><strong>access bits</strong>: <code>00001</code> (rsync=0, rdist=0, cvs=0, sftp=0, scp=1)
+<ul>
+<li>Only SCP is allowed</li>
+</ul>
+</li>
+<li><strong>chroot path</strong>: <code>/var/www/vitthalmirji.com</code> (user can&rsquo;t access anything outside this directory)</li>
+</ul>
+<p>See the <a href="https://linux.die.net/man/5/rssh.conf" rel="noopener external" target="_blank">rssh.conf man page</a>
+ for details.</p>
+<blockquote>
+  <p><strong>Setting up chroot is complex.</strong> You need to copy required libraries and binaries into the chroot directory. Read the <code>CHROOT</code> file in the rssh source directory carefully. This is a multi-step process that varies by distribution.</p>
+
+</blockquote><p><strong>Update SSH configuration:</strong></p>
+<p>Edit <code>/etc/ssh/sshd_config</code>:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Ensure github user is allowed</span>
+</span></span><span class="line"><span class="cl">AllowUsers your-user github</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Consider creating separate groups for <code>rssh</code> and regular <code>ssh</code> users if you&rsquo;re doing this on a multi-user system.</p>
+<p>Restart SSH:</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">service sshd restart</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>Set user shell to rssh:</strong></p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">usermod -s /usr/bin/rssh github</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Now the <code>github</code> user can only SCP files to the deployment directory. They can&rsquo;t:</p>
+<ul>
+<li>Run shell commands</li>
+<li>Access other parts of the filesystem</li>
+<li>SSH in for interactive sessions</li>
+</ul>
+<p><strong>Generate SSH keys:</strong></p>
+<p>For GitHub Actions, generate keys in PEM format (the Ubuntu runner image uses an older OpenSSH version):</p>
+<div class="highlight highlight-bash" data-lang="bash"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh-keygen -m PEM -t rsa -b <span class="m">4096</span> -f github_deploy_key</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Add the public key to <code>/home/github/.ssh/authorized_keys</code>, then add the private key as a GitHub secret.</p>
+<hr>
+<h2 id="the-result">The result</h2>
+<p>Well, if you&rsquo;re reading this, judge for yourself!</p>
+<p><strong>Performance improvements:</strong></p>
+<ul>
+<li><strong>Before (WordPress)</strong>: 2.5MB transfer, 47 requests, 40 seconds on slow connections</li>
+<li><strong>After (Hugo)</strong>: ~500KB transfer (mostly images), minimal JS/CSS, instant load</li>
+</ul>
+<p>It&rsquo;s not as flashy as the WordPress template. But it&rsquo;s fast, it works, and I can actually write without fighting an editor.</p>
+<p><strong>The workflow now:</strong></p>
+<ol>
+<li>Write markdown in vim (offline)</li>
+<li><code>git push</code></li>
+<li>GitHub Actions builds and deploys automatically</li>
+<li>Live in seconds</li>
+</ol>
+<p>No database, no PHP, no manual HTML editing, no fighting with plugins.</p>
+<hr>
+<h2 id="conclusion">Conclusion</h2>
+<p>I&rsquo;m pretty happy with this change. For my sanity, if nothing else.</p>
+<p>Look, I don&rsquo;t get a ton of traffic here (I don&rsquo;t run analytics, so I don&rsquo;t actually know). But <strong>blogging is fun</strong>. Every time I write something, I learn something - whether it&rsquo;s complex ML theory or, like today, getting back into web dev and deployment automation.</p>
+<p>This new setup lets me blog more. I spend time writing code and posts, not fighting WordPress. Faster load times mean less frustration for readers. Version-controlled markdown means no more lock-in - anyone can contribute via pull requests.</p>
+<p>If you&rsquo;re thinking about migrating away from WordPress, or starting a blog, give Hugo (or any static site generator) a try. The workflow is so much cleaner than fighting a WYSIWYG editor.</p>
+<p>And if you want to use GitHub + Hugo + nginx, hopefully this post helps.</p>
+<hr>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li>Migrated from WordPress (40s page loads, horrible editor) to Hugo static site generator</li>
+<li>Hugo: Single Go binary, markdown input, blazing-fast static HTML output</li>
+<li>Exported WordPress posts to markdown with <code>wordpress-export-to-markdown</code> tool</li>
+<li>Fixed broken content with bash/Go scripts (Gists, permalinks, metadata)</li>
+<li>Customized hugo-ink theme: removed CDN dependencies, added TOC, fixed syntax highlighting</li>
+<li>Automated deployment with GitHub Actions: push to Git → auto-build → deploy via SCP</li>
+<li>Secured deployment with rssh (restricted shell): GitHub Actions can only SCP files, no shell access</li>
+<li>Result: 500KB pages that load instantly, markdown workflow in vim, version control, collaborative via PRs</li>
+</ul>
+]]></content:encoded><enclosure url="https://vitthalmirji.com/images/og/generated/2020-05-goodbye-wordpress-hello-hugo--nginx-with-fast-builds-and-sane-deploys-today.png" type="image/png"/></item></channel></rss>
