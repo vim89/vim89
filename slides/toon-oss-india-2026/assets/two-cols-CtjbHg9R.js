@@ -1,0 +1,1 @@
+import{o as t,a,b as s,i as e}from"./modules/vue-Bk_yUYT3.js";import{u as r}from"./slidev/context-AKhieYwT.js";const c={class:"slidev-layout"},i={class:"grid grid-cols-2 gap-16"},l={class:"prose"},d={class:"prose"},u={__name:"two-cols",setup(_){return r(),(o,n)=>(t(),a("div",c,[s("div",i,[s("div",l,[e(o.$slots,"default")]),s("div",d,[e(o.$slots,"right")])])]))}};export{u as _};

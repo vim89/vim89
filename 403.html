@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>403 Forbidden | vitthalmirji.com</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f8fa;
+        --card: #ffffff;
+        --text: #1f2328;
+        --muted: #57606a;
+        --accent: #3700ff;
+        --border: #e1e4e8;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1117;
+          --card: #161b22;
+          --text: #e6edf3;
+          --muted: #9aa4b2;
+          --accent: #9375fd;
+          --border: #30363d;
+        }
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .card {
+        max-width: 640px;
+        width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      }
+      .code {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 10px 0 12px;
+        font-size: 28px;
+      }
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      ul {
+        margin: 0 0 20px;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+      li {
+        margin: 6px 0;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .actions a {
+        text-decoration: none;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        color: var(--text);
+        background: transparent;
+        font-weight: 600;
+      }
+      .actions a.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .footer {
+        margin-top: 18px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body data-pagefind-body data-pagefind-ignore="all">
+    <main class="wrap">
+      <section class="card" role="main">
+        <div class="code">HTTP 403</div>
+        <h1>Forbidden</h1>
+        <p>You do not have permission to access this resource. The server understood the request but will not authorize it.</p>
+        <ul>
+          <li>If you typed the URL, verify it is correct.</li>
+          <li>If you expected access, contact the site owner.</li>
+          <li>Try the homepage or use search to find public pages.</li>
+        </ul>
+        <div class="actions">
+          <a class="primary" href="/">Go to homepage</a>
+          <a href="/search/">Search</a>
+          <a href="/about/">Contact</a>
+        </div>
+        <div class="footer">VITTAL MIRJI via vitthalmirji.com</div>
+      </section>
+    </main>
+  </body>
+</html>
