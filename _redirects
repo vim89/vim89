@@ -1,0 +1,24 @@
+# Netlify Redirects
+# Format: from-path  to-path  [status-code]
+# Documentation: https://docs.netlify.com/routing/redirects/
+
+# Old blog structure redirects
+/blog/:year/:month/:slug  /:year/:month/:slug  301
+
+# Series path changes
+/series/scala-production  /series/scala-in-production  301
+/series/gde  /series/road-to-google-developer-expert  301
+
+# Topic consolidation
+/topics/big-data  /topics/data-engineering  301
+/topics/ml  /topics/ai-ml  301
+/topics/machine-learning  /topics/ai-ml  301
+
+# Old about page
+/about-me  /about  301
+
+# Temporary redirects (302) - can be changed later
+# /black-friday  /  302
+
+# Note: Cloudflare Workers/Pages only support 200 or 3xx here.
+# Custom 404 handling is done by the static host.

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="840" viewBox="0 0 1600 840">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1f33"/>
+      <stop offset="100%" stop-color="#133a5d"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1600" height="840" fill="url(#g)"/>
+  <g transform="translate(120,200)">
+    <text x="0" y="0" fill="#e8f6ff" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-weight: 800; font-size: 64px;">Make Schema Drift a Compile‑Time Error</text>
+    <text x="0" y="70" fill="#cfe8ff" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-weight: 500; font-size: 32px;">A gentle guide to Scala 3 macros (with Scala 2 notes)</text>
+    <text x="0" y="140" fill="#a9c7dd" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-weight: 400; font-size: 24px;">If it compiles, contracts align. Pure inside, effects at the edges.</text>
+  </g>
+  <g transform="translate(120,640)" opacity="0.25">
+    <rect x="0" y="0" width="140" height="60" rx="12" fill="#e8f6ff"/>
+    <rect x="200" y="0" width="220" height="60" rx="12" fill="#e8f6ff"/>
+    <rect x="480" y="0" width="220" height="60" rx="12" fill="#e8f6ff"/>
+    <rect x="760" y="0" width="220" height="60" rx="12" fill="#b7ffd0"/>
+  </g>
+</svg>
+

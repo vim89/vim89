@@ -1,0 +1,2 @@
+reveal.js 6.0.1 (MIT, see LICENSE): the files of its npm package's dist/ that the theme loads.
+Update by copying the same files from a newer package.
