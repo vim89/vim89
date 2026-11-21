@@ -1,0 +1,250 @@
+/* A projector-first palette, aligned to Rust/DataFusion/Spark brand colors
+   (verified from each project's own site CSS or the Simple Icons brand
+   catalog, not guessed) with a very light J On The Beach touch. Two real,
+   different ways existed to apply this — kept as both, toggleable, rather
+   than picking one:
+
+   "semantic" (default, [data-palette="semantic"] or unset) — distinct
+   per-brand colors tied to meaning: DataFusion's burnt orange is the
+   primary --accent (the talk's hero), Spark's orange-red becomes
+   --syntax-keyword (already the .error tone's color in the ported
+   code-annotations engine, since Spark is what's being compared against),
+   Rust's gold becomes --syntax-title (the .question tone). J On The
+   Beach's dominant sunny yellow (#FFCC00, by far the most-used color on
+   their own site) is reserved for .eyebrow only — the one deliberately
+   light touch, not a general palette color.
+
+   "ember" (backup, [data-palette="ember"]) — a single unified warm accent
+   blending Spark's #E25A1C and DataFusion's own #d66133 (averaged:
+   #DC5D27), since the talk's own thesis is DataFusion replacing Spark —
+   one visual family for both engines reads as deliberate, not patchwork.
+   --ink borrows Rust's own site text color (#2a3439) directly. No yellow
+   eyebrow touch in this one — it reverts to the plain --accent color.
+
+   Toggle at runtime: press "P" (registered via Reveal.addKeyBinding in
+   palette-toggle.mjs), remembered in localStorage. */
+.reveal, .reveal-viewport {
+  --paper: #f5f7f9; --ink: #22303b; --accent: #d66133;
+  --muted: #55606b; --rule: #ccd4db; --code-bg: #eef1f4;
+  --syntax-keyword: #c74a1a; --syntax-value: #00685e;
+  --syntax-comment: #52687b; --syntax-title: #b8860b;
+  --r-main-color: var(--ink); --r-heading-color: var(--ink);
+  --r-background-color: var(--paper); --r-link-color: var(--accent);
+}
+html[data-palette="ember"] .reveal, html[data-palette="ember"] .reveal-viewport {
+  --paper: #f7f4ef; --ink: #2a3439; --accent: #dc5d27;
+  --muted: #6b6259; --rule: #d9cfc2; --code-bg: #f1ece3;
+  --syntax-keyword: #9c6b05; --syntax-value: #6b6259;
+  --syntax-comment: #7a6f63; --syntax-title: #245b91;
+}
+.reveal .slides > section { background: var(--paper); color: var(--ink); }
+.reveal .slides > section.dark-slide {
+  --paper: #10283d; --ink: #f4f8fc; --accent: #e8835a;
+  --muted: #c3d4e2; --rule: #557086; --code-bg: #19364d;
+  --syntax-keyword: #ff8f5e; --syntax-value: #9ce8ce;
+  --syntax-comment: #b9cbd9; --syntax-title: #ffd766;
+  --r-main-color: var(--ink); --r-heading-color: var(--ink);
+  background: var(--paper); color: var(--ink); color-scheme: dark;
+}
+html[data-palette="ember"] .reveal .slides > section.dark-slide {
+  --paper: #22170f; --ink: #f7ede4; --accent: #ff8952;
+  --muted: #cbb9ac; --rule: #5c4a3c; --code-bg: #2e2017;
+  --syntax-keyword: #ffd27a; --syntax-value: #ffb085;
+  --syntax-comment: #b9a594; --syntax-title: #9ecbff;
+}
+.reveal .slide-body,
+.reveal .slide-body :is(h1,h2,h3,h4,p,li,td,th,blockquote,strong,em) {
+  color: var(--ink);
+}
+.reveal .slide-body { gap: .6em; padding: 64px 82px 58px; }
+.reveal h2 { font-size: 1.52em; line-height: 1.12; max-width: 23ch; }
+.reveal .focus { font-size: 1.4em; line-height: 1.15; }
+.reveal .caveat, .reveal .footnote { font-size: .65em; color: var(--muted); line-height: 1.35; opacity: 1; }
+.reveal .title-slide .slide-body { justify-content: center; gap: 1.1em; }
+.reveal .title-slide h1 { font-size: 2.3em; line-height: 1.03; letter-spacing: -.035em; max-width: 17ch; }
+.reveal .title-slide h1 em { color: var(--accent); font-style: normal; }
+.reveal .title-slide .columns { flex: 0 0 auto; font-size: .82em; }
+/* `p.eyebrow`, not `.eyebrow`: a pre-existing specificity gap, found while
+   verifying this — `.reveal .slide-body :is(h1,...,p,...)` above resolves to
+   (0,2,1) (the :is() argument list's most specific member, `p`, counts as
+   one element), which already beat a bare `.reveal .eyebrow` at (0,2,0). The
+   eyebrow color was silently losing to the generic ink-color rule the whole
+   time; this never visibly mattered while both colors were --accent-adjacent,
+   but it would have broken outright once this got an actual distinct color. */
+.reveal .slide-body p.eyebrow { color: #c9a400; font-size: .6em; text-transform: uppercase; letter-spacing: .16em; }
+/* ember has no yellow touch — plain --accent instead. */
+html[data-palette="ember"] .slide-body p.eyebrow { color: var(--accent); }
+.reveal .chapter-slide .slide-body { justify-content: center; }
+.reveal .chapter-slide h1 { font-size: 2.1em; line-height: 1.12; max-width: 19ch; }
+.reveal .chapter-slide h1 em { color: var(--accent); font-style: normal; }
+.reveal .badge, .reveal .flow-badge, .reveal .status-badge {
+  display: inline-block; color: var(--accent); border: 1px solid var(--rule);
+  border-radius: 5px; padding: .12em .5em; font-size: .62em;
+  font-weight: 600; line-height: 1.4; vertical-align: middle;
+}
+.reveal .flow-badge { color: var(--muted); }
+.reveal .status-fails { color: var(--syntax-keyword); }
+.reveal table { width: 100%; font-size: .74em; border-collapse: collapse; }
+.reveal table :is(th,td) { padding: .42em .5em; border-bottom: 1px solid var(--rule); }
+.reveal table th { font-size: .85em; color: var(--muted); font-weight: 600; }
+.reveal table td strong { color: var(--accent); }
+.reveal pre { width: 100%; font-size: .82em; line-height: 1.42; box-shadow: none; margin: 0; }
+.reveal pre code { max-height: none; padding: .8em .9em; border: 1px solid var(--rule); border-radius: 10px; background: var(--code-bg); color: var(--ink); line-height: 1.42; }
+.reveal :not(pre) > code { color: var(--ink); background: var(--code-bg); border-radius: 3px; padding: .04em .18em; }
+.reveal .columns.code-walkthrough { grid-template-columns: 1.5fr 1fr; grid-auto-flow: row; align-items: center; gap: 1.8em; }
+.reveal .columns.code-walkthrough.balanced { grid-template-columns: 1fr 1fr; }
+.reveal .columns.code-walkthrough.wide { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 1.2em; }
+.reveal .columns.code-walkthrough.wide > .stack { min-width: 0; }
+.reveal .columns.code-walkthrough.wide pre { font-size: .76em; }
+.reveal .code-caption { font-size: .68em; color: var(--muted); line-height: 1.3; }
+.reveal .code-becomes { font-size: .8em; color: var(--accent); line-height: 1.25; }
+/* Ported from the reference Scala Days deck's code-annotations.mjs engine
+   (its own source isn't in this repo; reconstructed from its built CSS, per
+   PR #21). Tones map onto this theme's existing syntax-highlighting colors
+   rather than new ones: default/no-tone keeps today's --accent, .result
+   reuses --syntax-value, .question reuses --syntax-title, .error reuses
+   --syntax-keyword — all three already flip correctly on a dark slide. */
+.reveal .code-note { font-size: .88em; line-height: 1.3; padding: .45em .6em; background: color-mix(in srgb, var(--accent) 10%, var(--paper)); color: var(--ink); border-left: 4px solid var(--accent); }
+.reveal .code-note p { margin: 0; }
+.reveal .code-note strong { color: var(--accent); }
+.reveal .code-note [data-code-extend] { display: block; margin-top: .35em; color: inherit; font-style: normal; font-weight: inherit; }
+.reveal .code-note.result { background: color-mix(in srgb, var(--syntax-value) 10%, var(--paper)); border-color: var(--syntax-value); }
+.reveal .code-note.result strong { color: var(--syntax-value); }
+.reveal .code-note.question { background: color-mix(in srgb, var(--syntax-title) 10%, var(--paper)); border-color: var(--syntax-title); }
+.reveal .code-note.question strong { color: var(--syntax-title); }
+.reveal .code-note.error { background: color-mix(in srgb, var(--syntax-keyword) 12%, var(--paper)); border-color: var(--syntax-keyword); }
+.reveal .code-note.error strong { color: var(--syntax-keyword); }
+.reveal .code-note.visible:not(.current-fragment) { opacity: .48; }
+.reveal .code-note.current-fragment { opacity: 1; }
+/* Table-local annotations keep the measured values visible between clicks. */
+.reveal #tax td:last-child { white-space: nowrap; }
+.reveal #tax .tax-ratio {
+  padding: .05em .2em;
+  border-radius: .15em;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper));
+}
+.reveal #tax .tax-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  margin-left: .45em;
+  padding: .25em .45em;
+  border-radius: .2em;
+  background: color-mix(in srgb, var(--accent) 10%, var(--paper));
+  color: var(--ink);
+  font-size: .65em;
+  font-weight: 600;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+.reveal #tax .tax-callout::before {
+  content: "\2190";
+  color: var(--accent);
+  font-size: 1.4em;
+  line-height: 1;
+}
+.reveal .fragment.step { transition: opacity .2s ease; }
+.reveal .fragment.step:not(.visible) { opacity: 0; }
+.reveal .fragment.step.visible { opacity: 1; }
+.reveal .fragment.step.verdict { font-size: 1em; font-weight: 600; color: var(--accent); }
+.reveal .slide-body { position: relative; }
+.reveal .code-walkthrough:has([data-code]) { position: relative; gap: 2.1em; }
+.reveal .annotation-lines { position: absolute; overflow: visible; pointer-events: none; z-index: 5; }
+.reveal .annotation-lines path { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+.reveal .annotation-lines circle { fill: var(--accent); }
+.reveal .annotation-lines .result path { stroke: var(--syntax-value); }
+.reveal .annotation-lines .result circle { fill: var(--syntax-value); }
+.reveal .annotation-lines .question path { stroke: var(--syntax-title); }
+.reveal .annotation-lines .question circle { fill: var(--syntax-title); }
+.reveal .annotation-lines .error path { stroke: var(--syntax-keyword); }
+.reveal .annotation-lines .error circle { fill: var(--syntax-keyword); }
+.reveal mark.code-emphasis { color: inherit; background: color-mix(in srgb, var(--accent) 23%, transparent); border-radius: .08em; padding: 0; font: inherit; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.reveal mark.code-emphasis.result { background: color-mix(in srgb, var(--syntax-value) 28%, transparent); }
+.reveal mark.code-emphasis.question { background: color-mix(in srgb, var(--syntax-title) 28%, transparent); }
+.reveal mark.code-emphasis.error { background: color-mix(in srgb, var(--syntax-keyword) 28%, transparent); }
+.reveal .annotation-lines g, .reveal .annotation-lines path { transition: d .2s ease, opacity .2s ease; }
+.reveal .annotation-lines circle { transition: cx .2s ease, cy .2s ease, opacity .2s ease; }
+.reveal mark.code-emphasis { transition: background-color .2s ease; }
+.reveal .annotation-lines .annotation-pending { opacity: 0; }
+.reveal mark.code-emphasis.annotation-pending { background: transparent; }
+html:not(.reveal-print) .reveal:not(.fit-measure):not(.overview) .code-note[data-code-note-sizes] {
+  overflow: hidden; height: var(--code-note-height); margin-bottom: calc(var(--code-note-full-height) - var(--code-note-height));
+  transition: height .25s ease, margin-bottom .25s ease;
+}
+.reveal.overview .code-walkthrough .fragment { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal .annotation-lines g, .reveal .annotation-lines path, .reveal .annotation-lines circle, .reveal mark.code-emphasis { transition: none; }
+  .reveal .code-note[data-code-note-sizes] { transition: none !important; }
+}
+/* Ported from the reference Scala Days deck's repo-badge (its own source
+   isn't in this repo; reconstructed from its built CSS). Colors swapped
+   from that deck's hardcoded #fff/#181717 to this theme's --paper/--ink so
+   the badge flips correctly on a dark-slide chapter divider. */
+.reveal .slide-body > .repo-badge:not(.repo-badge-inline) { position: absolute; top: 64px; right: 82px; z-index: 2; margin: 0; font: 400 26px/1.2 var(--r-main-font); }
+.reveal .repo-badge.repo-badge-inline { position: static; align-self: flex-start; margin: 0; font: 400 .9em/1.2 var(--r-main-font); }
+.reveal .repo-badge > a { display: inline-flex; align-items: center; gap: 8px; padding: 4px 16px 4px 6px; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; background: var(--paper); color: var(--ink); text-decoration: none; white-space: nowrap; }
+.reveal .repo-badge > a > .repo-badge-label { display: block; line-height: 1; transform: translateY(.08em); }
+.reveal .repo-badge > a:hover { border-color: var(--accent); color: var(--accent); }
+.reveal .repo-badge > a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.reveal .repo-badge > a > img { display: block; flex: 0 0 40px; width: 40px; height: 40px; min-height: 0; max-width: none; max-height: none; margin: 0; border: 0; box-shadow: none; object-fit: contain; }
+.reveal .repo-badge-inline > a > img { flex-basis: 1.54em; width: 1.54em; height: 1.54em; }
+/* Keep file links inside the content bounds measured by the theme fitter. */
+.reveal .slide-body > .stack.code-source-links {
+  position: absolute; top: 64px; right: 82px; left: 82px; z-index: 2;
+  display: flex; flex-direction: row; justify-content: flex-end; align-items: center;
+  gap: 10px; margin: 0;
+}
+.reveal .slide-body:has(> .code-source-links) > :is(h1,h2) { max-width: min(23ch, calc(100% - 350px)); }
+.reveal .code-source-links > .repo-badge-inline { min-width: 0; margin: 0; font: 400 18px/1.2 var(--r-main-font); }
+.reveal .code-source-links .repo-badge > a { max-width: 100%; box-sizing: border-box; }
+.reveal .code-source-links .repo-badge-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* The diagram-note counterpart to mark[data-code-anchor]: a code token gets
+   wrapped and boxed, a diagram node has no text run to wrap, so the whole
+   shape (rect for a box, path for a cylinder/other basic shape) is outlined
+   instead. !important matches this file's existing overrides of mermaid's
+   own generated styles below. */
+.reveal .mermaid-figure .diagram-anchor-live rect,
+.reveal .mermaid-figure .diagram-anchor-live path { stroke: var(--accent) !important; stroke-width: 3px !important; transition: opacity .2s ease; }
+.reveal .mermaid-figure .diagram-anchor-live.annotation-pending rect,
+.reveal .mermaid-figure .diagram-anchor-live.annotation-pending path { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal .mermaid-figure .diagram-anchor-live rect, .reveal .mermaid-figure .diagram-anchor-live path { transition: none; }
+}
+.reveal .mermaid-figure { display: flex; justify-content: center; margin: 0; width: 100%; }
+.reveal .mermaid-figure svg { width: 100%; height: auto; max-height: 300px; font-size: 27px; }
+.reveal .write-paths .mermaid-figure svg { max-height: 390px; }
+/* Reserve more height for this vertical flow without scaling its SQL or footer. */
+.reveal .point-lookup-content .mermaid-figure svg {
+  height: 460px;
+  max-height: none;
+  max-width: none !important;
+}
+.reveal .point-lookup-content table :is(th, td) { padding: .22em .4em; }
+.reveal .point-lookup-content .rust-context {
+  font-size: .65em;
+  line-height: 1.3;
+  color: var(--syntax-value);
+}
+.reveal .point-lookup-content .rust-context strong { color: inherit; }
+.reveal .mermaid-figure .nodeLabel, .reveal .mermaid-figure .edgeLabel { color: var(--ink) !important; }
+.reveal .mermaid-figure text { fill: var(--ink) !important; }
+.reveal .mermaid-figure .nodeLabel { font-weight: 600; }
+.reveal .mermaid-figure .node rect { rx: 12px; ry: 12px; filter: drop-shadow(0 2px 3px #142b4224); }
+.reveal .mermaid-figure .edgePath path { stroke-width: 2.4px; }
+.reveal .mermaid-failed { border: 2px solid var(--syntax-keyword); }
+.reveal .metric { font-size: 2.5em; line-height: 1; color: var(--accent); font-weight: 600; }
+.reveal .columns > .stack > h3 { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .reveal .fragment { transition: none; } }
+/* A multiline code block must be a block, never an inline box per line. */
+.reveal pre { padding: 0; border: 0; background: none; }
+.reveal pre code { display: block; box-sizing: border-box; }
+.reveal .columns.code-walkthrough > .stack { justify-content: center; }
+.reveal h2 { max-width: none; }
+
+/* Keep the new snapshot flow readable without changing other slide diagrams. */
+.reveal .snapshot-contract-flow .mermaid-figure svg {
+  height: 420px;
+  max-height: none;
+}

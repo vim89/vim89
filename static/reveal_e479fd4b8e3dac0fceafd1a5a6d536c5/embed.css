@@ -1,0 +1,8 @@
+/* These rules live inside each player's shadow root. */
+:host { display:block; margin:1.5rem 0; contain:content; }
+.reveal { width:100%; height:auto; aspect-ratio:16 / 9; background:var(--paper); }
+.reveal:focus-visible { outline:3px solid var(--accent); outline-offset:-3px; }
+.reveal .slide-background { background:var(--paper); }
+.reveal .slides { margin:0; }
+.reveal .slides > section { margin:0; }
+.reveal .slides :is(h1,h2,h3,p,ul,ol,pre,blockquote,table) { margin:0; }
