@@ -1,0 +1,1277 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="description" content="A measured Spark/DataFusion evaluation and a typed Arrow pipeline that checks declared connections at build time and actual batches at runtime." /><title>Rust ate Spark's lunch: DataFusion pipelines without the JVM</title><link rel="stylesheet" href="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/vendor/reveal/dist/reset.css" /><link rel="stylesheet" href="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/vendor/reveal/dist/reveal.css" /><link rel="stylesheet" href="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/theme.css" /><link rel="stylesheet" href="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/fonts.css" /><link rel="stylesheet" href="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/jotb.css" /></head><body class="reveal-standalone" style="--r-main-font:Source Sans, Arial, sans-serif;--r-heading-font:var(--r-main-font);--r-code-font:Menlo, Consolas, monospace;--r-focus-font:var(--r-main-font)" data-render-mode="static" data-deck-assets="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/" data-reveal-assets="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/" data-preview-code="assets/deck-extras.mjs"><div class="reveal" style="--r-main-font:Source Sans, Arial, sans-serif;--r-heading-font:var(--r-main-font);--r-code-font:Menlo, Consolas, monospace;--r-focus-font:var(--r-main-font)"><div class="slides"><section id="title" class="dark-slide title-slide" data-timing="20" data-background-color="#10283d"><div class="slide-body"><p class="eyebrow">J On The Beach, Torremolinos Malága; 29-30 October 2026</p>
+<h1><a href="#heading:title:rust-ate-sparks-lunch-datafusion-pipelines-without-the-jvm" id="heading:title:rust-ate-sparks-lunch-datafusion-pipelines-without-the-jvm" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Rust ate Spark's lunch: <em>DataFusion pipelines without the JVM</em></h1>
+<div class="columns ">
+<p><strong>Vitthal</strong><br>
+Software Engineer - Data Platforms<br></p>
+</div>
+</div></section><section id="decision" class="standard" data-timing="50"><div class="slide-body"><h2><a href="#heading:decision:rust-ate-sparks-lunch-really" id="heading:decision:rust-ate-sparks-lunch-really" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Rust ate Spark's lunch, Really?</h2>
+<div class="fragment step" data-fragment-index="0">
+<p>Apache Spark is still at the table.</p>
+</div>
+<br>
+<div class="fragment step" data-fragment-index="1">
+<p><strong>Let's check the receipts before splitting the bill.</strong></p>
+<br>
+<div class="mermaid">
+flowchart LR
+  Y[&quot;Where is time spent&lt;br/&gt;between the files?&quot;] --&gt; H[&quot;Follow the batches&lt;br/&gt;and the plan&quot;]
+  H --&gt; W[&quot;Check the answer&lt;br/&gt;Count the cost&quot;]
+  class Y input
+  class H work
+  class W result
+</div>
+</div>
+</div></section><section id="about" class="standard" data-timing="45"><div class="slide-body"><h2><a href="#heading:about:vitthal-mirji" id="heading:about:vitthal-mirji" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Vitthal Mirji</h2>
+<p><strong>Software Engineer · Data platforms · Stuttgart, Germany</strong></p>
+<div class="fragment step" data-fragment-index="0">
+<p>Data Engineering, Scala &amp; functional programming.</p>
+</div>
+<div class="fragment step" data-fragment-index="1">
+<p>The assignment: systems-level automotive POCs in Rust.</p>
+</div>
+<div class="fragment step" data-fragment-index="2">
+<p><em>Rust was the assignment. DataFusion was the second date.</em></p>
+</div>
+<div class="fragment step" data-fragment-index="3">
+<p><strong>Would Rust help the data-pipelines we already know?</strong></p>
+</div>
+<p><a href="https://vitthalmirji.com">vitthalmirji.com</a></p>
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/vim89" title="https://github.com/vim89"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">vim89</span></a></p>
+</div></section><section id="chapter-spark" class="standard" data-timing="40"><div class="slide-body"><h2><a href="#heading:chapter-spark:choose-the-engine-and-the-work-you-will-own" id="heading:chapter-spark:choose-the-engine-and-the-work-you-will-own" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Choose the engine and the work you will own</h2>
+<div class="columns top">
+<div class="stack ">
+<div class="fragment step" data-fragment-index="0">
+<h3><a href="#heading:chapter-spark:apache-spark" id="heading:chapter-spark:apache-spark" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Apache Spark</h3>
+<p>Data-processing engine and platform.</p>
+<p><strong>Keep distributed job coordination.</strong></p>
+<p>Distributed ETL · Structured Streaming</p>
+</div>
+</div>
+<div class="stack ">
+<div class="fragment step" data-fragment-index="1">
+<h3><a href="#heading:chapter-spark:apache-datafusion" id="heading:chapter-spark:apache-datafusion" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Apache DataFusion</h3>
+<p>Embeddable query engine, written in Rust.</p>
+<p><strong>Reuse a query engine inside your app.</strong></p>
+<p>Data tools · bounded ETL · query services</p>
+</div>
+</div>
+</div>
+<p class="caveat">Both plan and execute queries. <strong>Choose by workload and operating needs.</strong></p>
+</div></section><section id="plan" class="standard" data-timing="45"><div class="slide-body"><h1><a href="#heading:plan:where-does-the-time-go-between-the-disk-io" id="heading:plan:where-does-the-time-go-between-the-disk-io" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Where does the time go between the disk I/O?</h1>
+<pre><code class="language-sql">SELECT region, SUM(amount) AS revenue
+FROM orders
+WHERE order_date = DATE '2026-10-01'
+GROUP BY region;
+</code></pre>
+<p class="code-caption">Orders partitioned by order_date · illustrative query</p>
+<div class="stack code-walkthrough">
+<div class="fragment step" data-fragment-index="0">
+<p>Parquet at both ends. Mind the middle.</p>
+<div data-walkthrough-code="sparkplan">
+<div class="mermaid">
+flowchart LR
+  P[(Parquet&lt;br/&gt;columnar)] --&gt; S[scan] --&gt; F[filter] --&gt; J[project]
+  J --&gt; X([shuffle]) --&gt; A[hash-aggregate] --&gt; O[(Parquet&lt;br/&gt;columnar)]
+  
+  class P input
+  class S,F,J,A work
+  class X boundary
+  class O result
+  
+</div>
+</div>
+</div>
+<div class="fragment step" data-fragment-index="1">
+<div data-walkthrough-code="spark-driver-executor">
+<div class="mermaid">
+flowchart LR
+  E[Executor1] --shuffle--&gt; E2[Executor2] --shuffle--&gt; E
+  D[Driver/Client] --&gt; E
+  D --&gt; E2
+  class D input
+  class E,E2 work
+</div>
+</div>
+</div>
+</div>
+</div></section><section id="parquet-or-ipc" class="standard" data-timing="45"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/ipc-vs-parquet.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/ipc-vs-parquet.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:parquet-or-ipc:parquet-columns-still-need-decoding" id="heading:parquet-or-ipc:parquet-columns-still-need-decoding" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Parquet columns still need decoding</h2>
+<div class="mermaid">
+flowchart LR
+  P[(Parquet: id, amount, placed_at, note)] --&gt;|select amount, leaf 1| D[Decode selected pages]
+  D --&gt; B[Arrow RecordBatch: amount]
+  class P input
+  class D work
+  class B result
+</div>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Projected Parquet reader · shortened repository example</p>
+<div data-walkthrough-code="formats">
+<pre><code class="language-rust">// This fixture stores amount at leaf index 1.
+let projection = ProjectionMask::leaves(
+    builder.parquet_schema(), [1]
+);
+let reader = builder
+    .with_projection(projection)
+    .build()?;
+for decoded_batch in reader {
+    let batch: RecordBatch = decoded_batch?;
+}
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="formats" data-code="[1]">
+<p>Read <strong>amount</strong>, not every field.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="formats" data-code="decoded_batch?">
+<p>Stored pages become usable <strong>Arrow columns</strong>.</p>
+</div>
+</div>
+</div>
+<p class="caveat">Mechanism only; not a Parquet-vs-IPC speedup.</p>
+</div></section><section id="transpose" class="standard" data-timing="100"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/apache/spark/blob/77bbf77e86ad48f58b5dfbc6ac882b3e70cf1989/sql/core/src/main/scala/org/apache/spark/sql/execution/Columnar.scala" title="https://github.com/apache/spark/blob/77bbf77e86ad48f58b5dfbc6ac882b3e70cf1989/sql/core/src/main/scala/org/apache/spark/sql/execution/Columnar.scala"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:transpose:different-layouts-add-handoff-work" id="heading:transpose:different-layouts-add-handoff-work" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Different layouts add handoff work</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Spark 4.1.3 physical-plan rule · shortened</p>
+<div data-walkthrough-code="spark">
+<pre><code class="language-scala">// The next operator needs batches
+if (!plan.supportsColumnar)
+  RowToColumnarExec(
+    ensureOutputsRowBased(plan)
+  )
+
+// The next operator needs rows
+if (plan.supportsColumnar &amp;&amp;
+    !plan.supportsRowBased)
+  ColumnarToRowExec(
+    ensureOutputsColumnar(plan)
+  )
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="spark" data-code="RowToColumnarExec">
+<p>Rows are packed into column vectors.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="spark" data-code="ColumnarToRowExec">
+<p>Batch values are read as rows.</p>
+</div>
+</div>
+</div>
+</div></section><section id="why" class="standard" data-timing="50"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/benchmark/spark-comet/query.sql" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/benchmark/spark-comet/query.sql"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:why:same-answer-different-work-to-reach-it" id="heading:why:same-answer-different-work-to-reach-it" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Same answer. Different work to reach it.</h2>
+<pre><code class="language-sql">SELECT COUNT(*), SUM(amount)
+FROM orders
+WHERE amount &gt; 50.00;
+</code></pre>
+<div class="mermaid">
+flowchart LR
+  Q[Same query] --&gt;|row path, per row| R1[Read one row]
+  R1 --&gt; R2[Test: amount &gt; 50.00] --&gt; R3[Update: count+1, sum+=amount]
+  Q --&gt;|batch path, once per batch| B[Scan amount values]
+  B --&gt; F[Apply amount &gt; 50.00 to the batch] --&gt; A[Update: count+=matches, sum+=batch total]
+  class Q input
+  class R1,R2,B,F work
+  class R3,A result
+</div>
+<p class="caveat"><strong>Schematic paths. Operators may fuse or mix row and batch work.</strong>
+With GROUP BY/HAVING, the batch path groups once per batch instead of updating one global total — mechanism on slide 180.</p>
+</div></section><section id="python-boundary" class="standard" data-timing="60"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/apache/spark/blob/77bbf77e86ad48f58b5dfbc6ac882b3e70cf1989/python/pyspark/sql/functions/builtin.py" title="https://github.com/apache/spark/blob/77bbf77e86ad48f58b5dfbc6ac882b3e70cf1989/python/pyspark/sql/functions/builtin.py"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:python-boundary:python-submits-a-plan-a-udf-moves-data" id="heading:python-boundary:python-submits-a-plan-a-udf-moves-data" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Python submits a plan. A UDF moves data.</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">PySpark 4.1.3 · non-null integer amount · not measured</p>
+<div data-walkthrough-code="python">
+<pre><code class="language-python">df.select(
+    (col(&quot;amount&quot;) + 1).alias(&quot;next&quot;)
+)
+
+@udf(&quot;long&quot;, useArrow=False)
+def bump(x): return x + 1
+df.select(bump(&quot;amount&quot;))
+
+@udf(&quot;long&quot;, useArrow=True)
+def bump_arrow(x): return x + 1
+df.select(bump_arrow(&quot;amount&quot;))
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="python" data-code="col(&quot;amount&quot;) + 1">
+<p>Built-in expression: no Python row UDF.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="python" data-code="useArrow=False">
+<p>Pickle transfer to a Python worker.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="python" data-code="useArrow=True">
+<p>Arrow transfer; this UDF still sees Python scalars.</p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>A Python DataFrame API call is not a per-row Python round trip.</strong></p>
+</div></section><section id="spark-row-detour" class="standard" data-timing="25"><div class="slide-body"><h2><a href="#heading:spark-row-detour:one-row-only-step-can-need-two-conversions" id="heading:spark-row-detour:one-row-only-step-can-need-two-conversions" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>One row-only step can need two conversions</h2>
+<div class="columns code-walkthrough balanced">
+<div class="stack ">
+<p class="code-caption">SQL → Catalyst logical and physical planning</p>
+<pre><code class="language-sql">SELECT amount + 1 AS next_amount
+FROM orders
+WHERE amount &gt; 50;
+</code></pre>
+</div>
+<div class="stack ">
+<p class="code-caption">Illustrative row loop · non-null BIGINT amount</p>
+<pre><code class="language-scala">for (row &lt;- rows) {
+  val amount = row.getLong(0)
+  if (amount &gt; 50L)
+    emit(amount + 1L)
+}
+</code></pre>
+</div>
+</div>
+<div class="mermaid">
+flowchart LR
+  C[Columnar batch] --&gt; T[To rows] --&gt; R[Row-only step]
+  R --&gt; U[To batches] --&gt; O[Columnar batch]
+  class C input
+  class T,U boundary
+  class R work
+  class O result
+</div>
+<p class="caveat"><strong>Loop illustrates row processing, not generated Spark code. Bridges depend on the actual plan.</strong></p>
+</div></section><section id="spark-wins" class="standard" data-timing="45"><div class="slide-body"><h2><a href="#heading:spark-wins:keep-the-coordination-your-job-depends-on" id="heading:spark-wins:keep-the-coordination-your-job-depends-on" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Keep the coordination your job depends on</h2>
+<div class="columns top">
+<div class="stack ">
+<h3><a href="#heading:spark-wins:plan" id="heading:spark-wins:plan" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Plan</h3>
+<p>SQL parser + DataFrame API</p>
+<p>Catalyst + AQE</p>
+</div>
+<div class="stack ">
+<h3><a href="#heading:spark-wins:run" id="heading:spark-wins:run" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Run</h3>
+<p>Task scheduling + shuffle coordination</p>
+<p>Fault recovery + cluster-manager integration</p>
+</div>
+</div>
+<p>Photon (Databricks, C++) and Comet (DataFusion, Rust)
+accelerate supported execution paths.</p>
+<p><strong>Keep Spark’s reach. Change the hot path.</strong></p>
+</div></section><section id="comet" class="standard" data-timing="80"><div class="slide-body"><h2><a href="#heading:comet:keep-spark-accelerate-supported-work" id="heading:comet:keep-spark-accelerate-supported-work" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Keep Spark. Accelerate supported work.</h2>
+<p class="code-caption">Spark plans; the executor hosts the native library</p>
+<div class="mermaid">
+flowchart LR
+  P[Spark plan / AQE] --&gt; T[JVM executor task]
+  T --&gt;|eligible subtree| J[Rust / Datafusion Comet JNI]
+  J --&gt; D[DataFusion] --&gt; A[Arrow batches]
+  class P input
+  class T,D work
+  class J boundary
+  class A result
+</div>
+<div class="fragment step">
+<p class="code-caption">Historical row-based writer fallback</p>
+<div class="mermaid">
+flowchart LR
+  A[Comet Arrow batch] --&gt; R[ColumnarToRow] --&gt; J[Java writer]
+  class A input
+  class R boundary
+  class J result
+</div>
+</div>
+<div class="fragment step">
+<p>The JVM stays. <strong>Coverage and conversion boundaries decide the gain.</strong></p>
+</div>
+</div></section><section id="chapter-niche" class="dark-slide chapter-slide" data-timing="10" data-background-color="#10283d"><div class="slide-body"><h1><a href="#heading:chapter-niche:why-columnar-wins-checked-at-the-instruction-level" id="heading:chapter-niche:why-columnar-wins-checked-at-the-instruction-level" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Why columnar wins, <em>checked at the instruction level</em></h1>
+</div></section><section id="mechanisms" class="standard" data-timing="80"><div class="slide-body"><h2><a href="#heading:mechanisms:the-cpu-likes-a-boring-loop" id="heading:mechanisms:the-cpu-likes-a-boring-loop" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>The CPU likes a boring loop</h2>
+<div class="columns top">
+<div class="stack ">
+<h3><a href="#heading:mechanisms:memory" id="heading:mechanisms:memory" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Memory</h3>
+<p>Adjacent <code>amount</code> values favor cache lines and hardware prefetch.</p>
+</div>
+<div class="stack ">
+<h3><a href="#heading:mechanisms:compute" id="heading:mechanisms:compute" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Compute</h3>
+<p>One typed operation across the batch, not a row-at-a-time loop over <code>UnsafeRow</code>.</p>
+<p>Branch prediction sees regular loop control; <code>WHERE</code> still depends on data.</p>
+<p>SIMD naturally gets enabled when the kernel and CPU support it.</p>
+</div>
+</div>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">The filter query we measured</p>
+<div data-walkthrough-code="sqlq">
+<pre><code class="language-sql">WHERE amount &gt; 50.00
+  AND note IS NOT NULL
+</code></pre>
+</div>
+<div class="code-note fragment step" data-fragment-index="0" data-code-ref="sqlq" data-code="amount &gt; 50.00" data-code-also="[&quot;note IS NOT NULL&quot;]">
+<p>Two predicates, one <code>AND</code>.</p>
+</div>
+</div>
+<div class="stack ">
+<p class="code-caption">Arrow kernels · Datum wrapping omitted</p>
+<div data-walkthrough-code="kernels">
+<pre><code class="language-rust">let big  = gt(&amp;amount, &amp;fifty)?;
+let kept = is_not_null(&amp;note)?;
+let mask = and(&amp;big, &amp;kept)?;
+</code></pre>
+</div>
+<div class="code-note fragment step" data-fragment-index="0" data-code-ref="kernels" data-code="gt(" data-code-also="[&quot;is_not_null(&quot;,&quot;and(&quot;]">
+<p>One flat pass each, then a bitwise <strong>AND</strong> of the two masks. No branch per row.</p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>Arrow chooses the layout; Rust checks ownership.</strong> Python/JVM can use Arrow too.
+No promised 4×/8× speedup.</p>
+</div></section><section id="simd" class="standard" data-timing="80"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/heavily-nested-transpose-cost.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/heavily-nested-transpose-cost.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:simd:four-instructions-eight-additions-no-miracle" id="heading:simd:four-instructions-eight-additions-no-miracle" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Four instructions. Eight additions. No miracle.</h2>
+<div class="columns code-walkthrough balanced">
+<div class="stack ">
+<p class="code-caption">Add one to each value; produce a new Arrow array</p>
+<pre><code class="language-rust">let incremented =
+    Float64Array::from_iter_values(
+        leaf.values().iter()
+            .map(|value| value + 1.0)
+    );
+</code></pre>
+</div>
+<div class="stack ">
+<p class="code-caption">Recorded release binary · Apple Silicon</p>
+<div data-walkthrough-code="asm">
+<pre><code class="language-text">fadd.2d  v0, v0, v4
+fadd.2d  v1, v1, v4
+fadd.2d  v2, v2, v4
+fadd.2d  v3, v3, v4
+</code></pre>
+</div>
+<p class="code-caption">v0–v3: our data, two doubles each · v4: the constant 1.0, broadcast once</p>
+<div class="code-note fragment step" data-code-ref="asm" data-code="fadd.2d">
+<p><strong>Two f64 additions</strong> per instruction.</p>
+</div>
+</div>
+</div>
+<div class="fragment step">
+<p>Eight additions. Four vector instructions.</p>
+</div>
+<p class="caveat"><span class="badge">inspected binary</span> Not a cross-platform speedup.</p>
+</div></section><section id="object-handoff" class="standard" data-timing="65"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/scala/arrow-interop/src/main/scala/arrowinterop/ObjectMaterializationDriver.scala" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/scala/arrow-interop/src/main/scala/arrowinterop/ObjectMaterializationDriver.scala"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:object-handoff:packing-took-414-ms-the-rust-phase-took-25-ms" id="heading:object-handoff:packing-took-414-ms-the-rust-phase-took-25-ms" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Packing took 414 ms. The Rust phase took 25 ms.</h2>
+<div class="mermaid">
+flowchart LR
+  O[Scala Order objects] --&gt;|pack value| A[Arrow vector]
+  A --&gt;|IPC file| R[Rust subprocess]
+  R --&gt;|IPC file| B[Arrow vector]
+  B --&gt;|rebuild| O2[Scala Order objects]
+  class O input
+  class A,B work
+  class R boundary
+  class O2 result
+</div>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">valueColumn is an Arrow IntVector · local name clarified</p>
+<div data-walkthrough-code="handoff">
+<pre><code class="language-scala">orders.zipWithIndex.foreach {
+  case (order, i) =&gt;
+    valueColumn.set(i, order.value)
+}
+// later, in writeIpc:
+writer.writeBatch()
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="handoff" data-code="valueColumn.set(i, order.value)">
+<p>Object → Arrow <strong>packing</strong>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="handoff" data-code="writer.writeBatch()">
+<p>Arrow → IPC <strong>serialization</strong>.</p>
+</div>
+</div>
+</div>
+<p><span class="badge">measured</span> 500k objects: <strong>414 ms pack · 25 ms Rust subprocess</strong>.</p>
+</div></section><section id="tax" class="standard" data-timing="95"><div class="slide-body"><h2><a href="#heading:tax:50-columns-1530-ms-versus-21798-ms" id="heading:tax:50-columns-1530-ms-versus-21798-ms" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>50 columns: 15.30 ms versus 217.98 ms</h2>
+<table class="article-table">
+<thead>
+<tr><th>Case</th><th>Columnar</th><th>Row round trip</th><th>Ratio</th></tr>
+</thead>
+<tbody>
+<tr><td>1 column</td><td>0.370 ms</td><td>1.250 ms</td><td>3.4×</td></tr>
+<tr><td>50 columns</td><td>15.30 ms</td><td>217.98 ms</td><td><strong class="tax-ratio">14.2×</strong><span class="fragment tax-callout" data-fragment-index="0">Wide rows</span></td></tr>
+<tr><td>100 columns</td><td>32.19 ms</td><td>388.36 ms</td><td>12.1×</td></tr>
+<tr><td>List, 5 elements/row</td><td>0.18 ms</td><td>11.58 ms</td><td><strong class="tax-ratio">64.6×</strong><span class="fragment tax-callout" data-fragment-index="1">Lists</span></td></tr>
+<tr><td>5 nesting levels</td><td>57.33 µs</td><td>7.31 ms</td><td><strong class="tax-ratio">127.5×</strong><span class="fragment tax-callout" data-fragment-index="2">Deep nesting</span></td></tr>
+</tbody>
+</table>
+<p><span class="badge">measured</span> M2 Max · synthetic, in-process · flat: mean of 5; nested: median of 3.</p>
+</div></section><section id="row-format" class="standard" data-timing="60"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/apache/datafusion/blob/7d3835c71f30cbd3c3ae4041732267f1f453097a/datafusion/physical-plan/src/aggregates/group_values/row.rs" title="https://github.com/apache/datafusion/blob/7d3835c71f30cbd3c3ae4041732267f1f453097a/datafusion/physical-plan/src/aggregates/group_values/row.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:row-format:datafusion-builds-rows-too--on-purpose" id="heading:row-format:datafusion-builds-rows-too--on-purpose" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>DataFusion builds rows too — on purpose</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Arrow RowConverter API · initialized inputs omitted</p>
+<div data-walkthrough-code="rowfmt">
+<pre><code class="language-rust">// Configured for the key fields.
+let keys = converter.convert_columns(&amp;columns)?;
+
+let ordering = keys.row(left)
+    .cmp(&amp;keys.row(right));
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="rowfmt" data-code="convert_columns">
+<p>Sort, group-by and top-k build <strong>comparison keys</strong>.</p>
+</div>
+<div class="fragment step">
+<p>Compare encoded keys instead of dispatching comparisons field by field.</p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>Spark bridge: feed a row-based operator. Here: encode comparison keys.</strong></p>
+</div></section><section id="comet-write-boundary" class="standard" data-timing="65"><div class="slide-body"><h2><a href="#heading:comet-write-boundary:avoid-the-row-detour-3-5x-here" id="heading:comet-write-boundary:avoid-the-row-detour-3-5x-here" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Avoid the row detour: 3-5x here</h2>
+<p class="code-caption">5M input rows</p>
+<div class="columns code-walkthrough balanced write-paths">
+<div class="stack ">
+<p class="code-caption">Spark baseline</p>
+<div class="mermaid">
+flowchart TB
+  A["Parquet scan (batches)"] --> R["ColumnarToRow"] --> F["Filter"] --> W["Parquet writer"]
+  class A input
+  class R,F work
+  class W result
+</div>
+</div>
+<div class="stack ">
+<p class="code-caption">Spark + Comet</p>
+<div class="mermaid">
+flowchart TB
+  N["Native Parquet scan (Arrow batches)"] --> CF["Native filter"] --> NW["Native Parquet writer"]
+  class N input
+  class CF work
+  class NW result
+</div>
+</div>
+</div>
+<p class="caveat">Native path skips Spark rows. Parquet still needs decoding and encoding.</p>
+<div class="fragment step">
+<p><strong>1.66 s → ~0.79 s for this <code>.write.parquet</code> call.</strong></p>
+</div>
+<p class="caveat">Our plain Parquet: Spark 3.5.5 / Comet 0.16 · local[2] · 6 measured pairs · experimental writer</p>
+<div class="fragment step">
+<p class="caveat">Parquet under Iceberg: <strong>2.9x</strong> unpartitioned · <strong>5.5x</strong> partitioned fanout</p>
+</div>
+</div></section><section id="zero-transpose" class="dark-slide" data-timing="85" data-background-color="#19242a"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/zero-transpose-end-to-end.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bin/zero-transpose-end-to-end.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:zero-transpose:this-write-handoff-needs-no-row-conversion" id="heading:zero-transpose:this-write-handoff-needs-no-row-conversion" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>This write handoff needs no row conversion</h2>
+<p class="code-caption">Standalone Rust + DataFusion · no Spark or Comet</p>
+<div class="mermaid">
+flowchart LR
+  P[(Parquet)] --&gt; D[DataFusion] --&gt; A[RecordBatch] --&gt; W[ArrowWriter] --&gt; O[(Parquet)]
+  class P input
+  class D,A,W work
+  class O result
+</div>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Inspected read / filter / write path · shortened</p>
+<div data-walkthrough-code="native">
+<pre><code class="language-rust">let batches = query.collect().await?;
+let batch: RecordBatch =
+    concat_batches(&amp;schema, &amp;batches)?;
+write_parquet(
+    &amp;batch, path, Compression::SNAPPY
+)?;
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="native" data-code="&amp;batch, path">
+<p>Borrowed batch reaches the <strong>Parquet encoder</strong>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="native" data-code="concat_batches">
+<p>Still materializes. <strong>Not zero-copy.</strong></p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>Rust checks the borrow lifetime. Parquet still encodes.</strong></p>
+</div></section><section id="datafusion-stream" class="standard" data-timing="65"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/datafusion_query.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/datafusion_query.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/ipc_mmap.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/ipc_mmap.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:datafusion-stream:share-batch-owners-know-when-bytes-are-reused" id="heading:datafusion-stream:share-batch-owners-know-when-bytes-are-reused" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Share batch owners. Know when bytes are reused.</h2>
+<div class="columns code-walkthrough balanced">
+<div class="stack ">
+<p class="code-caption">DataFusion memory source · local names clarified</p>
+<div data-walkthrough-code="stream">
+<pre><code class="language-rust">let batches = self.batches.clone();
+let schema = Arc::clone(&amp;self.schema);
+
+MemoryStream::try_new(
+    batches, schema,
+    self.projection.clone(),
+)?
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="stream" data-code="self.batches.clone()">
+<p>Clone batch <strong>handles</strong>, not Order objects.</p>
+</div>
+</div>
+<div class="stack ">
+<p class="code-caption">Separate immutable IPC experiment · shortened</p>
+<div data-walkthrough-code="mapped">
+<pre><code class="language-rust">let (batch, reused) = unsafe {
+    mmap_decode_single_i32_column(
+        &amp;path
+    )
+};
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="mapped" data-code="reused">
+<p>Pointer check: did IPC reuse the value buffer?</p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>Shared ownership is not zero-copy I/O. Parquet still decodes and encodes.</strong></p>
+</div></section><section id="datafusion-aggregate" class="standard" data-timing="50"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/datafusion_query.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/datafusion_query.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:datafusion-aggregate:keep-enough-state-to-combine-partial-answers" id="heading:datafusion-aggregate:keep-enough-state-to-combine-partial-answers" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Keep enough state to combine partial answers</h2>
+<div class="mermaid">
+flowchart LR
+  B1[batch A] --&gt; U1[update_batch] --&gt; S1[(min, max)]
+  B2[batch B] --&gt; U2[update_batch] --&gt; S2[(min, max)]
+  S1 --&gt;|state| M[merge_batch] --&gt; R[range]
+  S2 --&gt;|state| M
+  class B1,B2 input
+  class U1,U2,S1,S2,M work
+  class R result
+</div>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">AmountRangeAccumulator::merge_batch · after array downcasts</p>
+<div data-walkthrough-code="aggregate">
+<pre><code class="language-rust">for min in mins.iter().flatten() {
+    self.min = Some(self.min.map_or(
+        min, |current| current.min(min)));
+}
+for max in maxes.iter().flatten() {
+    self.max = Some(self.max.map_or(
+        max, |current| current.max(max)));
+}
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="aggregate" data-code="current.min(min)">
+<p>Keep the smallest <strong>partial minimum</strong>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="aggregate" data-code="current.max(max)">
+<p>Keep the largest <strong>partial maximum</strong>.</p>
+</div>
+</div>
+</div>
+<p><strong>[4, 9] + [20, 21] → min 4, max 21 → range 17.</strong></p>
+<p class="caveat">Repository UDAF example; the timed query uses built-in COUNT/SUM.</p>
+</div></section><section id="spill" class="standard" data-timing="75"><div class="slide-body"><h2><a href="#heading:spill:out-of-memory-budget-the-query-can-fail" id="heading:spill:out-of-memory-budget-the-query-can-fail" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Out of memory budget? The query can fail.</h2>
+<p class="code-caption">Standalone DataFusion experiment · Spark users: think memory-related task failure</p>
+<table class="article-table">
+<thead>
+<tr><th>Recorded DataFusion run</th><th>Outcome</th></tr>
+</thead>
+<tbody>
+<tr><td>Hash join with a 40 GB pool</td><td>Failed: <code>ResourcesExhausted</code></td></tr>
+<tr><td>Rerun preferring sort-merge join</td><td>Completed in 160.13 s; result matched</td></tr>
+</tbody>
+</table>
+<p><strong>A memory budget alone does not guarantee completion. Execution strategy matters.</strong></p>
+<p><strong>Spark:</strong> memory failure can trigger task retries or executor loss; repeated failures can abort the job.</p>
+<p class="caveat">The pool limits tracked allocations. It does not cap all process memory.</p>
+</div></section><section id="learning-curve" class="standard" data-timing="55"><div class="slide-body"><h2><a href="#heading:learning-curve:steep-start-earlier-feedback" id="heading:learning-curve:steep-start-earlier-feedback" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Steep start. Earlier feedback.</h2>
+<div class="columns top">
+<div class="stack ">
+<h3><a href="#heading:learning-curve:pay-upfront--new" id="heading:learning-curve:pay-upfront--new" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Pay upfront / New</h3>
+<p>Ownership, lifetimes, Arrow + async</p>
+</div>
+<div class="stack ">
+<h3><a href="#heading:learning-curve:catch-earlier" id="heading:learning-curve:catch-earlier" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Catch earlier</h3>
+<p>Moved values. Conflicting borrows. Wrong ID types.</p>
+</div>
+</div>
+<p><strong>Familiar:</strong> SQL and schema reasoning.</p>
+<p class="caveat">My experience: <strong>slower at first; less debugging later.</strong></p>
+<p><strong>Count learning, builds and debugging together.</strong></p>
+<p class="caveat">Compiles ≠ correct business logic. Rust ≠ automatic speed.</p>
+</div></section><section id="chapter-above" class="dark-slide chapter-slide" data-timing="10" data-background-color="#10283d"><div class="slide-body"><p class="repo-badge"><a href="https://github.com/com-vitthalmirji/datacrate" title="https://github.com/com-vitthalmirji/datacrate"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">com-vitthalmirji/datacrate</span></a></p>
+<h1><a href="#heading:chapter-above:datacrate" id="heading:chapter-above:datacrate" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Datacrate</h1>
+<p><em>The compiler takes first shift.</em></p>
+</div></section><section id="ecosystem" class="standard" data-timing="40"><div class="slide-body"><h2><a href="#heading:ecosystem:reject-bad-handoffs-before-they-travel-further" id="heading:ecosystem:reject-bad-handoffs-before-they-travel-further" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Reject bad handoffs before they travel further</h2>
+<div class="mermaid">
+flowchart LR
+  M[&quot;Modeler / steward&lt;br/&gt;expected fields&quot;] --&gt; D[&quot;Datacrate&lt;br/&gt;Rust pipeline toolkit&quot;]
+  E[&quot;Data engineer&lt;br/&gt;stage output&quot;] --&gt; D
+  D --&gt; B[&quot;Build&lt;br/&gt;mismatched fields fail&quot;]
+  D --&gt; Q[&quot;DataFusion&lt;br/&gt;optional query stage&quot;]
+  D --&gt; R[&quot;Run&lt;br/&gt;validate Arrow batches&quot;]
+  Q --&gt; R
+  class M,E input
+  class D,Q work
+  class B,R result
+</div>
+<p class="code-caption">Compile-time using Macros : Rust → DataFusion · Scala → Catalyst</p>
+<p><strong>Bad declaration or selected SQL: build stops. Bad batch: stop, or quarantine by policy.</strong></p>
+</div></section><section id="thesis" class="dark-slide" data-timing="80" data-background-color="#19242a"><div class="slide-body"><h2><a href="#heading:thesis:the-model-signs-the-batch-shows-id" id="heading:thesis:the-model-signs-the-batch-shows-id" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>The model signs. The batch shows ID.</h2>
+<div class="mermaid">
+flowchart LR
+  M[&quot;Steward input model&lt;br/&gt;dbt / Erwin subsets&quot;] --&gt; G[&quot;Generate Rust shape&quot;]
+  P[&quot;Reference Parquet footer&quot;] --&gt; G
+  G --&gt; C[&quot;cargo build: artifact ↔ input&lt;br/&gt;stage ↔ stage ↔ sink&quot;]
+  T[&quot;Steward target shape&lt;br/&gt;declared Rust type&quot;] --&gt; C
+  U[&quot;Upstream pipelines&lt;br/&gt;actual Arrow batches&quot;] --&gt; V[&quot;Run: validate each output&quot;]
+  C --&gt; V
+  V --&gt;|&quot;valid&quot;| W[&quot;External write&lt;br/&gt;outcome may be unknown&quot;]
+  V --&gt;|&quot;invalid&quot;| X[&quot;Stop by default&lt;br/&gt;or quarantine batch&quot;]
+  class M,P,T,U input
+  class G,C,V work
+  class W,X boundary
+</div>
+<p class="code-caption">Separate SQL POCs: Rust → DataFusion · Scala → Catalyst</p>
+<p><strong>Build checks shapes and selected SQL. Runtime: stop or quarantine bad batches.</strong></p>
+</div></section><section id="demo-dbt" class="standard" data-timing="150"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/fixtures/schema-gate-example/orders_dbt_schema.yml" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/fixtures/schema-gate-example/orders_dbt_schema.yml"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/schema-gate-example/src/lib.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/schema-gate-example/src/lib.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:demo-dbt:change-id-to-text-the-build-stops" id="heading:demo-dbt:change-id-to-text-the-build-stops" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Change <code>id</code> to text; the build stops.</h2>
+<div class="columns code-walkthrough balanced">
+<div class="stack ">
+<p class="code-caption">A steward changes the declared type</p>
+<div data-walkthrough-code="yaml">
+<pre><code class="language-yaml">- name: id
+  data_type: varchar
+  tests: [not_null]
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="yaml" data-code="varchar">
+<p>Was <code>bigint</code>. Still non-null.</p>
+<p><strong>Producer: text. Consumer: integer.</strong></p>
+</div>
+</div>
+<div class="stack ">
+<p class="code-caption">Rust consumer expects id: i64</p>
+<div data-walkthrough-code="gate">
+<pre><code class="language-rust">const _: () = SchemaConforms::&lt;
+    DbtSourceOfTruth,
+    StewardInputModel,
+    ExactOrdered,
+&gt;::CHECK;
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="gate" data-code="::CHECK">
+<p>The incompatible field stops the build.</p>
+</div>
+</div>
+</div>
+<div class="fragment step">
+<p><strong class="status-badge status-fails">FAILS</strong> pipeline expects <code>i64</code>; model now says <code>String</code>.</p>
+</div>
+<p class="caveat"><strong>Model mismatch: build fails. Bad batch: stop or quarantine.</strong></p>
+</div></section><section id="demo-columns" class="standard" data-timing="105"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/connectors-derive/tests/compile_fail/renamed_field_col_accessor.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/connectors-derive/tests/compile_fail/renamed_field_col_accessor.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:demo-columns:catch-the-stale-accessor-before-query-planning" id="heading:demo-columns:catch-the-stale-accessor-before-query-planning" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Catch the stale accessor before query planning</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<div data-walkthrough-code="names">
+<pre><code class="language-rust">#[derive(Contract, Connector)]
+struct Order {
+    id: i64,
+    amount: i32,
+}
+
+Order::col_quantity()
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="names" data-code="amount:">
+<p><strong>Renamed field:</strong> quantity → amount.</p>
+<p>The declaration now has <code>amount</code>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="names" data-code="col_quantity()">
+<p>The stale method <strong>does not exist</strong>.</p>
+</div>
+</div>
+</div>
+<div class="fragment step">
+<p><code>E0599</code> · caught by Rust, before query planning.</p>
+</div>
+</div></section><section id="demo-typestate-1" class="standard" data-timing="50"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/typestate/tests/contract_pipeline.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/typestate/tests/contract_pipeline.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:demo-typestate-1:reject-incompatible-declared-connections-at-build" id="heading:demo-typestate-1:reject-incompatible-declared-connections-at-build" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Reject incompatible declared connections at build</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<div data-walkthrough-code="stages">
+<pre><code class="language-rust">ContractPipeline::source::&lt;Bronze, _&gt;(
+    read
+)
+    .transform::&lt;Silver, Gold&gt;(enrich)
+    .sink::&lt;Gold&gt;(write)
+    .build()?
+    .run()?;
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="stages" data-code=".transform::&lt;Silver, Gold&gt;">
+<p>Bronze: <strong>id: i64</strong></p>
+<p>Silver: <strong>id: i64</strong></p>
+<p>Different names. <strong>Same declared shape.</strong></p>
+</div>
+<div class="code-note fragment step" data-code-ref="stages" data-code=".sink::&lt;Gold&gt;">
+<p>Only a matching sink can attach.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="stages" data-code=".build()?">
+<p>No sink? <strong>No build method.</strong></p>
+</div>
+</div>
+</div>
+</div></section><section id="demo-snapshot-contract" class="standard" data-timing="45"><div class="slide-body" data-font-size="32" style="--slide-font-size:32px"><h2><a href="#heading:demo-snapshot-contract:sql-is-valid-the-handoff-is-not" id="heading:demo-snapshot-contract:sql-is-valid-the-handoff-is-not" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>SQL is valid. The handoff is not.</h2>
+<p class="code-caption">Rust macro · DataFusion planner</p>
+<div class="columns code-walkthrough balanced">
+<div class="stack ">
+<div data-walkthrough-code="sql-macro">
+<pre><code class="language-rust">checked_sql! {
+    output: Planned,
+    input: Raw,
+    required: Gold,
+    source: &quot;snapshot.json&quot;,
+    sql: &quot;SELECT * FROM raw&quot;,
+}
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="sql-macro" data-code="SELECT * FROM raw">
+<p>Inferred output: <strong>id, amount</strong>.</p>
+</div>
+</div>
+<div class="stack ">
+<p class="code-caption">Required by the sink</p>
+<div data-walkthrough-code="sql-required">
+<pre><code class="language-rust">#[derive(Contract)]
+struct Gold {
+    id: i64,
+    total: i64,
+}
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="sql-required" data-code="total: i64">
+<p>Requires <strong>total</strong>. <strong>Build fails.</strong></p>
+</div>
+<div data-walkthrough-code="sql-fixed">
+<pre><code class="language-sql">SELECT id, amount AS total FROM raw
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="sql-fixed" data-code="amount AS total">
+<p>Matching output → <strong>build passes</strong>.</p>
+</div>
+</div>
+</div>
+<p class="caveat"><strong>Compile time:</strong> captured schema + SQL output. <strong>Runtime:</strong> actual batches + values.</p>
+</div></section><section id="demo-snapshot-flow" class="standard" data-timing="20"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><h2><a href="#heading:demo-snapshot-flow:same-idea-use-the-engine-that-runs-it" id="heading:demo-snapshot-flow:same-idea-use-the-engine-that-runs-it" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Same idea. Use the engine that runs it.</h2>
+<p class="code-caption">Two macros · different guarantees</p>
+<div class="stack snapshot-contract-flow">
+<div class="mermaid">
+flowchart LR
+  subgraph DF[&quot;Rust / DataFusion&quot;]
+    A[&quot;Saved Arrow&lt;br/&gt;schema&quot;] --&gt; M[&quot;Rust macro&lt;br/&gt;DataFusion planner&quot;]
+    M --&gt; C{&quot;Output fits&lt;br/&gt;sink contract?&quot;}
+    C --&gt;|&quot;yes&quot;| P[&quot;Build passes&quot;]
+  end
+  subgraph SP[&quot;Scala / Spark&quot;]
+    D[&quot;Declared&lt;br/&gt;catalog&quot;] --&gt; S[&quot;Scala macro&lt;br/&gt;Spark Catalyst&quot;]
+    S --&gt; Q[&quot;Checked&lt;br/&gt;SQL string&quot;]
+    Q --&gt; R[&quot;Runtime&lt;br/&gt;Spark + Comet&quot;]
+  end
+  M --&gt;|&quot;invalid SQL&quot;| F[&quot;Build fails&quot;]
+  C --&gt;|&quot;no&quot;| F
+  S --&gt;|&quot;invalid SQL&quot;| F
+  class A,D input
+  class M,S,Q work
+  class C,F boundary
+  class P,R result
+</div>
+</div>
+<p class="caveat"><strong>Catalyst checks SQL. The Rust prototype also checks the sink contract.</strong></p>
+</div></section><section id="demo-catalyst-parquet" class="standard" data-timing="45"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/vbergeron/spark-compiletime/blob/82533a4013047afa01a798600f4d5a954cc62e6f/src/main/scala/spark/compiletime/macros.scala" title="https://github.com/vbergeron/spark-compiletime/blob/82533a4013047afa01a798600f4d5a954cc62e6f/src/main/scala/spark/compiletime/macros.scala"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:demo-catalyst-parquet:bad-sql-let-the-build-take-the-hit" id="heading:demo-catalyst-parquet:bad-sql-let-the-build-take-the-hit" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Bad SQL? Let the build take the hit.</h2>
+<p class="code-caption">Scala 3 macro · Spark Catalyst · existing Parquet</p>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<div data-walkthrough-code="catalyst-query">
+<pre><code class="language-scala">val orders = table(&quot;&quot;&quot;
+  CREATE TABLE orders (id BIGINT,
+    amount DECIMAL(10,2),
+    placed_at TIMESTAMP_NTZ, note STRING)
+&quot;&quot;&quot;)
+val domain = catalog(orders)
+val checked = domain.sql(&quot;&quot;&quot;
+  SELECT COUNT(*) AS order_count,
+         SUM(amount) AS total_amount
+  FROM orders WHERE amount &gt; 50.00
+&quot;&quot;&quot;)
+spark.sql(checked)
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="catalyst-query" data-code="domain.sql">
+<p><strong>Catalyst during compilation</strong></p>
+<p>Invalid column, simplified plan:</p>
+<pre><code class="language-text">'Project ['missing_column]
++- RelationV2[id] orders
+</code></pre>
+<p><strong>Unresolved → build fails.</strong></p>
+</div>
+<div class="code-note fragment step" data-code-ref="catalyst-query" data-code="spark.sql(checked)">
+<p>Comet scan/filter/partial aggregate;
+Spark exchange/final aggregate.</p>
+</div>
+</div>
+</div>
+<p class="caveat">Declared catalog only · Spark 3.5.5 / Comet 0.16 · correctness check, not a speed result.</p>
+</div></section><section id="demo-typed-callback" class="standard" data-timing="45"><div class="slide-body" data-font-size="26" style="--slide-font-size:26px"><h2><a href="#heading:demo-typed-callback:clean-is-a-type-not-a-pinky-promise" id="heading:demo-typed-callback:clean-is-a-type-not-a-pinky-promise" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Clean is a type. Not a pinky promise.</h2>
+<p class="code-caption">Tested prototype · separate from ContractPipeline</p>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Wrong return</p>
+<div data-walkthrough-code="wrong-return">
+<pre><code class="language-rust">fn clean(raw: RawBatch)
+    -&gt; Result&lt;CleanBatch, DemoError&gt;
+{
+    Ok(raw)
+}
+</code></pre>
+</div>
+<p class="code-caption">Clean and check</p>
+<div data-walkthrough-code="checked-return">
+<pre><code class="language-rust">fn clean(raw: RawBatch)
+    -&gt; Result&lt;CleanBatch, DemoError&gt;
+{
+    raw.clean()
+}
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="wrong-return" data-code="Ok(raw)">
+<p><strong>Compile error</strong></p>
+<p>Expected <code>CleanBatch</code>. Found <code>RawBatch</code>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="checked-return" data-code="raw.clean()">
+<p><strong>Data quality checks</strong></p>
+<p>Trim spaces. Reject missing or blank names.</p>
+</div>
+</div>
+</div>
+<p><strong>Compile time:</strong> declared schemas and return types.</p>
+<p><strong>Runtime:</strong> actual batch schemas and data quality.</p>
+</div></section><section id="demo-typestate-2" class="standard" data-timing="70"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><h2><a href="#heading:demo-typestate-2:wrong-schema-stop-before-parquet-decoding" id="heading:demo-typestate-2:wrong-schema-stop-before-parquet-decoding" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Wrong schema? Stop before Parquet decoding.</h2>
+<p class="code-caption">Tested local-file prototype · footer check runs at runtime</p>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<div data-walkthrough-code="parquet-source">
+<pre><code class="language-rust">let source =
+    ParquetSource::open(input, batch_size)?;
+
+for raw in source {
+    let clean = raw?.clean()?;
+    sink(clean)?;
+}
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="parquet-source" data-code="ParquetSource::open">
+<p><strong>Check footer schema first.</strong></p>
+<p>Mismatch? Stop before decoding.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="parquet-source" data-code="raw?.clean()">
+<p><strong>Decode → check → clean.</strong></p>
+<p>Trim spaces. Reject missing or blank names.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="parquet-source" data-code="sink(clean)?">
+<p><strong>Only checked batches reach the sink.</strong></p>
+</div>
+</div>
+</div>
+<p>Schema mismatch: <strong>no row decoding.</strong> Data quality failure: <strong>stop before sink.</strong></p>
+</div></section><section id="demo-scaffold" class="standard" data-timing="25"><div class="slide-body"><h2><a href="#heading:demo-scaffold:starting-code-still-needs-a-safe-multi-batch-sink" id="heading:demo-scaffold:starting-code-still-needs-a-safe-multi-batch-sink" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Starting code still needs a safe multi-batch sink</h2>
+<div class="mermaid">
+flowchart LR
+  D[dbt schema declarations] --&gt; G[scaffold-cli]
+  G --&gt; R[Rust contract pipeline]
+  class D input
+  class G work
+  class R result
+</div>
+<p>The generated example <strong>collects eagerly</strong> and <strong>overwrites the same sink per batch</strong>.</p>
+</div></section><section id="close" class="dark-slide" data-timing="90" data-background-color="#19242a"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/manifest.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/manifest.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:close:what-cannot-move-to-compilation" id="heading:close:what-cannot-move-to-compilation" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>What cannot move to compilation?</h2>
+<div class="columns code-walkthrough">
+<div class="stack ">
+<div data-walkthrough-code="digest">
+<pre><code class="language-rust">digest ^= hash_row(row);
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="digest" data-code="^=">
+<p>Two equal hashes: <strong>7 ^ 7 == 0</strong>.</p>
+<p>Lose <strong>two identical rows</strong>? XOR cannot see it.</p>
+</div>
+<div class="fragment step">
+<pre><code class="language-rust">digest = digest
+    .wrapping_add(hash_row(row));
+</code></pre>
+</div>
+<div class="fragment step">
+<p><code>PublicationUnknown</code></p>
+<p>An error is not proof nothing happened.</p>
+</div>
+</div>
+</div>
+<div class="fragment step">
+<p>Move the provable failures earlier. <strong>Name the remaining uncertainty.</strong></p>
+<p><strong>Start with one job. Keep the fallback. Switch only after agreed checks pass.</strong></p>
+</div>
+</div></section><section id="chapter-evidence" class="dark-slide chapter-slide" data-timing="15" data-background-color="#10283d"><div class="slide-body"><h1><a href="#heading:chapter-evidence:what-the-measurements-actually-say" id="heading:chapter-evidence:what-the-measurements-actually-say" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>What the measurements <em>actually say</em></h1>
+</div></section><section id="methodology" class="standard" data-timing="90"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/benchmark/spark-comet/query.sql" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/benchmark/spark-comet/query.sql"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:methodology:three-engines-matched-the-independent-answer" id="heading:methodology:three-engines-matched-the-independent-answer" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Three engines matched the independent answer</h2>
+<pre><code class="language-sql">SELECT COUNT(*) AS order_count,
+       SUM(amount) AS total_amount
+FROM orders WHERE amount &gt; 50.00;
+</code></pre>
+<p><span class="badge">correctness check</span> <strong>5M synthetic rows · one Parquet file · local, 21 Sep</strong></p>
+<p><strong>Spark = Spark+Comet = DataFusion</strong></p>
+<p>2,500,000 orders · total_amount <strong>188,750,000.00</strong></p>
+</div></section><section id="table" class="standard" data-timing="110"><div class="slide-body"><h2><a href="#heading:table:same-spark-job-4525-s--1394-s" id="heading:table:same-spark-job-4525-s--1394-s" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Same Spark job: 45.25 s → 13.94 s</h2>
+<div class="columns top">
+<div class="stack ">
+<p class="code-caption">Matched Spark command timings · 91 GB suite</p>
+<table class="article-table">
+<thead>
+<tr><th>Query</th><th align="right">Spark</th><th align="right">+Comet</th></tr>
+</thead>
+<tbody>
+<tr><td>Revenue aggregate</td><td align="right">45.25 s (2)</td><td align="right"><strong>13.94 s (2)</strong></td></tr>
+<tr><td>Group-by region</td><td align="right">153.879 s (1)</td><td align="right"><strong>60.603 s (1)</strong></td></tr>
+<tr><td>Fraud filter</td><td align="right">101.495 s (1)</td><td align="right"><strong>54.129 s (1)</strong></td></tr>
+</tbody>
+</table>
+<p><strong>Aggregate: 31.31 s less elapsed time, about 69%.</strong></p>
+<p class="caveat">Join: no Spark or Comet run.</p>
+</div>
+<div class="stack ">
+<p class="code-caption">Separate clocks · context, not a matched ranking</p>
+<table class="article-table">
+<thead>
+<tr><th>Query</th><th align="right">DataFusion</th><th align="right">Ballista</th></tr>
+</thead>
+<tbody>
+<tr><td>Revenue aggregate</td><td align="right">5.84 s (2)</td><td align="right">4.30 s (2)</td></tr>
+<tr><td>Order ⋈ shipment</td><td align="right">160.13 s (1)</td><td align="right">443.76 s (1)</td></tr>
+<tr><td>Group-by region</td><td align="right">12.97 s (2)</td><td align="right">19.52 s (2)</td></tr>
+<tr><td>Fraud filter</td><td align="right">14.17 s (2)</td><td align="right">29.80 s (2)</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="caveat"><strong>(n) = runs.</strong> Spark/Comet include startup; DataFusion is query-only; Ballista is client elapsed.</p>
+<p class="caveat">Spark/Comet: 7.748 GiB VM. Rust: 64 GiB host. Local M2 Max, not a cloud-bill measurement.</p>
+</div></section><section id="contradiction" class="dark-slide" data-timing="80" data-background-color="#19242a"><div class="slide-body"><h2><a href="#heading:contradiction:comet-scale-and-clock-change-the-answer" id="heading:contradiction:comet-scale-and-clock-change-the-answer" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Comet: scale and clock change the answer</h2>
+<table class="article-table">
+<thead>
+<tr><th>Aggregate</th><th align="right">Spark</th><th align="right">Spark+Comet</th></tr>
+</thead>
+<tbody>
+<tr><td>91 GB · full command</td><td align="right">45.25 s (2)</td><td align="right"><strong>13.94 s (2)</strong></td></tr>
+<tr><td>5M rows · full command</td><td align="right"><strong>5.48 s (3)</strong></td><td align="right">5.85 s (3)</td></tr>
+<tr><td>5M rows · Spark “Time taken”</td><td align="right">0.97 s (2)</td><td align="right"><strong>0.71 s (2)</strong></td></tr>
+</tbody>
+</table>
+<p><span class="badge">measured</span> Separate runs, different timing boundaries. <strong>(n) = runs.</strong></p>
+</div></section><section id="polars" class="standard" data-timing="65"><div class="slide-body"><h2><a href="#heading:polars:14-gb-too-close-91-gb-datafusion-ahead" id="heading:polars:14-gb-too-close-91-gb-datafusion-ahead" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>14 GB: too close. 91 GB: DataFusion ahead.</h2>
+<table class="article-table">
+<thead>
+<tr><th>Same filter and aggregate</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td>14 GB</td><td><strong>Too close to call</strong> across runs</td></tr>
+<tr><td>91 GB</td><td><strong>DataFusion ~2.85× faster</strong> (2 runs each)</td></tr>
+</tbody>
+</table>
+<p><span class="badge">measured</span> Same query · local M2 Max runs.</p>
+</div></section><section id="point-lookup" class="standard" data-timing="90"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/b1cda8e5bb285c6deb23f692e5eb8a360648f249/crates/pipeline/examples/point_query_tuning.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/b1cda8e5bb285c6deb23f692e5eb8a360648f249/crates/pipeline/examples/point_query_tuning.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:point-lookup:818--12268-lookupss-with-specialized-rebinding" id="heading:point-lookup:818--12268-lookupss-with-specialized-rebinding" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>818 → 12,268 lookups/s, with specialized rebinding</h2>
+<div class="columns code-walkthrough wide point-lookup-content">
+<div class="stack ">
+<div data-walkthrough-code="point-read">
+<pre><code class="language-rust">// Reuse scan config + cached Parquet metadata.
+let decoder_pushdown = false;
+let plan = rebind(
+    file_scan, decoder_pushdown, order_id
+)?;
+let mut output =
+    execute_stream(plan, ctx.task_ctx())?;
+</code></pre>
+</div>
+<div class="code-note fragment step" data-code-ref="point-read" data-code="rebind(">
+<p><strong>Reuse:</strong> file/schema, reader settings, cached Parquet metadata.</p>
+<p><strong>Rebuild:</strong> filter + scan state for each order ID.</p>
+</div>
+<table class="article-table">
+<thead>
+<tr><th>Path</th><th align="right">Median reads/s</th><th align="right">Gain</th></tr>
+</thead>
+<tbody>
+<tr><td>Original SQL</td><td align="right">818</td><td align="right">1×</td></tr>
+<tr><td>Tuned fresh SQL</td><td align="right">5,139</td><td align="right">6.28×</td></tr>
+<tr><td>Experimental rebind</td><td align="right"><strong>12,268</strong></td><td align="right"><strong>15.00×</strong></td></tr>
+</tbody>
+</table>
+</div>
+<div class="stack ">
+<div class="mermaid">
+flowchart TD
+  G[&quot;39 row groups&quot;] --&gt;|&quot;min/max skips 38&quot;| K[&quot;1 group remains&quot;]
+  K --&gt;|&quot;page index&quot;| P[&quot;2,048 scan rows&quot;]
+  P --&gt;|&quot;FilterExec&quot;| R[&quot;1 result&quot;]
+  class G input
+  class K,P work
+  class R result
+</div>
+<p class="rust-context"><strong>Rust:</strong> scan APIs + shared ownership.<br />
+Both measured paths use DataFusion.</p>
+</div>
+</div>
+<p class="caveat">5M rows · 1 warm local immutable file · 1 client · M2 Max · 5 rounds × 128 holdout keys/path</p>
+<p class="caveat">Complete lookup; setup excluded. 15× includes specialized physical rebinding, LZ4 layout and mimalloc.</p>
+</div></section><section id="migration-path" class="standard" data-timing="60"><div class="slide-body"><h2><a href="#heading:migration-path:move-one-job-keep-a-way-back" id="heading:migration-path:move-one-job-keep-a-way-back" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Move one job. Keep a way back.</h2>
+<div class="fragment step" data-fragment-index="0">
+<p><strong>1. Keep Spark. Pilot Comet.</strong></p>
+<p>Same pipeline · check results, native coverage and complete job time.</p>
+</div>
+<div class="fragment step" data-fragment-index="1">
+<p><strong>2. Port one bounded step to DataFusion.</strong></p>
+<p>Reuse SQL where semantics match · rebuild reader, writer and runtime wiring.</p>
+</div>
+<div class="fragment step" data-fragment-index="2">
+<p><strong>3. Run beside Spark before switching.</strong></p>
+<p>Check types, nulls, decimals, retries and downstream output. Keep the fallback.</p>
+</div>
+<p class="caveat"><strong>Query implementations, Process, patterns and Production migration steps.</strong></p>
+</div></section><section id="not-measured" class="standard" data-timing="30"><div class="slide-body"><h2><a href="#heading:not-measured:my-chart-cannot-decide-your-migration" id="heading:not-measured:my-chart-cannot-decide-your-migration" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>My chart cannot decide your migration</h2>
+<p><strong>Does it hold on your cloud and cluster?</strong></p>
+<p><strong>How does it behave under sustained load?</strong></p>
+<p class="caveat"><strong>What does the complete pipeline cost to run?</strong></p>
+</div></section><section id="costs" class="standard" data-timing="40"><div class="slide-body"><h2><a href="#heading:costs:count-engineering-and-recovery-in-the-decision" id="heading:costs:count-engineering-and-recovery-in-the-decision" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Count engineering and recovery in the decision</h2>
+<div class="columns top">
+<div class="stack ">
+<h3><a href="#heading:costs:engineering" id="heading:costs:engineering" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Engineering</h3>
+<p>Compile times, async, FFI</p>
+</div>
+<div class="stack ">
+<h3><a href="#heading:costs:guarantee-boundary" id="heading:costs:guarantee-boundary" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Guarantee boundary</h3>
+<p>Declared connections in one compilation</p>
+</div>
+</div>
+<p>Files and other processes still need runtime checks.</p>
+</div></section><section id="conclusion" class="dark-slide" data-timing="75" data-background-color="#19242a"><div class="slide-body"><h2><a href="#heading:conclusion:keep-the-answer-lose-unnecessary-work" id="heading:conclusion:keep-the-answer-lose-unnecessary-work" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Keep the answer. Lose unnecessary work.</h2>
+<div class="fragment step">
+<p><strong>Less job time:</strong> 45.25 → 13.94 seconds with Comet.</p>
+<p class="caveat">91 GB aggregate · full command · 2 runs per engine.</p>
+</div>
+<div class="fragment step">
+<p><strong>More lookups:</strong> 818 → 12,268 per second.</p>
+<p class="caveat">Warm local 5M-row file · 1 client · 5 holdout rounds. Setup excluded.
+Specialized rebinding + tuned layout + mimalloc; not a general 15× gain.</p>
+</div>
+<div class="fragment step">
+<p><strong>Earlier rejection:</strong> incompatible declarations at build;
+bad Arrow batches before downstream callbacks.</p>
+<p class="caveat">Datacrate checks; separate from DataFusion's measured gains.</p>
+</div>
+<p><strong>Try Comet within Spark first. Reach for DataFusion in one bounded application only if that ceiling isn't enough.</strong></p>
+<p><strong>One job. Same answer. Keep the fallback. Earn the switch.</strong></p>
+</div></section><section id="questions" class="dark-slide title-slide" data-timing="20" data-background-color="#10283d"><div class="slide-body"><p class="repo-badge"><a href="https://github.com/vim89" title="https://github.com/vim89"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">vim89</span></a></p>
+<h1><a href="#heading:questions:questions-and-thank-you" id="heading:questions:questions-and-thank-you" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Questions? <em>And thank you.</em></h1>
+<div class="columns ">
+<p><strong>Vitthal Mirji</strong><br>
+<a href="https://vitthalmirji.com">vitthalmirji.com</a></p>
+<p>Which workload merits an engine change —<br>
+and which boundary should be explicit<br>
+<em>regardless</em> of engine?</p>
+</div>
+</div></section><section id="chapter-decision" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h1><a href="#heading:chapter-decision:so--would-you-move-it" id="heading:chapter-decision:so--would-you-move-it" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>So — <em>would you move it?</em></h1>
+</div></section><section id="matrix" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:matrix:one-job-a-fallback-a-decision-you-can-reverse" id="heading:matrix:one-job-a-fallback-a-decision-you-can-reverse" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>One job. A fallback. A decision you can reverse.</h2>
+<table class="article-table">
+<thead>
+<tr><th>Path</th><th>Next step</th></tr>
+</thead>
+<tbody>
+<tr><td>Comet within Spark</td><td>Pilot supported workloads</td></tr>
+<tr><td>Standalone DataFusion</td><td>Evaluate one bounded job</td></tr>
+<tr><td>DataFusion Python</td><td>Evaluate query authoring</td></tr>
+<tr><td>Hybrid hot step</td><td>Measure boundary costs</td></tr>
+<tr><td>One box replaces a cluster</td><td>Untested</td></tr>
+<tr><td>Ballista replacement</td><td>Not established</td></tr>
+</tbody>
+</table>
+</div></section><section id="appendix-migration-and-gc" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:appendix-migration-and-gc:appendix-the-pain-point-and-the-realistic-migration-path" id="heading:appendix-migration-and-gc:appendix-the-pain-point-and-the-realistic-migration-path" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: the pain point, and the realistic migration path</h2>
+<div class="columns top">
+<div class="stack ">
+<h3><a href="#heading:appendix-migration-and-gc:the-pain-tuning-doesnt-remove" id="heading:appendix-migration-and-gc:the-pain-tuning-doesnt-remove" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>The pain tuning doesn't remove</h3>
+<p>GC pause frequency/duration is tunable. The category is not.</p>
+<p><strong>Spark under pressure:</strong> a silent executor OOM-kill, then the whole stage retries.</p>
+<p><strong>DataFusion under pressure:</strong> an unbounded pool swap-thrashed 4.5+ hours, no output.
+Bounded, it instead fails one query, exactly:
+<code>&quot;HashJoinInput[5] ... 197.9 KB remain ... pool_size: 40.0 GB&quot;</code></p>
+<p>One query rejected cleanly beats one process killed silently.</p>
+</div>
+<div class="stack ">
+<h3><a href="#heading:appendix-migration-and-gc:the-realistic-path-in-order" id="heading:appendix-migration-and-gc:the-realistic-path-in-order" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>The realistic path, in order</h3>
+<ol>
+<li><strong>Flip the Comet flag. Zero rewrite.</strong> 2.5×–2.6× measured, config only.</li>
+<li><strong>Python cohort pilots DataFusion's own Python API</strong> on a query they already own. No Rust.</li>
+<li><strong>Only if Comet's ceiling isn't enough</strong>, scope a hybrid: Spark orchestrates, DataFusion owns one hot step. Budget months, not weeks.</li>
+<li><strong>Don't plan a full rewrite or a distributed rollout</strong> off evidence this thin.</li>
+</ol>
+</div>
+</div>
+<p class="caveat"><strong>Evidence-driven order, not dogma: measure which step hurts before deciding how much to replace.</strong></p>
+</div></section><section id="appendix-arrow-validation" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:appendix-arrow-validation:appendix-reject-bad-visible-values-not-hidden-ones" id="heading:appendix-arrow-validation:appendix-reject-bad-visible-values-not-hidden-ones" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: reject bad visible values, not hidden ones</h2>
+<div class="mermaid">
+flowchart LR
+  B[Arrow batch] --&gt; V[Contract validator]
+  V --&gt; A[Active values only]
+  class B input
+  class V work
+  class A result
+</div>
+<p>Skip children of null parents and values outside a slice.</p>
+<p><strong>Hidden values can be validly irrelevant.</strong></p>
+</div></section><section id="appendix-measurement" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:appendix-measurement:appendix-use-the-counter-that-answers-your-question" id="heading:appendix-measurement:appendix-use-the-counter-that-answers-your-question" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: use the counter that answers your question</h2>
+<div class="mermaid">
+flowchart LR
+  P[Plan intent] --&gt; E[Execute]
+  E --&gt; M[Runtime metrics]
+  class P input
+  class E work
+  class M result
+</div>
+<table class="article-table">
+<thead>
+<tr><th>Metric</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td>Decoder rows pruned</td><td>Rows, not network bytes</td></tr>
+<tr><td>Engine bytes scanned</td><td>Engine accounting</td></tr>
+<tr><td>Range requests</td><td>Attempted calls, including errors</td></tr>
+<tr><td>Unexposed wire bytes</td><td>Unavailable, not zero</td></tr>
+<tr><td>Admitted Arrow bytes</td><td>Not process RSS</td></tr>
+</tbody>
+</table>
+</div></section><section id="appendix-extending" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:appendix-extending:appendix-a-small-answer-can-require-large-work" id="heading:appendix-extending:appendix-a-small-answer-can-require-large-work" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: a small answer can require large work</h2>
+<table class="article-table">
+<thead>
+<tr><th>Extension</th><th>Example</th></tr>
+</thead>
+<tbody>
+<tr><td>TableProvider</td><td>Custom table</td></tr>
+<tr><td>ExecutionPlan</td><td>Physical execution</td></tr>
+<tr><td>OptimizerRule</td><td>Test policy</td></tr>
+<tr><td>Async UDF</td><td>Deliberate yield</td></tr>
+</tbody>
+</table>
+<p><strong>A result cap does not bound upstream work.</strong></p>
+</div></section><section id="appendix-encodings" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><h2><a href="#heading:appendix-encodings:appendix-decode-cost-comes-before-kernel-speed" id="heading:appendix-encodings:appendix-decode-cost-comes-before-kernel-speed" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: decode cost comes before kernel speed</h2>
+<table class="article-table">
+<thead>
+<tr><th>Encoding</th><th>Retained</th><th>Decode</th></tr>
+</thead>
+<tbody>
+<tr><td>Dictionary · 100 distinct</td><td>2,000,640 B</td><td>1.07 ms</td></tr>
+<tr><td>Dictionary · all distinct</td><td>4,000,240 B</td><td>1.01 ms</td></tr>
+<tr><td>Run-end · 10,000 per run</td><td><strong>576 B</strong></td><td>3.56 ms</td></tr>
+<tr><td>Run-end · 2 per run</td><td>2,000,176 B</td><td><strong>12.95 ms</strong></td></tr>
+</tbody>
+</table>
+<p><strong><code>wrapping_add_simd</code> takes <code>Int32Array</code> only. Every row above decodes first.</strong></p>
+</div></section><section id="appendix-backpressure" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bounded/transport.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/pipeline/src/bounded/transport.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:appendix-backpressure:appendix-the-budget-returns-itself" id="heading:appendix-backpressure:appendix-the-budget-returns-itself" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>Appendix: the budget returns itself</h2>
+<div data-walkthrough-code="reservation">
+<pre><code class="language-rust">impl Drop for Reservation {
+    fn drop(&amp;mut self) {
+        if let Some((control, bytes)) = &amp;self.0 {
+            let mut state = control.lock();
+            state.bytes -= bytes;
+            control.changed.notify_all();
+        }
+    }
+}
+</code></pre>
+</div>
+<p><strong>The charge is tied to the batch's lifetime, not to a <code>release()</code> call.</strong></p>
+</div></section><section id="demo-type-transitions" class="appendix" data-timing="0" data-visibility="uncounted"><div class="slide-body" data-font-size="36" style="--slide-font-size:36px"><div class="stack code-source-links">
+<p class="repo-badge repo-badge-inline"><a href="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/typestate/src/contract_pipeline.rs" title="https://github.com/com-vitthalmirji/datacrate/blob/202c5b473c432d9b6bcd7bbf5145e3ee36d738e0/crates/typestate/src/contract_pipeline.rs"><img data-src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/github-mark.png" alt="GitHub" /><span class="repo-badge-label">Github link</span></a></p>
+</div>
+<h2><a href="#heading:demo-type-transitions:a-sink-changes-which-methods-exist" id="heading:demo-type-transitions:a-sink-changes-which-methods-exist" class="anchor-link anchor-link__source"><i class="fa-solid fa-link"></i></a>A sink changes which methods exist</h2>
+<div class="columns code-walkthrough wide">
+<div class="stack ">
+<p class="code-caption">Source and sink only · callbacks omitted</p>
+<div data-walkthrough-code="states">
+<pre><code class="language-rust">let pipeline: ContractPipeline&lt;'_, Bronze&gt; =
+    ContractPipeline::source::&lt;Bronze, _&gt;(read);
+
+let sink: ContractSink&lt;'_&gt; =
+    pipeline.sink::&lt;Bronze&gt;(write);
+
+let ready = sink.build()?;
+ready.run()?;
+</code></pre>
+</div>
+</div>
+<div class="stack ">
+<div class="code-note fragment step" data-code-ref="states" data-code="ContractPipeline">
+<p>Before sink: <strong>no build method</strong>.</p>
+</div>
+<div class="code-note fragment step" data-code-ref="states" data-code="ContractSink">
+<p>After sink: <strong>build is available</strong>.</p>
+</div>
+</div>
+</div>
+</div></section></div><div class="presentation-tools"><div class="fullscreen-control"><button type="button" data-fullscreen="" aria-keyshortcuts="f" aria-label="Fullscreen" title="Fullscreen (F)"><span data-fullscreen-label="">Fullscreen</span></button><span class="fullscreen-status" role="status" hidden="true"></span></div></div></div><script src="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/vendor/reveal/dist/reveal.js"></script><script src="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/vendor/reveal/dist/plugin/notes.js"></script><script src="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/deck.js"></script><script type="module" src="/static/reveal_e479fd4b8e3dac0fceafd1a5a6d536c5/fullscreen.mjs"></script><script type="module" src="/static/deck_jotb-talk_d62081b9b4c008172f0b576fdaa4ab54/assets/deck-extras.mjs"></script></body></html>
